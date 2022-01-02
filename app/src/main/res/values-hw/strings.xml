@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">המעשר שלי</string>
+    <string name="type_income">הקלד הכנסה כאן</string>
+    <string name="save">שמור</string>
+</resources>
