@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">My Maser</string>
     <string name="type_income">Type your income</string>
+    <string name="type_donation">Amount of donation</string>
     <string name="save">Save</string>
+    <string name="donate">Donate</string>
+    <string name="income">Income</string>
 </resources>

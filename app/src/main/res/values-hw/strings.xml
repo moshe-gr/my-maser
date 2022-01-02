@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">המעשר שלי</string>
     <string name="type_income">הקלד הכנסה כאן</string>
+    <string name="type_donation">סכום התרומה</string>
     <string name="save">שמור</string>
+    <string name="donate">תרום</string>
+    <string name="income">הכנסה</string>
 </resources>
