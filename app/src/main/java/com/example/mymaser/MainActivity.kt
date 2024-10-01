@@ -1,99 +1,62 @@
 package com.example.mymaser
 
-import android.graphics.Color
+import android.content.Context
+import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.addTextChangedListener
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.lifecycleScope
+import com.example.mymaser.gui.screens.MainScreen
+import com.example.mymaser.gui.screens.TotalMaserView
+import com.example.mymaser.history.HistoryDb
+import com.example.mymaser.history.HistoryRepository.Companion.historyDao
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 private const val totalMaserTXT = "total maser"
-private const val shardPref = "shardPref"
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "my_maser_prefs")
 
 class MainActivity : AppCompatActivity() {
-    private var donate = false
-    private var save = false
-    private lateinit var tvTotal: TextView
-    private lateinit var etIncome: EditText
-    private lateinit var btSave: Button
-    private var totalMaser = 0F
+    private var totalMaser by mutableFloatStateOf(0F)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        tvTotal = findViewById(R.id.TV_total_maser)
-        etIncome = findViewById(R.id.ET_income)
-        btSave = findViewById(R.id.BT_save)
-        totalMaser = getSharedPreferences(shardPref, MODE_PRIVATE)
-            .getFloat(totalMaserTXT, 0F)
-
-        tvTotal.text = totalMaser.toString()
-        etIncome.addTextChangedListener {
-            save = !it.isNullOrEmpty()
-            btSave.setBackgroundColor(
-                if (save) Color.RED else resources.getColor(R.color.purple_500)
-            )
-            when {
-                save -> btSave.setText(R.string.save)
-                donate -> {
-                    btSave.setText(R.string.income)
-                    etIncome.setHint(R.string.type_donation)
+        historyDao = HistoryDb.getInstance(this).getHistoryDao()
+        dataStore.data
+            .map { totalMaser = it[floatPreferencesKey(totalMaserTXT)] ?: 0F }
+            .launchIn(lifecycleScope)
+        setContent {
+            if (resources.configuration.orientation == ORIENTATION_PORTRAIT) {
+                MainScreen(totalMaser) { edit ->
+                    lifecycleScope.launch {
+                        dataStore.edit {
+                            it[floatPreferencesKey(totalMaserTXT)] = totalMaser + edit
+                        }
+                        Toast.makeText(
+                            this@MainActivity,
+                            R.string.information_saved_successfully,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
-                else -> {
-                    btSave.setText(R.string.donate)
-                    etIncome.setHint(R.string.type_income)
-                }
-            }
-        }
-        btSave.setOnClickListener {
-            if (save) {
-                maserChange()
             } else {
-                actionChange()
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    TotalMaserView(totalMaser)
+                }
             }
         }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putBoolean("donate", donate)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        donate = savedInstanceState.getBoolean("donate")
-        if (!save && donate) {
-            btSave.setText(R.string.income)
-            etIncome.setHint(R.string.type_donation)
-        }
-    }
-
-    private fun maserChange() {
-        if (donate) {
-            totalMaser -= etIncome.text.toString().toFloat()
-        } else {
-            totalMaser += etIncome.text.toString().toFloat() / 10
-        }
-        tvTotal.text = totalMaser.toString()
-        etIncome.text.clear()
-        getSharedPreferences(shardPref, MODE_PRIVATE)
-            .edit()
-            .putFloat(
-                totalMaserTXT,
-                totalMaser
-            )
-            .apply()
-    }
-
-    private fun actionChange() {
-        if (donate) {
-            btSave.setText(R.string.donate)
-            etIncome.setHint(R.string.type_income)
-        } else {
-            btSave.setText(R.string.income)
-            etIncome.setHint(R.string.type_donation)
-        }
-        donate = !donate
     }
 }

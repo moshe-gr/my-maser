@@ -7,6 +7,22 @@
     tools:context=".MainActivity">
 
     <EditText
+        android:id="@+id/ET_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/et_bg"
+        android:hint="@string/type_name"
+        android:inputType="textShortMessage"
+        android:maxLength="50"
+        android:padding="12dp"
+        android:textColor="@android:color/holo_orange_dark"
+        android:textSize="25sp"
+        app:layout_constraintBottom_toTopOf="@id/ET_income"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <EditText
         android:id="@+id/ET_income"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

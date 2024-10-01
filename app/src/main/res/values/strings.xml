@@ -5,4 +5,19 @@
     <string name="save">Save</string>
     <string name="donate">Donate</string>
     <string name="income">Income</string>
+    <string name="type_name">Type name</string>
+    <string name="home">Home</string>
+    <string name="history">History</string>
+    <string name="donation">Donation</string>
+    <string name="source_of_income">Source of income</string>
+    <string name="donate_to">Donate to</string>
+    <string name="confirm">Confirm</string>
+    <string name="last_income_info">Last income info: %s</string>
+    <string name="last_donation_info">Last donation info: %s</string>
+    <string name="information_saved_successfully">Information saved successfully</string>
+    <string name="no_information_yet">No information yet</string>
+    <string name="last_action_at">Last action at: %s</string>
+    <string name="total">Total:</string>
+    <string name="this_year">This year:</string>
+    <string name="this_month">This month:</string>
 </resources>

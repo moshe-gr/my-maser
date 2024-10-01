@@ -5,4 +5,19 @@
     <string name="save">שמור</string>
     <string name="donate">תרום</string>
     <string name="income">הכנסה</string>
+    <string name="type_name">הקלד שם</string>
+    <string name="home">בית</string>
+    <string name="history">הסטוריה</string>
+    <string name="donation">תרומה</string>
+    <string name="source_of_income">מקור הכנסה</string>
+    <string name="donate_to">תרום ל</string>
+    <string name="confirm">אשר</string>
+    <string name="last_income_info">הכנסה אחרונה: %s</string>
+    <string name="last_donation_info">תרומה אחרונה: %s</string>
+    <string name="information_saved_successfully">מידע נשמר בהצלחה</string>
+    <string name="no_information_yet">אין מידע עדיין</string>
+    <string name="last_action_at">פעולה אחרונה ב: %s</string>
+    <string name="total">סה״כ:</string>
+    <string name="this_year">השנה:</string>
+    <string name="this_month">החודש:</string>
 </resources>
