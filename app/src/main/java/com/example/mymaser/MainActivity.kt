@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
@@ -13,14 +14,15 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.lifecycleScope
+import com.example.mymaser.gui.components.TotalMaserView
 import com.example.mymaser.gui.screens.MainScreen
-import com.example.mymaser.gui.screens.TotalMaserView
 import com.example.mymaser.history.HistoryDb
 import com.example.mymaser.history.HistoryRepository.Companion.historyDao
 import kotlinx.coroutines.flow.launchIn
@@ -53,7 +55,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = colorResource(id = R.color.bg_color)), contentAlignment = Alignment.Center) {
                     TotalMaserView(totalMaser)
                 }
             }

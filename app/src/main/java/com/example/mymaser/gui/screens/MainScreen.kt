@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
@@ -14,8 +15,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
 
 @Composable
@@ -26,7 +30,9 @@ fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
             .fillMaxSize(),
         topBar = {
             TabRow(
-                selectedTabIndex = tabIndex
+                selectedTabIndex = tabIndex,
+                backgroundColor = colorResource(id = R.color.colorPrimary),
+                contentColor = colorResource(id = R.color.colorOnPrimary)
             ) {
                 ScreenTypes.entries.forEachIndexed { index, screenType ->
                     Tab(
@@ -36,7 +42,16 @@ fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
                             )
                         },
                         icon = {
-                               Image(painter = painterResource(id = screenType.icon), contentDescription = null)
+                            Image(
+                                painter = painterResource(id = screenType.icon),
+                                contentDescription = null,
+                                alpha = if (tabIndex == index) 1f else ContentAlpha.medium,
+                                colorFilter = ColorFilter.tint(
+                                    colorResource(
+                                        id = R.color.colorOnPrimary
+                                    )
+                                )
+                            )
                         },
                         selected = tabIndex == index,
                         onClick = { tabIndex = index }
@@ -44,19 +59,19 @@ fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
                 }
             }
         },
-        content = { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                when (tabIndex) {
-                    ScreenTypes.Home.ordinal -> HomeScreen(totalMaser)
-                    ScreenTypes.Income.ordinal -> IncomeScreen(onEdit)
-                    ScreenTypes.Donation.ordinal -> DonationScreen(onEdit)
-                    ScreenTypes.History.ordinal -> HistoryScreen()
-                }
+        backgroundColor = colorResource(id = R.color.bg_color)
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when (tabIndex) {
+                ScreenTypes.Home.ordinal -> HomeScreen(totalMaser)
+                ScreenTypes.Income.ordinal -> IncomeScreen(onEdit)
+                ScreenTypes.Donation.ordinal -> DonationScreen(onEdit)
+                ScreenTypes.History.ordinal -> HistoryScreen()
             }
         }
-    )
+    }
 }

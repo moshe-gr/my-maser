@@ -1,5 +1,6 @@
 package com.example.mymaser.gui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -23,61 +26,89 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.gui.components.myTextFieldColors
+import com.example.mymaser.gui.components.SuggestionsList
+import com.example.mymaser.history.HistoryRepository.Companion.getAllNamesByType
+import com.example.mymaser.history.HistoryRepository.Companion.getAmountByName
 import com.example.mymaser.history.HistoryRepository.Companion.getLastHistoryByType
 import com.example.mymaser.history.HistoryRepository.Companion.saveHistory
 
 @Composable
 fun DonationScreen(onEdit: (Float) -> Unit) {
-    var value by rememberSaveable {
-        mutableFloatStateOf(0F)
-    }
-
-    var donationReceiver by rememberSaveable {
-        mutableStateOf("")
-    }
-
-    var lastDonation by remember {
-        mutableStateOf(getLastHistoryByType(true))
-    }
-
+    var value by rememberSaveable { mutableFloatStateOf(0F) }
+    var valueString by rememberSaveable { mutableStateOf("") }
+    var donationReceiver by rememberSaveable { mutableStateOf("") }
+    var lastDonation by remember { mutableStateOf(getLastHistoryByType(true)) }
+    var expanded by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    val pastSources = remember { getAllNamesByType(true) }
+    val suggestions = remember(donationReceiver) {
+        pastSources.filter { it.contains(donationReceiver, ignoreCase = true) }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 48.dp),
+            .padding(vertical = 8.dp)
+            .clickable(interactionSource = null, indication = null) { focusManager.clearFocus() },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(40.dp))
+        Column {
+            OutlinedTextField(
+                value = donationReceiver,
+                onValueChange = {
+                    donationReceiver = it
+                    expanded = it.isNotBlank()
+                },
+                modifier = Modifier
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { expanded = it.isFocused && donationReceiver.isNotBlank() },
+                label = { Text(text = stringResource(id = R.string.donate_to)) },
+                singleLine = true,
+                shape = RoundedCornerShape(8.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = {
+                    focusManager.moveFocus(FocusDirection.Down)
+                }),
+                colors = myTextFieldColors()
+            )
+            if (expanded && suggestions.isNotEmpty()) {
+                SuggestionsList(suggestions = suggestions) {
+                    donationReceiver = it
+                    focusManager.moveFocus(FocusDirection.Down)
+                    value = getAmountByName(it, true).toFloat()
+                    valueString = value.toString()
+                }
+            } else {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
         OutlinedTextField(
-            value = if (value != 0F) value.toString() else "",
-            onValueChange = { v -> value = v.toFloatOrNull() ?: 0F },
+            value = valueString,
+            onValueChange = { v ->
+                if (v.matches(Regex("^\\d*\\.?\\d{0,5}$"))) {
+                    valueString = v
+                    value = v.toFloatOrNull() ?: 0F
+                }
+            },
             modifier = Modifier.focusRequester(focusRequester),
             label = { Text(text = stringResource(id = R.string.type_donation)) },
             singleLine = true,
             shape = RoundedCornerShape(8.dp),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Next
-            ),keyboardActions = KeyboardActions(onNext = {
-                focusManager.moveFocus(FocusDirection.Down)
-            })
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
-            value = donationReceiver,
-            onValueChange = { v -> donationReceiver = v },
-            modifier = Modifier.focusRequester(focusRequester),
-            label = { Text(text = stringResource(id = R.string.donate_to)) },
-            singleLine = true,
-            shape = RoundedCornerShape(8.dp),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                imeAction = ImeAction.Done
+            ),
             keyboardActions = KeyboardActions(onDone = {
                 focusManager.clearFocus()
                 if (value != 0F && donationReceiver.isNotBlank()) {
@@ -85,9 +116,11 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
                     onEdit(-value)
                     lastDonation = getLastHistoryByType(true)
                     value = 0F
+                    valueString = ""
                     donationReceiver = ""
                 }
-            })
+            }),
+            colors = myTextFieldColors()
         )
         Spacer(modifier = Modifier.weight(1f))
         Button(
@@ -95,16 +128,27 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
                 saveHistory(donationReceiver, value, true)
                 onEdit(-value)
                 lastDonation = getLastHistoryByType(true)
+                value = 0F
+                valueString = ""
+                donationReceiver = ""
             },
-            enabled = value != 0F && donationReceiver.isNotBlank()
+            enabled = value != 0F && donationReceiver.isNotBlank(),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = colorResource(id = R.color.colorPrimary),
+                contentColor = colorResource(id = R.color.colorOnPrimary)
+            )
         ) {
             Text(text = stringResource(id = R.string.confirm))
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = stringResource(
                 id = R.string.last_donation_info,
-                lastDonation?.let { "${it.name} - ${it.amount}" } ?: stringResource(id = R.string.no_information_yet))
+                lastDonation?.let { "${it.name} - ${it.amount}" }
+                    ?: stringResource(id = R.string.no_information_yet)
+            ),
+            color = colorResource(id = R.color.text),
+            style = MaterialTheme.typography.caption
         )
     }
 }

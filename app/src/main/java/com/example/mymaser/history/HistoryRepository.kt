@@ -10,7 +10,7 @@ class HistoryRepository {
         lateinit var historyDao: HistoryDao
         private val calendar = Calendar.getInstance()
 
-        fun getAllHistory(): List<History> = historyDao.getAll()
+        private fun getAllHistory(): List<History> = historyDao.getAll()
 
         fun getHistoryForLastMonth(isDonation: Boolean): Double {
             calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMinimum(Calendar.DAY_OF_MONTH))
@@ -55,5 +55,9 @@ class HistoryRepository {
                 formatter.format(date)
             }
         }
+
+        fun getAllNamesByType(isDonation: Boolean) = historyDao.getAllNamesByType(isDonation).distinct()
+
+        fun getAmountByName(name: String, isDonation: Boolean): Double = historyDao.getAmountByName(name, isDonation).groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: 0.0
     }
 }
