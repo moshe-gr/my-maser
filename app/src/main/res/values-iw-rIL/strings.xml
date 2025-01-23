@@ -20,5 +20,8 @@
     <string name="total">סה״כ:</string>
     <string name="this_year">השנה:</string>
     <string name="this_month">החודש:</string>
-    <string name="no_history_found">No history found</string>
+    <string name="no_history_found">אין היסטוריה</string>
+    <string name="today">היום</string>
+    <string name="this_week">השבוע</string>
+    <string name="this_monthh">החודש</string>
 </resources>

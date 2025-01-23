@@ -1,6 +1,8 @@
 package com.example.mymaser.history
 
+import android.content.Context
 import android.icu.util.Calendar
+import com.example.mymaser.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -47,17 +49,43 @@ class HistoryRepository {
             }
         )
 
-        fun getAllHistoryGroupedByMonth(): Map<String, List<History>> {
-            val formatter = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+        fun groupHistoryByTimePeriod(context: Context): Map<String, List<History>> {
+            val today = Calendar.getInstance()
+            val thisWeekStart = (today.clone() as Calendar).apply {
+                set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val thisMonthStart = (today.clone() as Calendar).apply {
+                set(Calendar.DAY_OF_MONTH, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
 
             return getAllHistory().reversed().groupBy {
-                val date = Date(it.timeStamp)
-                formatter.format(date)
+                val historyDate = Calendar.getInstance().apply { timeInMillis = it.timeStamp }
+                when {
+                    isSameDay(today, historyDate) -> context.getString(R.string.today)
+                    historyDate.after(thisWeekStart) -> context.getString(R.string.this_week)
+                    historyDate.after(thisMonthStart) -> context.getString(R.string.this_monthh)
+                    else -> SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(historyDate.time)
+                }
             }
+        }
+
+        private fun isSameDay(calendar1: Calendar, calendar2: Calendar): Boolean {
+            return calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR) &&
+                    calendar1.get(Calendar.DAY_OF_YEAR) == calendar2.get(Calendar.DAY_OF_YEAR)
         }
 
         fun getAllNamesByType(isDonation: Boolean) = historyDao.getAllNamesByType(isDonation).distinct()
 
         fun getAmountByName(name: String, isDonation: Boolean): Double = historyDao.getAmountByName(name, isDonation).groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: 0.0
+
+        fun updateHistory(history: History) = historyDao.update(history)
     }
 }

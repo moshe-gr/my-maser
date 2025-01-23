@@ -21,4 +21,7 @@
     <string name="this_year">This year:</string>
     <string name="this_month">This month:</string>
     <string name="no_history_found">No history found</string>
+    <string name="today">Today</string>
+    <string name="this_week">This weak</string>
+    <string name="this_monthh">This month</string>
 </resources>

@@ -12,4 +12,5 @@ class History {
     var name: String = ""
     var amount: Float = 0F
     var isDonation: Boolean = false
+    var attachmentUri: String? = null
 }

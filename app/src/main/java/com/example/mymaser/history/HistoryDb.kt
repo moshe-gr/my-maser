@@ -1,11 +1,12 @@
 package com.example.mymaser.history
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [History::class], version = 1)
+@Database(entities = [History::class], version = 2, autoMigrations = [AutoMigration(from = 1, to = 2)])
 abstract class HistoryDb : RoomDatabase() {
     abstract fun getHistoryDao(): HistoryDao
 

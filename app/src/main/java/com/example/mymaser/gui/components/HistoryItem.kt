@@ -1,60 +1,118 @@
 package com.example.mymaser.gui.components
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.Card
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import com.example.mymaser.R
 import com.example.mymaser.history.History
+import com.example.mymaser.history.HistoryRepository.Companion.updateHistory
 import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
 
 @Preview
 @Composable
 fun HistoryItem(history: History = History()) {
-    Row(
-        modifier = Modifier
-            .wrapContentHeight()
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        SingleTextBox(
-            text = stringResource(id = if (history.isDonation) R.string.donation else R.string.income),
-            modifier = Modifier.weight(1f)
-        )
-        SingleTextBox(text = history.name, modifier = Modifier.weight(1f))
-        SingleTextBox(text = history.amount.toString(), modifier = Modifier.weight(1f))
-        SingleTextBox(
-            text = DateFormat.getDateInstance(DateFormat.SHORT).format(Date(history.timeStamp)),
-            modifier = Modifier.weight(1f)
+    val dateFormatter = remember {
+        DateFormat.getDateTimeInstance(
+            DateFormat.MEDIUM,
+            DateFormat.SHORT,
+            Locale.getDefault()
         )
     }
-}
-
-@Composable
-private fun SingleTextBox(text: String, modifier: Modifier) {
-    Text(
-        text = text,
-        modifier = modifier
-            .border(width = 0.8.dp, color = colorResource(id = R.color.black))
-            .padding(4.dp),
-        fontSize = 17.sp,
-        textAlign = TextAlign.Center,
-        overflow = TextOverflow.Ellipsis,
-        maxLines = 1
-    )
+    var attachmentUri by remember { mutableStateOf(history.attachmentUri) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = colorResource(id = if (history.isDonation) R.color.donation_red else R.color.income_green))
+                .padding(12.dp)
+        ) {
+            val context = LocalContext.current
+            val launcher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.OpenDocument()
+            ) {
+                it?.let {
+                    context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    history.attachmentUri = it.toString()
+                    updateHistory(history)
+                    attachmentUri = it.toString()
+                }
+            }
+            IconButton(
+                onClick = {
+                    if (attachmentUri.isNullOrEmpty()) {
+                        launcher.launch(arrayOf("image/*", "application/pdf"))
+                    } else {
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(Uri.parse(attachmentUri), context.contentResolver.getType(Uri.parse(attachmentUri)))
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        startActivity(context, intent, null)
+                    }
+                },
+                modifier = Modifier.size(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AttachFile,
+                    contentDescription = if (attachmentUri.isNullOrEmpty()) "Add Attachment" else "Show Attachment",
+                    tint = colorResource(id = R.color.colorPrimary)
+                )
+            }
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = history.name,
+                    color = colorResource(id = R.color.colorPrimary),
+                    style = MaterialTheme.typography.h6
+                )
+                Spacer(modifier = Modifier.padding(vertical = 2.dp))
+                Text(
+                    text = String.format(Locale.getDefault(), "Amount: ₪%,.2f", history.amount),
+                    color = colorResource(id = R.color.colorPrimary),
+                    style = MaterialTheme.typography.body1
+                )
+                Spacer(modifier = Modifier.padding(vertical = 2.dp))
+                Text(
+                    text = dateFormatter.format(Date(history.timeStamp)),
+                    color = colorResource(id = R.color.colorPrimary).copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.caption
+                )
+            }
+        }
+    }
 }
