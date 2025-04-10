@@ -1,7 +1,6 @@
 package com.example.mymaser.gui.components
 
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -18,6 +17,7 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,7 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.startActivity
+import androidx.core.net.toUri
 import com.example.mymaser.R
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryRepository.Companion.updateHistory
@@ -76,17 +76,19 @@ fun HistoryItem(history: History = History()) {
                     if (attachmentUri.isNullOrEmpty()) {
                         launcher.launch(arrayOf("image/*", "application/pdf"))
                     } else {
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(Uri.parse(attachmentUri), context.contentResolver.getType(Uri.parse(attachmentUri)))
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        attachmentUri?.let { uri ->
+                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri.toUri(), context.contentResolver.getType(uri.toUri()))
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(intent)
                         }
-                        startActivity(context, intent, null)
                     }
                 },
                 modifier = Modifier.size(16.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.AttachFile,
+                    imageVector = if (attachmentUri.isNullOrEmpty()) Icons.Filled.Add else Icons.Filled.AttachFile,
                     contentDescription = if (attachmentUri.isNullOrEmpty()) "Add Attachment" else "Show Attachment",
                     tint = colorResource(id = R.color.colorPrimary)
                 )
