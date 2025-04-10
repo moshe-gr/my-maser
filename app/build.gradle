@@ -2,15 +2,16 @@ plugins {
     id 'com.android.application'
     id 'kotlin-android'
     id 'com.google.devtools.ksp'
+    id 'org.jetbrains.kotlin.plugin.compose'
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.example.mymaser"
         minSdk 30
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
@@ -19,7 +20,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             ksp {
                 arg("room.schemaLocation", "$projectDir/schemas")
@@ -45,21 +46,21 @@ android {
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.core:core-ktx:1.16.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.room:room-runtime:2.6.1'
-    implementation 'androidx.room:room-ktx:2.6.1'
-    ksp 'androidx.room:room-compiler:2.6.1'
-    implementation 'androidx.activity:activity-compose:1.9.2'
-    implementation 'androidx.compose.material:material:1.7.3'
-    implementation 'androidx.compose.material:material:1.7.3'
-    implementation "androidx.compose.material:material-icons-extended:1.7.3"
-    implementation 'androidx.compose.animation:animation:1.7.3'
-    implementation 'androidx.compose.ui:ui-tooling:1.7.3'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6'
-    implementation 'androidx.navigation:navigation-compose:2.8.2'
-    implementation 'androidx.compose.ui:ui-viewbinding:1.7.3'
-    implementation 'androidx.datastore:datastore-preferences:1.1.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'androidx.room:room-runtime:2.7.0'
+    implementation 'androidx.room:room-ktx:2.7.0'
+    ksp 'androidx.room:room-compiler:2.7.0'
+    implementation 'androidx.activity:activity-compose:1.10.1'
+    implementation 'androidx.compose.material:material:1.7.8'
+    implementation 'androidx.compose.material:material:1.7.8'
+    implementation "androidx.compose.material:material-icons-extended:1.7.8"
+    implementation 'androidx.compose.animation:animation:1.7.8'
+    implementation 'androidx.compose.ui:ui-tooling:1.7.8'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7'
+    implementation 'androidx.navigation:navigation-compose:2.8.9'
+    implementation 'androidx.compose.ui:ui-viewbinding:1.7.8'
+    implementation 'androidx.datastore:datastore-preferences:1.1.4'
 }
