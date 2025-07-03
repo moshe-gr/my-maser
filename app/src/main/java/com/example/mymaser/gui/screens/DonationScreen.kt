@@ -2,18 +2,23 @@ package com.example.mymaser.gui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,8 +40,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
-import com.example.mymaser.gui.components.myTextFieldColors
+import com.example.mymaser.gui.components.SuccessPopUp
 import com.example.mymaser.gui.components.SuggestionsList
+import com.example.mymaser.gui.components.myTextFieldColors
 import com.example.mymaser.history.HistoryRepository.Companion.getAllNamesByType
 import com.example.mymaser.history.HistoryRepository.Companion.getAmountByName
 import com.example.mymaser.history.HistoryRepository.Companion.getLastHistoryByType
@@ -153,14 +159,23 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
             Text(text = stringResource(id = R.string.confirm))
         }
         Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = stringResource(
-                id = R.string.last_donation_info,
-                lastDonation?.let { "${it.name} - ${it.amount}" }
-                    ?: stringResource(id = R.string.no_information_yet)
-            ),
-            color = colorResource(id = R.color.text),
-            style = MaterialTheme.typography.caption
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                tint = colorResource(id = R.color.colorPrimary),
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Text(
+                text = stringResource(
+                    id = R.string.last_donation_info,
+                    lastDonation?.let { "${it.name} - ${it.amount}" }
+                        ?: stringResource(id = R.string.no_information_yet)
+                ),
+                color = colorResource(id = R.color.text),
+                style = MaterialTheme.typography.caption
+            )
+        }
     }
 }

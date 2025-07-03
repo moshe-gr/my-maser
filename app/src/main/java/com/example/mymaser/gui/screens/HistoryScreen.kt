@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -41,7 +42,7 @@ fun HistoryScreen() {
                 .padding(16.dp)
         ) {
             historyItems.forEach { (monthYear, historyItems) ->
-                item {
+                stickyHeader {
                     MonthDivider(monthYear)
                 }
                 itemsIndexed(historyItems, key = { _, history -> history.id }) { _, history ->
@@ -54,13 +55,15 @@ fun HistoryScreen() {
 
 @Composable
 fun MonthDivider(monthYear: String) {
-    Text(
-        text = monthYear,
-        color = colorResource(id = R.color.text),
-        style = MaterialTheme.typography.h5,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        textAlign = TextAlign.Center
-    )
+    Surface(color = colorResource(R.color.bg_color)) {
+        Text(
+            text = monthYear,
+            color = colorResource(id = R.color.text),
+            style = MaterialTheme.typography.h5,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            textAlign = TextAlign.Center
+        )
+    }
 }

@@ -10,11 +10,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.Card
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,11 +113,20 @@ fun HomeScreen(totalMaser: Float) {
                     }
                 }
             }
-            Text(
-                text = stringResource(R.string.last_action_at, getLastActionTime()),
-                color = colorResource(id = R.color.text),
-                style = MaterialTheme.typography.caption
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = null,
+                    tint = colorResource(id = R.color.colorPrimary),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+                Text(
+                    text = stringResource(R.string.last_action_at, getLastActionTime()),
+                    color = colorResource(id = R.color.text),
+                    style = MaterialTheme.typography.caption
+                )
+            }
         }
     }
 }
