@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.gui.components.SuccessPopUp
 import com.example.mymaser.gui.components.myTextFieldColors
 import com.example.mymaser.gui.components.SuggestionsList
 import com.example.mymaser.history.HistoryRepository.Companion.getAllNamesByType
@@ -51,8 +52,16 @@ fun IncomeScreen(onEdit: (Float) -> Unit) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val pastSources = remember { getAllNamesByType(false) }
+    var showSuccess by remember { mutableStateOf(false) }
     val suggestions =
         remember(source) { pastSources.filter { it.contains(source, ignoreCase = true) } }
+
+    LaunchedEffect(showSuccess) {
+        if (showSuccess) {
+            delay(2000)
+            showSuccess = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -122,10 +131,12 @@ fun IncomeScreen(onEdit: (Float) -> Unit) {
             colors = myTextFieldColors()
         )
         Spacer(modifier = Modifier.weight(1f))
+        SuccessPopUp(showSuccess)
         Button(
             onClick = {
                 saveHistory(source, value, false)
                 onEdit(value / 10)
+                showSuccess = true
                 lastIncome = getLastHistoryByType(false)
                 value = 0F
                 valueString = ""

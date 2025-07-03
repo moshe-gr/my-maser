@@ -3,7 +3,6 @@ package com.example.mymaser
 import android.content.Context
 import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
@@ -47,11 +46,6 @@ class MainActivity : AppCompatActivity() {
                         dataStore.edit {
                             it[floatPreferencesKey(totalMaserTXT)] = totalMaser + edit
                         }
-                        Toast.makeText(
-                            this@MainActivity,
-                            R.string.information_saved_successfully,
-                            Toast.LENGTH_SHORT
-                        ).show()
                     }
                 }
             } else {

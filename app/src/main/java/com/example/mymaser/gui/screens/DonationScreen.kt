@@ -15,6 +15,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +41,7 @@ import com.example.mymaser.history.HistoryRepository.Companion.getAllNamesByType
 import com.example.mymaser.history.HistoryRepository.Companion.getAmountByName
 import com.example.mymaser.history.HistoryRepository.Companion.getLastHistoryByType
 import com.example.mymaser.history.HistoryRepository.Companion.saveHistory
+import kotlinx.coroutines.delay
 
 @Composable
 fun DonationScreen(onEdit: (Float) -> Unit) {
@@ -51,8 +53,16 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val pastSources = remember { getAllNamesByType(true) }
+    var showSuccess by remember { mutableStateOf(false) }
     val suggestions = remember(donationReceiver) {
         pastSources.filter { it.contains(donationReceiver, ignoreCase = true) }
+    }
+
+    LaunchedEffect(showSuccess) {
+        if (showSuccess) {
+            delay(2000)
+            showSuccess = false
+        }
     }
 
     Column(
@@ -123,10 +133,12 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
             colors = myTextFieldColors()
         )
         Spacer(modifier = Modifier.weight(1f))
+        SuccessPopUp(showSuccess)
         Button(
             onClick = {
                 saveHistory(donationReceiver, value, true)
                 onEdit(-value)
+                showSuccess = true
                 lastDonation = getLastHistoryByType(true)
                 value = 0F
                 valueString = ""
