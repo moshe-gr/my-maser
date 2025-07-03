@@ -24,9 +24,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 
@@ -41,9 +40,8 @@ fun SuccessPopUp(show: Boolean) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
-            backgroundColor = Color.Green.copy(alpha = 0.1f),
-            shape = RoundedCornerShape(12.dp),
-            elevation = 4.dp
+            backgroundColor = colorResource(R.color.income_green).copy(alpha = 0.1f),
+            shape = RoundedCornerShape(12.dp)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -53,14 +51,14 @@ fun SuccessPopUp(show: Boolean) {
                 Icon(
                     Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = Color.Green,
+                    tint = colorResource(R.color.income_green),
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.size(8.dp))
                 Text(
                     text = stringResource(R.string.information_saved_successfully),
-                    color = Color.Green,
-                    style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Medium)
+                    color = colorResource(R.color.income_green),
+                    style = MaterialTheme.typography.body1
                 )
             }
         }
