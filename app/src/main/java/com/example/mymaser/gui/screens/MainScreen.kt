@@ -13,55 +13,32 @@ import androidx.compose.material.TabRow
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
 
 @Composable
 fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
-    var tabIndex by rememberSaveable { mutableIntStateOf(ScreenTypes.Home.ordinal) }
+    val navController = rememberNavController()
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .background(colorResource(id = R.color.colorPrimary))
             .systemBarsPadding(),
         topBar = {
-            TabRow(
-                selectedTabIndex = tabIndex,
-                backgroundColor = colorResource(id = R.color.colorPrimary),
-                contentColor = colorResource(id = R.color.colorOnPrimary)
-            ) {
-                ScreenTypes.entries.forEachIndexed { index, screenType ->
-                    Tab(
-                        text = {
-                            Text(
-                                text = stringResource(id = screenType.label)
-                            )
-                        },
-                        icon = {
-                            Image(
-                                painter = painterResource(id = screenType.icon),
-                                contentDescription = null,
-                                alpha = if (tabIndex == index) 1f else ContentAlpha.medium,
-                                colorFilter = ColorFilter.tint(
-                                    colorResource(
-                                        id = R.color.colorOnPrimary
-                                    )
-                                )
-                            )
-                        },
-                        selected = tabIndex == index,
-                        onClick = { tabIndex = index }
-                    )
-                }
-            }
+            TopNavigationBar(navController = navController)
         },
         backgroundColor = colorResource(id = R.color.bg_color)
     ) { paddingValues ->
@@ -70,12 +47,82 @@ fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (tabIndex) {
-                ScreenTypes.Home.ordinal -> HomeScreen(totalMaser)
-                ScreenTypes.Income.ordinal -> IncomeScreen(onEdit)
-                ScreenTypes.Donation.ordinal -> DonationScreen(onEdit)
-                ScreenTypes.History.ordinal -> HistoryScreen()
-            }
+            NavigationHost(
+                navController = navController,
+                totalMaser = totalMaser,
+                onEdit = onEdit
+            )
+        }
+    }
+}
+
+@Composable
+fun TopNavigationBar(navController: NavHostController) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    val selectedTabIndex = ScreenTypes.entries.indexOfFirst { screen ->
+        currentDestination?.hierarchy?.any { destination -> destination.route == screen.route } == true
+    }.takeIf { it >= 0 } ?: 0
+
+    TabRow(
+        selectedTabIndex = selectedTabIndex,
+        backgroundColor = colorResource(id = R.color.colorPrimary),
+        contentColor = colorResource(id = R.color.colorOnPrimary)
+    ) {
+        ScreenTypes.entries.forEachIndexed { index, screenType ->
+            Tab(
+                text = {
+                    Text(
+                        text = stringResource(id = screenType.label)
+                    )
+                },
+                icon = {
+                    Image(
+                        painter = painterResource(id = screenType.icon),
+                        contentDescription = null,
+                        alpha = if (selectedTabIndex == index) 1f else ContentAlpha.medium,
+                        colorFilter = ColorFilter.tint(
+                            colorResource(id = R.color.colorOnPrimary)
+                        )
+                    )
+                },
+                selected = selectedTabIndex == index,
+                onClick = {
+                    navController.navigate(screenType.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun NavigationHost(
+    navController: NavHostController,
+    totalMaser: Float,
+    onEdit: (Float) -> Unit
+) {
+    NavHost(
+        navController = navController,
+        startDestination = ScreenTypes.Home.route
+    ) {
+        composable(ScreenTypes.Home.route) {
+            HomeScreen(totalMaser)
+        }
+        composable(ScreenTypes.Income.route) {
+            IncomeScreen(onEdit)
+        }
+        composable(ScreenTypes.Donation.route) {
+            DonationScreen(onEdit)
+        }
+        composable(ScreenTypes.History.route) {
+            HistoryScreen()
         }
     }
 }
