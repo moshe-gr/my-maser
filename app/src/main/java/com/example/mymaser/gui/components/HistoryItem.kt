@@ -52,7 +52,8 @@ fun HistoryItem(history: History = History()) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 8.dp, horizontal = 16.dp),
+        elevation = 2.dp
     ) {
         Box(
             modifier = Modifier
