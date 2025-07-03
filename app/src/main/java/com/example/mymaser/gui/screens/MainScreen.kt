@@ -1,9 +1,11 @@
 package com.example.mymaser.gui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
@@ -27,7 +29,9 @@ fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
     var tabIndex by rememberSaveable { mutableIntStateOf(ScreenTypes.Home.ordinal) }
     Scaffold(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .background(colorResource(id = R.color.colorPrimary))
+            .systemBarsPadding(),
         topBar = {
             TabRow(
                 selectedTabIndex = tabIndex,
