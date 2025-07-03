@@ -3,8 +3,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        jcenter() // Warning: this repository is going to shut down soon
+        // jcenter() // Warning: this repository is going to shut down soon - removing deprecated jcenter
     }
 }
 rootProject.name = "My Maser"
-include ':app'
+include(":app")
