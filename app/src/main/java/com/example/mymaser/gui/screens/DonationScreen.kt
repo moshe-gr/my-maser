@@ -71,6 +71,16 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
         }
     }
 
+    fun processDonation() {
+        saveHistory(donationReceiver, value, true)
+        onEdit(-value)
+        showSuccess = true
+        lastDonation = getLastHistoryByType(true)
+        value = 0F
+        valueString = ""
+        donationReceiver = ""
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -128,12 +138,7 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
             keyboardActions = KeyboardActions(onDone = {
                 focusManager.clearFocus()
                 if (value != 0F && donationReceiver.isNotBlank()) {
-                    saveHistory(donationReceiver, value, true)
-                    onEdit(-value)
-                    lastDonation = getLastHistoryByType(true)
-                    value = 0F
-                    valueString = ""
-                    donationReceiver = ""
+                    processDonation()
                 }
             }),
             colors = myTextFieldColors()
@@ -142,13 +147,7 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
         SuccessPopUp(showSuccess)
         Button(
             onClick = {
-                saveHistory(donationReceiver, value, true)
-                onEdit(-value)
-                showSuccess = true
-                lastDonation = getLastHistoryByType(true)
-                value = 0F
-                valueString = ""
-                donationReceiver = ""
+                processDonation()
             },
             enabled = value != 0F && donationReceiver.isNotBlank(),
             colors = ButtonDefaults.buttonColors(

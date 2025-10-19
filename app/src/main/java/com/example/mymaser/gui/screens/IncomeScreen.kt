@@ -70,6 +70,16 @@ fun IncomeScreen(onEdit: (Float) -> Unit) {
         }
     }
 
+    fun processIncome() {
+        saveHistory(source, value, false)
+        onEdit(value / 10)
+        showSuccess = true
+        lastIncome = getLastHistoryByType(false)
+        value = 0F
+        valueString = ""
+        source = ""
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -127,12 +137,7 @@ fun IncomeScreen(onEdit: (Float) -> Unit) {
             keyboardActions = KeyboardActions(onDone = {
                 focusManager.clearFocus()
                 if (value != 0F && source.isNotBlank()) {
-                    saveHistory(source, value, false)
-                    onEdit(value / 10)
-                    lastIncome = getLastHistoryByType(false)
-                    value = 0F
-                    valueString = ""
-                    source = ""
+                    processIncome()
                 }
             }),
             colors = myTextFieldColors()
@@ -141,13 +146,7 @@ fun IncomeScreen(onEdit: (Float) -> Unit) {
         SuccessPopUp(showSuccess)
         Button(
             onClick = {
-                saveHistory(source, value, false)
-                onEdit(value / 10)
-                showSuccess = true
-                lastIncome = getLastHistoryByType(false)
-                value = 0F
-                valueString = ""
-                source = ""
+                processIncome()
             },
             enabled = value != 0F && source.isNotBlank(),
             colors = ButtonDefaults.buttonColors(
