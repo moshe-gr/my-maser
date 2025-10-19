@@ -84,7 +84,23 @@ class HistoryRepository {
 
         fun getAllNamesByType(isDonation: Boolean) = historyDao.getAllNamesByType(isDonation).distinct()
 
-        fun getAmountByName(name: String, isDonation: Boolean): Double = historyDao.getAmountByName(name, isDonation).groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: 0.0
+        fun getAmountByName(name: String, isDonation: Boolean): Double {
+            val histories = historyDao.getAmountByName(name, isDonation)
+            val today = Calendar.getInstance()
+            val currentDayOfMonth = today.get(Calendar.DAY_OF_MONTH)
+
+            val prioritizedHistories = histories.filter {
+                val historyCalendar = Calendar.getInstance().apply { timeInMillis = it.timeStamp }
+                val historyDayOfMonth = historyCalendar.get(Calendar.DAY_OF_MONTH)
+                historyDayOfMonth == currentDayOfMonth || historyDayOfMonth == currentDayOfMonth - 1
+            }
+
+            return (if (prioritizedHistories.isNotEmpty()) {
+                prioritizedHistories.groupingBy { it.amount }.eachCount().maxByOrNull { it.value }?.key
+            } else {
+                histories.groupingBy { it.amount }.eachCount().maxByOrNull { it.value }?.key
+            })?.toDouble() ?: 0.0
+        }
 
         fun updateHistory(history: History) = historyDao.update(history)
     }

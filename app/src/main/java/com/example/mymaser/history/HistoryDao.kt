@@ -43,7 +43,7 @@ interface HistoryDao {
     @Query("SELECT name FROM History WHERE isDonation == :isDonation ORDER BY CASE WHEN strftime('%d', timeStamp / 1000, 'unixepoch') = strftime('%d', 'now') THEN 0 ELSE 1 END, name ASC")
     fun getAllNamesByType(isDonation: Boolean): List<String>
 
-    @Query("SELECT amount FROM History WHERE name == :name AND isDonation == :isDonation")
-    fun getAmountByName(name: String, isDonation: Boolean): List<Double>
+    @Query("SELECT * FROM History WHERE name == :name AND isDonation == :isDonation")
+    fun getAmountByName(name: String, isDonation: Boolean): List<History>
 
 }
