@@ -49,9 +49,12 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .background(color = colorResource(id = R.color.bg_color)), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(color = colorResource(id = R.color.bg_color)),
+                    contentAlignment = Alignment.Center
+                ) {
                     TotalMaserView(totalMaser)
                 }
             }
