@@ -168,7 +168,13 @@ fun IncomeScreen(onEdit: (Float) -> Unit) {
             Text(
                 text = stringResource(
                     id = R.string.last_income_info,
-                    lastIncome?.let { "${it.name} - ${it.amount}" }
+                    lastIncome?.let {
+                        stringResource(
+                            id = R.string.last_income_donation_info,
+                            it.name,
+                            it.amount
+                        )
+                    }
                         ?: stringResource(R.string.no_information_yet)
                 ),
                 color = colorResource(id = R.color.text),

@@ -169,7 +169,13 @@ fun DonationScreen(onEdit: (Float) -> Unit) {
             Text(
                 text = stringResource(
                     id = R.string.last_donation_info,
-                    lastDonation?.let { "${it.name} - ${it.amount}" }
+                    lastDonation?.let {
+                        stringResource(
+                            id = R.string.last_income_donation_info,
+                            it.name,
+                            it.amount
+                        )
+                    }
                         ?: stringResource(id = R.string.no_information_yet)
                 ),
                 color = colorResource(id = R.color.text),

@@ -32,4 +32,8 @@
     <string name="select_attachments_directory">בחר תיקיית קבצים מצורפים</string>
     <string name="select_directory_to_enable">אנא בחר תיקייה כדי לאפשר עריכה</string>
     <string name="please_select_a_directory_in_settings">אנא בחר תיקייה בהגדרות</string>
+    <string name="amount_format">סכום: ₪%,.2f</string>
+    <string name="add_attachment">הוסף קובץ מצורף</string>
+    <string name="show_attachment">הצג קובץ מצורף</string>
+    <string name="selected_directory">התיקייה שנבחרה: %s</string>
 </resources>

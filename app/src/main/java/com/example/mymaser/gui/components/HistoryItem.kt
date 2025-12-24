@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -111,7 +112,7 @@ fun HistoryItem(history: History = History()) {
             ) {
                 Icon(
                     imageVector = if (attachmentUri.isNullOrEmpty()) Icons.Filled.Add else Icons.Filled.AttachFile,
-                    contentDescription = if (attachmentUri.isNullOrEmpty()) "Add Attachment" else "Show Attachment",
+                    contentDescription = if (attachmentUri.isNullOrEmpty()) stringResource(id = R.string.add_attachment) else stringResource(id = R.string.show_attachment),
                     tint = colorResource(id = R.color.colorPrimary)
                 )
             }
@@ -126,7 +127,7 @@ fun HistoryItem(history: History = History()) {
                 )
                 Spacer(modifier = Modifier.padding(vertical = 2.dp))
                 Text(
-                    text = String.format(Locale.getDefault(), "Amount: ₪%,.2f", history.amount),
+                    text = stringResource(id = R.string.amount_format, history.amount),
                     color = colorResource(id = R.color.colorPrimary),
                     style = MaterialTheme.typography.body1
                 )
@@ -165,7 +166,7 @@ private fun getFileName(context: Context, uri: Uri): String {
             }
         }
     }
-    return result ?: "attachment_${System.currentTimeMillis()}"
+    return result ?: "${context.getString(R.string.attachment_prefix)}${System.currentTimeMillis()}"
 }
 
 

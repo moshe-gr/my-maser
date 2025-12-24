@@ -102,7 +102,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             if (attachmentDirectoryUri.isNotBlank()) {
                 val treeUri = attachmentDirectoryUri.toUri()
                 val rootDir = DocumentFile.fromTreeUri(context, treeUri)
-                Text(text = "Selected directory: ${rootDir?.name}")
+                Text(text = stringResource(id = R.string.selected_directory, rootDir?.name ?: ""))
             } else {
                 Text(text = stringResource(id = R.string.select_directory_to_enable))
             }
