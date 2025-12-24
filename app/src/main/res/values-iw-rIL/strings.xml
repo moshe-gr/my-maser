@@ -24,4 +24,12 @@
     <string name="today">היום</string>
     <string name="this_week">השבוע</string>
     <string name="this_monthh">החודש</string>
+    <string name="settings">הגדרות</string>
+    <string name="donations">תרומות</string>
+    <string name="incomes">הכנסות</string>
+    <string name="donation_attachments_directory">תיקיית תרומות</string>
+    <string name="income_attachments_directory">תיקיית הכנסות</string>
+    <string name="select_attachments_directory">בחר תיקיית קבצים מצורפים</string>
+    <string name="select_directory_to_enable">אנא בחר תיקייה כדי לאפשר עריכה</string>
+    <string name="please_select_a_directory_in_settings">אנא בחר תיקייה בהגדרות</string>
 </resources>

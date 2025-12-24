@@ -1,5 +1,6 @@
 package com.example.mymaser.gui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -7,14 +8,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.ContentAlpha
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -27,10 +33,12 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
+import com.example.mymaser.settings.SettingsActivity
 
 @Composable
 fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
     val navController = rememberNavController()
+    val context = LocalContext.current
 
     Scaffold(
         modifier = Modifier
@@ -39,6 +47,20 @@ fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
             .systemBarsPadding(),
         topBar = {
             TopNavigationBar(navController = navController)
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    context.startActivity(Intent(context, SettingsActivity::class.java))
+                },
+                backgroundColor = colorResource(id = R.color.colorPrimary),
+                contentColor = colorResource(id = R.color.colorOnPrimary)
+            ) {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.settings)
+                )
+            }
         },
         backgroundColor = colorResource(id = R.color.bg_color)
     ) { paddingValues ->
