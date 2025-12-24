@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme.typography
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
@@ -165,22 +166,31 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = stringResource(R.string.settings))
+            Text(
+                text = stringResource(R.string.settings),
+                style = typography.h5
+            )
             Spacer(modifier = Modifier.size(16.dp))
 
             Button(onClick = { launcher.launch(null) }) {
                 Text(text = stringResource(R.string.select_attachments_directory))
             }
+            Spacer(modifier = Modifier.size(8.dp))
             if (attachmentDirectoryUri.isNotBlank()) {
                 val treeUri = attachmentDirectoryUri.toUri()
                 val rootDir = DocumentFile.fromTreeUri(context, treeUri)
-                Text(text = stringResource(id = R.string.selected_directory, rootDir?.name ?: ""))
+                Text(
+                    text = stringResource(id = R.string.selected_directory, rootDir?.name ?: ""),
+                    style = typography.body2
+                )
             } else {
-                Text(text = stringResource(id = R.string.select_directory_to_enable))
+                Text(
+                    text = stringResource(R.string.select_directory_to_enable),
+                    style = typography.caption
+                )
             }
 
-
-            Spacer(modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.size(24.dp))
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = donationDirectoryName,
