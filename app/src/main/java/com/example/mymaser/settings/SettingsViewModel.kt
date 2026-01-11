@@ -1,19 +1,113 @@
 package com.example.mymaser.settings
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.example.mymaser.settings.data.SettingsRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class SettingsViewModel(private val repository: SettingsRepository) : ViewModel() {
+
+    private var initialDonationName: String? = null
+    private var initialIncomeName: String? = null
+    private var donationNameUpdateJob: Job? = null
+    private var incomeNameUpdateJob: Job? = null
+    var donationDirectoryName by mutableStateOf("")
+        private set
+    var incomeDirectoryName by mutableStateOf("")
+        private set
+
+    init {
+        viewModelScope.launch {
+            donationDirectoryName = repository
+                .getString(SettingsKeys.PUBLIC_DONATION_NAME, "")
+                .first()
+
+            incomeDirectoryName = repository
+                .getString(SettingsKeys.PUBLIC_INCOME_NAME, "")
+                .first()
+
+            initialDonationName = donationDirectoryName
+            initialIncomeName = incomeDirectoryName
+        }
+    }
 
     fun getString(key: Preferences.Key<String>, defaultValue: String): Flow<String> {
         return repository.getString(key, defaultValue)
     }
 
-    suspend fun setString(key: Preferences.Key<String>, value: String) {
-        repository.setString(key, value)
+    fun setString(key: Preferences.Key<String>, value: String) {
+        when (key) {
+            SettingsKeys.PUBLIC_DONATION_NAME -> {
+                donationNameUpdateJob?.cancel()
+                donationNameUpdateJob = viewModelScope.launch {
+                    delay(400L)
+                    repository.setString(key, value)
+                }
+            }
+            SettingsKeys.PUBLIC_INCOME_NAME -> {
+                incomeNameUpdateJob?.cancel()
+                incomeNameUpdateJob = viewModelScope.launch {
+                    delay(400L)
+                    repository.setString(key, value)
+                }
+            }
+            else -> {
+                viewModelScope.launch {
+                    repository.setString(key, value)
+                }
+            }
+        }
+    }
+
+    fun updateDonationName(value: String) {
+        donationDirectoryName = value
+        setString(SettingsKeys.PUBLIC_DONATION_NAME, value)
+    }
+
+    fun updateIncomeName(value: String) {
+        incomeDirectoryName = value
+        setString(SettingsKeys.PUBLIC_INCOME_NAME, value)
+    }
+
+    fun onPause(
+        currentDonationName: String,
+        currentIncomeName: String,
+        attachmentDirectoryUri: String
+    ) {
+        viewModelScope.launch {
+            donationNameUpdateJob?.join()
+            incomeNameUpdateJob?.join()
+
+            val oldDonation = initialDonationName ?: currentDonationName
+            val oldIncome = initialIncomeName ?: currentIncomeName
+
+            if (oldDonation != currentDonationName) {
+                renameDirectory(oldDonation, currentDonationName, attachmentDirectoryUri)
+                initialDonationName = currentDonationName // Update cache for next pause
+            }
+
+            if (oldIncome != currentIncomeName) {
+                renameDirectory(oldIncome, currentIncomeName, attachmentDirectoryUri)
+                initialIncomeName = currentIncomeName // Update cache for next pause
+            }
+        }
+    }
+
+    private suspend fun renameDirectory(
+        oldName: String,
+        newName: String,
+        attachmentDirectoryUri: String
+    ) {
+        repository.renameDirectory(oldName, newName, attachmentDirectoryUri)
     }
 }
 
