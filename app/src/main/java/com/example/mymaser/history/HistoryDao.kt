@@ -46,4 +46,10 @@ interface HistoryDao {
     @Query("SELECT * FROM History WHERE name == :name AND isDonation == :isDonation")
     fun getAmountByName(name: String, isDonation: Boolean): List<History>
 
+    @Query("SELECT SUM(amount) FROM History WHERE name = :name AND isDonation = :isDonation")
+    suspend fun getTotalByName(name: String, isDonation: Boolean): Double
+
+    @Query("SELECT COUNT(*) FROM History WHERE name = :name AND isDonation = :isDonation")
+    suspend fun getCountByName(name: String, isDonation: Boolean): Int
+
 }

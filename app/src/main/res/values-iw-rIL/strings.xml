@@ -36,4 +36,8 @@
     <string name="add_attachment">הוסף קובץ מצורף</string>
     <string name="show_attachment">הצג קובץ מצורף</string>
     <string name="selected_directory">התיקייה שנבחרה: %s</string>
+    <string name="amount">כמות:</string>
+    <string name="type">סוג:</string>
+    <string name="date">תאריך:</string>
+    <string name="entries_count">ערכים:</string>
 </resources>

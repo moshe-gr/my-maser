@@ -38,4 +38,8 @@
     <string name="show_attachment">Show Attachment</string>
     <string name="attachment_prefix" translatable="false">attachment_</string>
     <string name="selected_directory">Selected directory: %s</string>
+    <string name="amount">Amount:</string>
+    <string name="type">Type:</string>
+    <string name="date">Date:</string>
+    <string name="entries_count">Entries:</string>
 </resources>

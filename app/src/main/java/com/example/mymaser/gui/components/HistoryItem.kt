@@ -7,7 +7,9 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -54,7 +56,10 @@ import java.util.Locale
 
 @Preview
 @Composable
-fun HistoryItem(history: History = History()) {
+fun HistoryItem(
+    history: History = History(),
+    onClick: () -> Unit = {}
+) {
     val dateFormatter = remember {
         DateFormat.getDateTimeInstance(
             DateFormat.MEDIUM,
@@ -82,8 +87,10 @@ fun HistoryItem(history: History = History()) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp),
-        elevation = 2.dp
+            .padding(16.dp)
+            .clickable { onClick() }
+            .animateContentSize(),
+        elevation = 6.dp
     ) {
         Box(
             modifier = Modifier
@@ -112,7 +119,9 @@ fun HistoryItem(history: History = History()) {
             ) {
                 Icon(
                     imageVector = if (attachmentUri.isNullOrEmpty()) Icons.Filled.Add else Icons.Filled.AttachFile,
-                    contentDescription = if (attachmentUri.isNullOrEmpty()) stringResource(id = R.string.add_attachment) else stringResource(id = R.string.show_attachment),
+                    contentDescription = if (attachmentUri.isNullOrEmpty()) stringResource(id = R.string.add_attachment) else stringResource(
+                        id = R.string.show_attachment
+                    ),
                     tint = colorResource(id = R.color.colorPrimary)
                 )
             }
@@ -217,7 +226,10 @@ private suspend fun saveAttachment(context: Context, history: History, uri: Uri)
 
     currentDir?.let { finalDir ->
         finalDir.findFile(fileName)?.delete()
-        val newFile = finalDir.createFile(context.contentResolver.getType(uri) ?: "application/octet-stream", fileName)
+        val newFile = finalDir.createFile(
+            context.contentResolver.getType(uri) ?: "application/octet-stream",
+            fileName
+        )
 
         newFile?.uri?.let { destUri ->
             context.contentResolver.openOutputStream(destUri)?.use { outputStream ->

@@ -103,5 +103,35 @@ class HistoryRepository {
         }
 
         fun updateHistory(history: History) = historyDao.update(history)
+
+        suspend fun loadHistorySummary(
+            history: History,
+            startOfMonth: Long,
+            endOfMonth: Long,
+            startOfYear: Long,
+            endOfYear: Long
+        ): HistorySummary {
+            return HistorySummary(
+                totalByName = historyDao.getTotalByName(history.name, history.isDonation),
+                count = historyDao.getCountByName(history.name, history.isDonation),
+                monthTotal = historyDao.getHistoryForLastMonth(
+                    startOfMonth,
+                    endOfMonth,
+                    history.isDonation
+                ),
+                yearTotal = historyDao.getHistoryForLastYear(
+                    startOfYear,
+                    endOfYear,
+                    history.isDonation
+                )
+            )
+        }
     }
+
+    data class HistorySummary(
+        val totalByName: Double,
+        val count: Int,
+        val monthTotal: Double,
+        val yearTotal: Double
+    )
 }
