@@ -109,21 +109,35 @@ class HistoryRepository {
             startOfMonth: Long,
             endOfMonth: Long,
             startOfYear: Long,
-            endOfYear: Long
+            endOfYear: Long,
+            startOfLastYear: Long,
+            endOfLastYear: Long
         ): HistorySummary {
+            val totalByName = historyDao.getTotalByName(history.name, history.isDonation)
+            val count = historyDao.getCountByName(history.name, history.isDonation)
+
             return HistorySummary(
-                totalByName = historyDao.getTotalByName(history.name, history.isDonation),
-                count = historyDao.getCountByName(history.name, history.isDonation),
-                monthTotal = historyDao.getHistoryForLastMonth(
+                totalByName = totalByName,
+                count = count,
+                monthTotal = historyDao.getHistoryForLastMonthByName(
+                    history.name,
                     startOfMonth,
                     endOfMonth,
                     history.isDonation
-                ),
-                yearTotal = historyDao.getHistoryForLastYear(
+                ) ?: 0.0,
+                yearTotal = historyDao.getHistoryForLastYearByName(
+                    history.name,
                     startOfYear,
                     endOfYear,
                     history.isDonation
-                )
+                ) ?: 0.0,
+                lastYearTotal = historyDao.getHistoryForPreviousYearByName(
+                    history.name,
+                    startOfLastYear,
+                    endOfLastYear,
+                    history.isDonation
+                ) ?: 0.0,
+                average = if (count > 0) totalByName / count else 0.0
             )
         }
     }
@@ -132,6 +146,8 @@ class HistoryRepository {
         val totalByName: Double,
         val count: Int,
         val monthTotal: Double,
-        val yearTotal: Double
+        val yearTotal: Double,
+        val lastYearTotal: Double,
+        val average: Double
     )
 }

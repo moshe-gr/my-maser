@@ -34,6 +34,7 @@ import com.example.mymaser.history.HistoryRepository.Companion.loadHistorySummar
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 @Composable
@@ -49,12 +50,12 @@ fun HistorySummarySheet(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 32.dp)
             .shadow(16.dp, RoundedCornerShape(24.dp))
-            .alpha(1f - (offsetY / 600).coerceIn(0f, 1f))
+            .alpha(1f - (offsetY.absoluteValue / 600).coerceIn(0f, 1f))
             .offset { IntOffset(0, animatedOffsetY.roundToInt()) }
             .pointerInput(Unit) {
                 detectVerticalDragGestures(
                     onDragEnd = {
-                        if (offsetY > 250) {
+                        if (offsetY.absoluteValue > 200) {
                             onDismiss()
                         } else {
                             offsetY = 0f
@@ -62,8 +63,7 @@ fun HistorySummarySheet(
                     },
                     onDragCancel = { offsetY = 0f },
                     onVerticalDrag = { _, dragAmount ->
-                        val newOffset = offsetY + dragAmount
-                        if (newOffset >= 0f) offsetY = newOffset
+                        offsetY += dragAmount
                     }
                 )
             },
@@ -86,27 +86,30 @@ fun HistorySummaryContent(
     LaunchedEffect(history.id) {
         val calendar = Calendar.getInstance()
 
-        val startOfMonth = calendar.apply {
-            set(Calendar.DAY_OF_MONTH, 1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-        }.timeInMillis
+        // Current year
+        val now = calendar.timeInMillis
+        calendar.set(Calendar.DAY_OF_YEAR, 1)
+        val startOfYear = calendar.timeInMillis
 
-        val endOfMonth = Calendar.getInstance().timeInMillis
+        // Previous year
+        calendar.add(Calendar.YEAR, -1)
+        val startOfLastYear = calendar.timeInMillis
+        calendar.set(Calendar.DAY_OF_YEAR, calendar.getActualMaximum(Calendar.DAY_OF_YEAR))
+        val endOfLastYear = calendar.timeInMillis
 
-        val startOfYear = Calendar.getInstance().apply {
-            set(Calendar.MONTH, 0)
-            set(Calendar.DAY_OF_MONTH, 1)
-        }.timeInMillis
-
-        val endOfYear = Calendar.getInstance().timeInMillis
+        // Current month
+        calendar.timeInMillis = now // reset
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        val startOfMonth = calendar.timeInMillis
 
         summary = loadHistorySummary(
             history,
             startOfMonth,
-            endOfMonth,
+            now,
             startOfYear,
-            endOfYear
+            now,
+            startOfLastYear,
+            endOfLastYear
         )
     }
 
@@ -119,7 +122,7 @@ fun HistorySummaryContent(
 
         Spacer(Modifier.height(16.dp))
 
-        SummaryRow(stringResource(R.string.amount), history.amount.toString())
+        SummaryRow(stringResource(R.string.amount), stringResource(R.string.formated_with_nis,history.amount))
         SummaryRow(
             stringResource(R.string.type),
             stringResource(if (history.isDonation) R.string.donation else R.string.income)
@@ -131,10 +134,12 @@ fun HistorySummaryContent(
 
         summary?.let {
             Spacer(Modifier.height(16.dp))
-            SummaryRow(stringResource(R.string.total), it.totalByName.toString())
+            SummaryRow(stringResource(R.string.total), stringResource(R.string.formated_with_nis,it.totalByName))
             SummaryRow(stringResource(R.string.entries_count), it.count.toString())
-            SummaryRow(stringResource(R.string.this_month), it.monthTotal.toString())
-            SummaryRow(stringResource(R.string.this_year), it.yearTotal.toString())
+            SummaryRow(stringResource(R.string.this_month), stringResource(R.string.formated_with_nis,it.monthTotal))
+            SummaryRow(stringResource(R.string.this_year), stringResource(R.string.formated_with_nis,it.yearTotal))
+            SummaryRow(stringResource(R.string.last_year), stringResource(R.string.formated_with_nis,it.lastYearTotal))
+            SummaryRow(stringResource(R.string.average), stringResource(R.string.formated_with_nis, it.average))
         }
     }
 }

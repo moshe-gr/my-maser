@@ -34,8 +34,17 @@ interface HistoryDao {
     @Query("SELECT SUM(amount) FROM History WHERE isDonation == :isDonation AND timeStamp >= :startOfMonth AND timeStamp < :endOfMonth")
     fun getHistoryForLastMonth(startOfMonth: Long, endOfMonth: Long, isDonation: Boolean): Double
 
+    @Query("SELECT SUM(amount) FROM History WHERE name = :name AND isDonation == :isDonation AND timeStamp >= :startOfMonth AND timeStamp < :endOfMonth")
+    suspend fun getHistoryForLastMonthByName(name: String, startOfMonth: Long, endOfMonth: Long, isDonation: Boolean): Double?
+
     @Query("SELECT SUM(amount) FROM History WHERE isDonation == :isDonation AND timeStamp >= :startOfYear AND timeStamp < :endOfYear")
     fun getHistoryForLastYear(startOfYear: Long, endOfYear: Long, isDonation: Boolean): Double
+
+    @Query("SELECT SUM(amount) FROM History WHERE name = :name AND isDonation == :isDonation AND timeStamp >= :startOfYear AND timeStamp < :endOfYear")
+    suspend fun getHistoryForLastYearByName(name: String, startOfYear: Long, endOfYear: Long, isDonation: Boolean): Double?
+
+    @Query("SELECT SUM(amount) FROM History WHERE name = :name AND isDonation == :isDonation AND timeStamp >= :startOfLastYear AND timeStamp < :endOfLastYear")
+    suspend fun getHistoryForPreviousYearByName(name: String, startOfLastYear: Long, endOfLastYear: Long, isDonation: Boolean): Double?
 
     @Query("SELECT SUM(amount) FROM History WHERE isDonation")
     fun getTotalMaser(): Double

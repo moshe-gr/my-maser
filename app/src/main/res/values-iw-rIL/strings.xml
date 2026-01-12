@@ -40,4 +40,6 @@
     <string name="type">סוג:</string>
     <string name="date">תאריך:</string>
     <string name="entries_count">ערכים:</string>
+    <string name="last_year">שנה שעברה:</string>
+    <string name="average">ממוצע:</string>
 </resources>

@@ -42,4 +42,7 @@
     <string name="type">Type:</string>
     <string name="date">Date:</string>
     <string name="entries_count">Entries:</string>
+    <string name="last_year">Last year:</string>
+    <string name="average">Average:</string>
+    <string name="formated_with_nis" translatable="false">₪%,.2f</string>
 </resources>
