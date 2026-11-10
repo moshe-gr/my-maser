@@ -173,15 +173,30 @@ private fun csvField(value: String): String {
 
 private fun Float.csvNumber() = String.format(Locale.ROOT, "%.2f", this)
 
-fun entriesToCsv(entries: List<History>, zone: ZoneId): String = buildString {
-    appendLine("date,name,type,amount,maser_percentage,maser_effect,has_attachment")
+/**
+ * CSV of [entries] as shown (converted), oldest first, with each entry's stored amount and
+ * currency from [originalOf] alongside.
+ */
+fun entriesToCsv(
+    entries: List<History>,
+    zone: ZoneId,
+    originalOf: (History) -> History = { it }
+): String = buildString {
+    appendLine(
+        "date,name,type,amount,currency,original_amount,original_currency," +
+            "maser_percentage,maser_effect,has_attachment"
+    )
     entries.sortedBy { it.timeStamp }.forEach { entry ->
+        val original = originalOf(entry)
         appendLine(
             listOf(
                 Instant.ofEpochMilli(entry.timeStamp).atZone(zone).format(CSV_DATE_TIME),
                 csvField(entry.name),
                 if (entry.isDonation) "donation" else "income",
                 entry.amount.csvNumber(),
+                entry.currency,
+                original.amount.csvNumber(),
+                original.currency,
                 entry.maserPercentage.csvNumber(),
                 entry.maserDelta.csvNumber(),
                 (!entry.attachmentUri.isNullOrEmpty()).toString()

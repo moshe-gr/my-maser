@@ -42,6 +42,7 @@ import com.example.mymaser.R
 import com.example.mymaser.gui.components.EmptyState
 import com.example.mymaser.gui.components.ScreenColumn
 import com.example.mymaser.gui.components.surfaceCardColors
+import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.gui.theme.MaserPreview
@@ -68,10 +69,14 @@ fun HomeScreen(
     onTotalShown: (Float) -> Unit,
     onAddIncome: () -> Unit,
     onAddDonation: () -> Unit,
-    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
+    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
+    notice: @Composable () -> Unit = {}
 ) {
     if (history == null || totalMaser == null) return
-    val stats = remember(history) { computeHomeStats(history, ZonedDateTime.now()) }
+    val currency = LocalDisplayCurrency.current
+    val stats = remember(history, currency) {
+        computeHomeStats(history.filter { it.currency == currency }, ZonedDateTime.now())
+    }
     HomeContent(
         total = totalMaser,
         countFrom = lastShownTotal ?: totalMaser,
@@ -79,7 +84,8 @@ fun HomeScreen(
         onTotalShown = onTotalShown,
         onAddIncome = onAddIncome,
         onAddDonation = onAddDonation,
-        maserPercentage = maserPercentage
+        maserPercentage = maserPercentage,
+        notice = notice
     )
 }
 
@@ -91,10 +97,12 @@ private fun HomeContent(
     onTotalShown: (Float) -> Unit,
     onAddIncome: () -> Unit,
     onAddDonation: () -> Unit,
-    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
+    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
+    notice: @Composable () -> Unit = {}
 ) {
     ScreenColumn {
         TotalCard(total = total, countFrom = countFrom, onShown = onTotalShown)
+        notice()
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickAction(
                 label = stringResource(R.string.add_income),

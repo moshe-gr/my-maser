@@ -162,8 +162,29 @@ class NameAnalyticsTest {
             ),
             zone
         ).lines()
-        assertEquals("date,name,type,amount,maser_percentage,maser_effect,has_attachment", csv[0])
-        assertEquals("2026-10-01 12:00,\"'=SUM(A1)\",income,1000.00,20.00,200.00,false", csv[1])
-        assertEquals("2026-11-02 12:00,\"Fund \"\"A\"\", Inc\",donation,12.50,10.00,-12.50,false", csv[2])
+        assertEquals(
+            "date,name,type,amount,currency,original_amount,original_currency," +
+                "maser_percentage,maser_effect,has_attachment",
+            csv[0]
+        )
+        assertEquals(
+            "2026-10-01 12:00,\"'=SUM(A1)\",income,1000.00,ILS,1000.00,ILS,20.00,200.00,false",
+            csv[1]
+        )
+        assertEquals(
+            "2026-11-02 12:00,\"Fund \"\"A\"\", Inc\",donation,12.50,ILS,12.50,ILS,10.00,-12.50,false",
+            csv[2]
+        )
+    }
+
+    @Test
+    fun `csv lists the stored amount next to the converted one`() {
+        val stored = income("Salary", at(2026, 10, 1), 1000F).copy(id = 7, currency = "USD")
+        val shown = stored.copy(amount = 3700F, currency = "ILS")
+        val csv = entriesToCsv(listOf(shown), zone) { stored }.lines()
+        assertEquals(
+            "2026-10-01 12:00,\"Salary\",income,3700.00,ILS,1000.00,USD,10.00,370.00,false",
+            csv[1]
+        )
     }
 }

@@ -82,7 +82,7 @@
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
-    <string name="settings_currency">Currency symbol</string>
+    <string name="settings_currency">Display currency</string>
     <string name="settings_maser_percentage">Maser percentage</string>
     <string name="settings_custom">Custom</string>
     <string name="settings_custom_percentage">Custom percentage</string>
@@ -110,6 +110,23 @@
     <string name="summary_show_all">All entries</string>
     <string name="summary_export">Export CSV</string>
     <string name="summary_export_failed">Export failed</string>
+    <string name="currency_ils">Israeli shekel</string>
+    <string name="currency_usd">US dollar</string>
+    <string name="currency_eur">Euro</string>
+    <string name="currency_gbp">British pound</string>
+    <string name="currency_picker_description">Currency: %s</string>
+    <string name="currency_change_title">Show amounts in %1$s?</string>
+    <string name="currency_change_body">Past entries will be converted at the exchange rate on each entry\'s date. Your original amounts are kept, so you can switch back at any time.</string>
+    <string name="currency_change_confirm">Switch</string>
+    <string name="rates_loading">Downloading exchange rates…</string>
+    <string name="rates_failed">Couldn\'t download exchange rates. Check your connection.</string>
+    <string name="rates_source">Exchange rates: European Central Bank, via frankfurter.dev</string>
+    <string name="retry">Retry</string>
+    <string name="originally_amount">originally %s</string>
+    <plurals name="rates_pending">
+        <item quantity="one">%d entry in another currency is waiting for exchange rates and isn\'t in the totals yet</item>
+        <item quantity="other">%d entries in other currencies are waiting for exchange rates and aren\'t in the totals yet</item>
+    </plurals>
     <plurals name="summary_exported">
         <item quantity="one">Exported %d entry</item>
         <item quantity="other">Exported %d entries</item>

@@ -1,12 +1,14 @@
 package com.example.mymaser.settings
 
 import android.content.Context
+import com.example.mymaser.currency.BalanceAdjustment
+import com.example.mymaser.currency.DEFAULT_CURRENCY
+import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.dataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
-const val DEFAULT_CURRENCY_SYMBOL = "₪"
 const val DEFAULT_MASER_PERCENTAGE = 10f
 const val MIN_MASER_PERCENTAGE = 1f
 const val MAX_MASER_PERCENTAGE = 100f
@@ -24,20 +26,45 @@ enum class ThemeMode(val key: String) {
 
 data class Appearance(
     val themeMode: ThemeMode = ThemeMode.System,
-    val currencySymbol: String = DEFAULT_CURRENCY_SYMBOL
+    val displayCurrency: String = DEFAULT_CURRENCY
 )
 
 fun Context.appearanceFlow(): Flow<Appearance> = dataStore.data
     .map {
         Appearance(
             themeMode = ThemeMode.fromKey(it[SettingsKeys.THEME_MODE]),
-            currencySymbol = it[SettingsKeys.CURRENCY_SYMBOL] ?: DEFAULT_CURRENCY_SYMBOL
+            displayCurrency = it[SettingsKeys.DISPLAY_CURRENCY]
+                ?: SupportedCurrency.fromSymbol(it[SettingsKeys.LEGACY_CURRENCY_SYMBOL])?.code
+                ?: DEFAULT_CURRENCY
         )
     }
     .distinctUntilChanged()
 
+fun Context.displayCurrencyFlow(): Flow<String> = appearanceFlow()
+    .map { it.displayCurrency }
+    .distinctUntilChanged()
+
 fun Context.maserPercentageFlow(): Flow<Float> = dataStore.data
     .map { it[SettingsKeys.MASER_PERCENTAGE] ?: DEFAULT_MASER_PERCENTAGE }
+    .distinctUntilChanged()
+
+data class BalanceSetup(val adjustment: BalanceAdjustment?)
+
+/** Null until the multi-currency upgrade has run, so the balance is never shown half-migrated. */
+fun Context.balanceSetupFlow(): Flow<BalanceSetup?> = dataStore.data
+    .map { prefs ->
+        if (prefs[SettingsKeys.MULTI_CURRENCY_MIGRATED] != true) return@map null
+        val amount = prefs[SettingsKeys.BALANCE_ADJUSTMENT]
+        val currency = prefs[SettingsKeys.BALANCE_ADJUSTMENT_CURRENCY]
+        val day = prefs[SettingsKeys.BALANCE_ADJUSTMENT_DAY]
+        BalanceSetup(
+            if (amount != null && currency != null && day != null) {
+                BalanceAdjustment(amount, currency, day)
+            } else {
+                null
+            }
+        )
+    }
     .distinctUntilChanged()
 
 fun isValidMaserPercentage(value: Float) = value in MIN_MASER_PERCENTAGE..MAX_MASER_PERCENTAGE

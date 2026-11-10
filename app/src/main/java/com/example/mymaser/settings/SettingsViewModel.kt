@@ -11,7 +11,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.mymaser.currency.CurrencyRepository
+import com.example.mymaser.currency.RateStatus
 import com.example.mymaser.settings.data.SettingsRepository
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +24,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = SettingsRepository(application)
+    private val currencyRepository = CurrencyRepository.getInstance(application)
 
     private var initialDonationName: String? = null
     private var initialIncomeName: String? = null
@@ -87,6 +91,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }
             }
         }
+    }
+
+    val rateStatus: StateFlow<RateStatus> = currencyRepository.status
+
+    /** Switches what everything is shown in, then fetches any exchange rates that requires. */
+    fun setDisplayCurrency(code: String) {
+        viewModelScope.launch {
+            repository.setString(SettingsKeys.DISPLAY_CURRENCY, code)
+            currencyRepository.ensureRates()
+        }
+    }
+
+    fun retryRates() {
+        viewModelScope.launch { currencyRepository.ensureRates() }
     }
 
     fun setFloat(key: Preferences.Key<Float>, value: Float) {

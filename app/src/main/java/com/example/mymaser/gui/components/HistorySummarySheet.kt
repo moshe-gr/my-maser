@@ -56,6 +56,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.gui.theme.tabular
@@ -117,14 +118,21 @@ fun HistorySummarySheet(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onShowAll: (SummaryPeriod) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    originalOf: (History) -> History = { it }
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val displayCurrency = LocalDisplayCurrency.current
     var period by rememberSaveable(history.id) { mutableStateOf(SummaryPeriod.ThisYear) }
-    val analytics = remember(allHistory, history, period) {
-        computeNameAnalytics(allHistory, history, period, ZonedDateTime.now())
+    val analytics = remember(allHistory, history, period, displayCurrency) {
+        computeNameAnalytics(
+            allHistory.filter { it.currency == displayCurrency },
+            history,
+            period,
+            ZonedDateTime.now()
+        )
     }
 
     fun hideThen(action: () -> Unit) {
@@ -141,7 +149,7 @@ fun HistorySummarySheet(
         ActivityResultContracts.CreateDocument("text/csv")
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
-        val csv = entriesToCsv(analytics.entries, ZoneId.systemDefault())
+        val csv = entriesToCsv(analytics.entries, ZoneId.systemDefault(), originalOf)
         scope.launch {
             val written = withContext(Dispatchers.IO) {
                 runCatching {
@@ -309,7 +317,7 @@ private fun SheetHeader(history: History, modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(
                     R.string.summary_entry_subtitle,
-                    formatCurrency(history.amount.toDouble()),
+                    formatCurrency(history.amount.toDouble(), currencyCode = history.currency),
                     DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(history.timeStamp))
                 ),
                 style = MaterialTheme.typography.bodyMedium.tabular,

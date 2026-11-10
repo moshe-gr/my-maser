@@ -87,7 +87,18 @@ fun suggestedAmount(
     name: String,
     isDonation: Boolean,
     now: ZonedDateTime
-): Float? {
+): Float? = suggestAmount(entries, name, isDonation, now)?.amount
+
+/** An amount in the currency it was entered in. */
+data class AmountSuggestion(val amount: Float, val currency: String)
+
+/** [suggestedAmount] together with its currency; the same number in two currencies votes apart. */
+fun suggestAmount(
+    entries: List<History>,
+    name: String,
+    isDonation: Boolean,
+    now: ZonedDateTime
+): AmountSuggestion? {
     val key = nameKey(name)
     val matching = entries
         .filter { it.isDonation == isDonation && nameKey(it.name) == key }
@@ -96,10 +107,11 @@ fun suggestedAmount(
         .ifEmpty { matching }
         .take(AMOUNT_LOOKBACK)
     return candidates.withIndex()
-        .groupBy({ it.value.amount }, { it.index })
+        .groupBy({ AmountSuggestion(it.value.amount, it.value.currency) }, { it.index })
         .maxWithOrNull(
-            compareBy<Map.Entry<Float, List<Int>>> { (_, ranks) -> ranks.sumOf { 1.0 / (it + 1) } }
-                .thenByDescending { (_, ranks) -> ranks.min() }
+            compareBy<Map.Entry<AmountSuggestion, List<Int>>> { (_, ranks) ->
+                ranks.sumOf { 1.0 / (it + 1) }
+            }.thenByDescending { (_, ranks) -> ranks.min() }
         )
         ?.key
 }

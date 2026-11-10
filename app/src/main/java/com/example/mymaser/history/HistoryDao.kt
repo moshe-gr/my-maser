@@ -22,4 +22,10 @@ interface HistoryDao {
 
     @Query("SELECT * FROM History ORDER BY timeStamp DESC")
     fun observeAll(): Flow<List<History>>
+
+    @Query("SELECT * FROM History ORDER BY timeStamp DESC")
+    suspend fun getAll(): List<History>
+
+    @Query("UPDATE History SET currency = :currency")
+    suspend fun setCurrencyForAll(currency: String)
 }

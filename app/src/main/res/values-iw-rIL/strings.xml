@@ -79,7 +79,7 @@
     <string name="settings_theme_system">לפי המערכת</string>
     <string name="settings_theme_light">בהירה</string>
     <string name="settings_theme_dark">כהה</string>
-    <string name="settings_currency">סמל מטבע</string>
+    <string name="settings_currency">מטבע תצוגה</string>
     <string name="settings_maser_percentage">אחוז מעשר</string>
     <string name="settings_custom">מותאם</string>
     <string name="settings_custom_percentage">אחוז מותאם</string>
@@ -105,6 +105,24 @@
     <string name="summary_show_all">כל הרשומות</string>
     <string name="summary_export">ייצוא CSV</string>
     <string name="summary_export_failed">הייצוא נכשל</string>
+    <string name="currency_ils">שקל חדש</string>
+    <string name="currency_usd">דולר אמריקאי</string>
+    <string name="currency_eur">אירו</string>
+    <string name="currency_gbp">לירה שטרלינג</string>
+    <string name="currency_picker_description">מטבע: %s</string>
+    <string name="currency_change_title">להציג סכומים ב%1$s?</string>
+    <string name="currency_change_body">רשומות קודמות יומרו לפי שער החליפין בתאריך של כל רשומה. הסכומים המקוריים נשמרים, כך שאפשר לחזור בכל עת.</string>
+    <string name="currency_change_confirm">החלף</string>
+    <string name="rates_loading">מוריד שערי חליפין…</string>
+    <string name="rates_failed">לא ניתן להוריד שערי חליפין. בדוק את החיבור.</string>
+    <string name="rates_source">שערי חליפין: הבנק המרכזי האירופי, דרך frankfurter.dev</string>
+    <string name="retry">נסה שוב</string>
+    <string name="originally_amount">במקור %s</string>
+    <plurals name="rates_pending">
+        <item quantity="one">רשומה אחת במטבע אחר ממתינה לשער חליפין ועדיין לא נכללת בסיכומים</item>
+        <item quantity="two">%d רשומות במטבע אחר ממתינות לשערי חליפין ועדיין לא נכללות בסיכומים</item>
+        <item quantity="other">%d רשומות במטבע אחר ממתינות לשערי חליפין ועדיין לא נכללות בסיכומים</item>
+    </plurals>
     <plurals name="summary_exported">
         <item quantity="one">יוצאה רשומה אחת</item>
         <item quantity="two">יוצאו %d רשומות</item>

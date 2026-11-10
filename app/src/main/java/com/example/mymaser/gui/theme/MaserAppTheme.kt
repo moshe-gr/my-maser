@@ -13,7 +13,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import com.example.mymaser.gui.LocalCurrencySymbol
+import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.settings.Appearance
 import com.example.mymaser.settings.ThemeMode
 import com.example.mymaser.settings.appearanceFlow
@@ -53,6 +53,6 @@ fun MaserAppTheme(
     LaunchedEffect(Unit) { onLoaded() }
 
     MyMaserTheme(darkTheme = darkTheme) {
-        CompositionLocalProvider(LocalCurrencySymbol provides loaded.currencySymbol, content = content)
+        CompositionLocalProvider(LocalDisplayCurrency provides loaded.displayCurrency, content = content)
     }
 }

@@ -40,6 +40,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.documentfile.provider.DocumentFile
 import com.example.mymaser.R
 import com.example.mymaser.dataStore
+import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.gui.formatSignedCurrency
 import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.gui.theme.tabular
@@ -59,7 +60,8 @@ fun HistoryItem(
     history: History,
     onClick: () -> Unit,
     onAttachmentSaved: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    original: History? = null
 ) {
     val dateFormatter = remember {
         DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
@@ -127,11 +129,27 @@ fun HistoryItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(
-                text = formatSignedCurrency(history.amount.toDouble(), history.isDonation),
-                style = MaterialTheme.typography.titleMedium.tabular,
-                color = accent
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = formatSignedCurrency(
+                        history.amount.toDouble(),
+                        history.isDonation,
+                        history.currency
+                    ),
+                    style = MaterialTheme.typography.titleMedium.tabular,
+                    color = accent
+                )
+                if (original != null && original.currency != history.currency) {
+                    Text(
+                        text = stringResource(
+                            R.string.originally_amount,
+                            formatCurrency(original.amount.toDouble(), currencyCode = original.currency)
+                        ),
+                        style = MaterialTheme.typography.bodySmall.tabular,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             IconButton(
                 onClick = {
                     if (hasAttachment) {

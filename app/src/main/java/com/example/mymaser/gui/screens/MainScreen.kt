@@ -40,6 +40,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
+import com.example.mymaser.gui.components.RatesNotice
 import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryViewModel
@@ -74,6 +75,8 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
     val incomeNames by viewModel.incomeNames.collectAsStateWithLifecycle()
     val donationNames by viewModel.donationNames.collectAsStateWithLifecycle()
     val maserPercentage by viewModel.maserPercentage.collectAsStateWithLifecycle()
+    val unconvertedCount by viewModel.unconvertedCount.collectAsStateWithLifecycle()
+    val rateStatus by viewModel.rateStatus.collectAsStateWithLifecycle()
 
     val undoLabel = stringResource(R.string.undo)
     val savedMessage = stringResource(R.string.information_saved_successfully)
@@ -91,16 +94,24 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
         }
     }
 
-    fun saveEntry(name: String, amount: Float, isDonation: Boolean) {
-        viewModel.addEntry(name, amount, isDonation) { saved ->
+    fun saveEntry(name: String, amount: Float, currency: String, isDonation: Boolean) {
+        viewModel.addEntry(name, amount, currency, isDonation) { saved ->
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             offerUndo(savedMessage) { viewModel.deleteEntry(saved) }
         }
     }
 
     fun deleteEntry(entry: History) {
-        viewModel.deleteEntry(entry)
-        offerUndo(deletedMessage) { viewModel.restoreEntry(entry) }
+        val removed = viewModel.deleteEntry(entry)
+        offerUndo(deletedMessage) { viewModel.restoreEntry(removed) }
+    }
+
+    val ratesNotice: @Composable () -> Unit = {
+        RatesNotice(
+            unconverted = unconvertedCount,
+            status = rateStatus,
+            onRetry = viewModel::retryRates
+        )
     }
 
     Scaffold(
@@ -169,7 +180,8 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     onTotalShown = { viewModel.lastShownTotal = it },
                     onAddIncome = { navController.openTab(ScreenTypes.Income) },
                     onAddDonation = { navController.openTab(ScreenTypes.Donation) },
-                    maserPercentage = maserPercentage
+                    maserPercentage = maserPercentage,
+                    notice = ratesNotice
                 )
             }
             composable(ScreenTypes.Income.route) {
@@ -177,7 +189,9 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     names = incomeNames,
                     lastEntry = history?.firstOrNull { !it.isDonation },
                     onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation = false) },
-                    onSave = { name, amount -> saveEntry(name, amount, isDonation = false) },
+                    onSave = { name, amount, currency ->
+                        saveEntry(name, amount, currency, isDonation = false)
+                    },
                     maserPercentage = maserPercentage
                 )
             }
@@ -186,7 +200,9 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     names = donationNames,
                     lastEntry = history?.firstOrNull { it.isDonation },
                     onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation = true) },
-                    onSave = { name, amount -> saveEntry(name, amount, isDonation = true) }
+                    onSave = { name, amount, currency ->
+                        saveEntry(name, amount, currency, isDonation = true)
+                    }
                 )
             }
             composable(ScreenTypes.History.route) {
@@ -195,7 +211,9 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     onEdit = viewModel::editEntry,
                     onDelete = ::deleteEntry,
                     onAttachmentSaved = viewModel::setAttachment,
-                    onAddEntry = { navController.openTab(ScreenTypes.Income) }
+                    onAddEntry = { navController.openTab(ScreenTypes.Income) },
+                    originalOf = viewModel::original,
+                    notice = ratesNotice
                 )
             }
         }

@@ -4,14 +4,15 @@ import androidx.compose.runtime.Composable
 import com.example.mymaser.gui.components.EntryForm
 import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
+import com.example.mymaser.history.AmountSuggestion
 import com.example.mymaser.history.History
 
 @Composable
 fun DonationScreen(
     names: List<String>,
     lastEntry: History?,
-    onSuggestionPicked: (String) -> Float?,
-    onSave: (String, Float) -> Unit
+    onSuggestionPicked: (String) -> AmountSuggestion?,
+    onSave: (name: String, amount: Float, currency: String) -> Unit
 ) {
     EntryForm(
         isDonation = true,
@@ -29,8 +30,8 @@ private fun DonationPreview() {
         DonationScreen(
             names = emptyList(),
             lastEntry = null,
-            onSuggestionPicked = { 0F },
-            onSave = { _, _ -> }
+            onSuggestionPicked = { null },
+            onSave = { _, _, _ -> }
         )
     }
 }

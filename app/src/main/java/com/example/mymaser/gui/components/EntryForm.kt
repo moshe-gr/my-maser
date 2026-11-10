@@ -41,7 +41,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
+import com.example.mymaser.history.AmountSuggestion
 import com.example.mymaser.history.History
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.maserDelta
@@ -57,16 +59,19 @@ fun EntryForm(
     isDonation: Boolean,
     names: List<String>,
     lastEntry: History?,
-    onSuggestionPicked: (String) -> Float?,
-    onSave: (String, Float) -> Unit,
+    onSuggestionPicked: (String) -> AmountSuggestion?,
+    onSave: (name: String, amount: Float, currency: String) -> Unit,
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
 ) {
+    val displayCurrency = LocalDisplayCurrency.current
     var name by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
+    var chosenCurrency by rememberSaveable { mutableStateOf<String?>(null) }
     var autoFilledAmount by rememberSaveable { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
+    val currency = chosenCurrency ?: displayCurrency
     val amount = amountText.toFloatOrNull() ?: 0F
     val canSave = amount > 0F && name.isNotBlank()
     val suggestions = remember(names, name) { matchSuggestions(names, name, MAX_SUGGESTIONS) }
@@ -77,10 +82,9 @@ fun EntryForm(
         focusManager.moveFocus(FocusDirection.Down)
         val amountIsOurs = amountText.isEmpty() || amountText == autoFilledAmount
         if (amountIsOurs) {
-            amountText = onSuggestionPicked(suggestion)
-                ?.takeIf { it > 0F }
-                ?.let(::formatAmountInput)
-                .orEmpty()
+            val suggested = onSuggestionPicked(suggestion)?.takeIf { it.amount > 0F }
+            amountText = suggested?.amount?.let(::formatAmountInput).orEmpty()
+            if (suggested != null) chosenCurrency = suggested.currency
             autoFilledAmount = amountText
         }
     }
@@ -88,9 +92,10 @@ fun EntryForm(
     fun submit() {
         if (!canSave) return
         focusManager.clearFocus()
-        onSave(name.trim(), amount)
+        onSave(name.trim(), amount, currency)
         name = ""
         amountText = ""
+        chosenCurrency = null
         autoFilledAmount = null
     }
 
@@ -153,12 +158,18 @@ fun EntryForm(
                     Text(
                         stringResource(
                             R.string.adds_to_maser,
-                            formatCurrency(maserDelta(amount, false, maserPercentage).toDouble())
+                            formatCurrency(
+                                maserDelta(amount, false, maserPercentage).toDouble(),
+                                currencyCode = currency
+                            )
                         )
                     )
                 }
             } else {
                 null
+            },
+            trailingIcon = {
+                CurrencyPicker(selected = currency, onSelect = { chosenCurrency = it })
             },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
@@ -194,7 +205,7 @@ private fun LastEntryRow(isDonation: Boolean, lastEntry: History?) {
         stringResource(
             R.string.last_income_donation_info,
             it.name,
-            formatCurrency(it.amount.toDouble())
+            formatCurrency(it.amount.toDouble(), currencyCode = it.currency)
         )
     } ?: stringResource(R.string.no_information_yet)
 

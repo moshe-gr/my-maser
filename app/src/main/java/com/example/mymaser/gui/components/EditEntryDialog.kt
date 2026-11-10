@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.history.History
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.sanitizeAmountInput
@@ -50,6 +51,7 @@ fun EditEntryDialog(
                     value = amountText,
                     onValueChange = { input -> sanitizeAmountInput(input)?.let { amountText = it } },
                     label = { Text(stringResource(R.string.amount)) },
+                    suffix = { Text(SupportedCurrency.symbolFor(entry.currency)) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.small,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)

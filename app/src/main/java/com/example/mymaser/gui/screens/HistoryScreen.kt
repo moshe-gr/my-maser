@@ -59,6 +59,7 @@ import com.example.mymaser.gui.components.EditEntryDialog
 import com.example.mymaser.gui.components.EmptyState
 import com.example.mymaser.gui.components.HistoryItem
 import com.example.mymaser.gui.components.HistorySummarySheet
+import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatSignedCurrency
 import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
@@ -113,7 +114,9 @@ fun HistoryScreen(
     onEdit: (History, String, Float) -> Unit,
     onDelete: (History) -> Unit,
     onAttachmentSaved: (History, String) -> Unit,
-    onAddEntry: () -> Unit
+    onAddEntry: () -> Unit,
+    originalOf: (History) -> History = { it },
+    notice: @Composable () -> Unit = {}
 ) {
     if (history == null) return
 
@@ -183,6 +186,7 @@ fun HistoryScreen(
                 .fillMaxWidth()
         ) {
             SearchField(value = searchText, onValueChange = { searchText = it })
+            Box(Modifier.padding(horizontal = 16.dp)) { notice() }
 
             Row(
                 modifier = Modifier
@@ -234,7 +238,8 @@ fun HistoryScreen(
                 HistoryList(
                     groups = groups,
                     onClick = { selectedId = it.id },
-                    onAttachmentSaved = onAttachmentSaved
+                    onAttachmentSaved = onAttachmentSaved,
+                    originalOf = originalOf
                 )
             }
         }
@@ -244,6 +249,7 @@ fun HistoryScreen(
         HistorySummarySheet(
             history = entry,
             allHistory = history,
+            originalOf = originalOf,
             onEdit = { editingId = entry.id },
             onDelete = {
                 selectedId = null
@@ -262,7 +268,7 @@ fun HistoryScreen(
 
     editing?.let { entry ->
         EditEntryDialog(
-            entry = entry,
+            entry = originalOf(entry),
             onConfirm = { name, amount ->
                 onEdit(entry, name, amount)
                 editingId = null
@@ -396,14 +402,20 @@ private fun MenuOption(text: String, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
+/** Income and donation totals in the display currency; entries awaiting a rate are left out. */
+@Composable
+private fun rememberTotals(entries: List<History>): Pair<Double, Double> {
+    val currency = LocalDisplayCurrency.current
+    return remember(entries, currency) {
+        val countable = entries.filter { it.currency == currency }
+        countable.filter { !it.isDonation }.sumOf { it.amount.toDouble() } to
+            countable.filter { it.isDonation }.sumOf { it.amount.toDouble() }
+    }
+}
+
 @Composable
 private fun ResultsSummary(entries: List<History>, onClear: () -> Unit) {
-    val incomeTotal = remember(entries) {
-        entries.filter { !it.isDonation }.sumOf { it.amount.toDouble() }
-    }
-    val donationTotal = remember(entries) {
-        entries.filter { it.isDonation }.sumOf { it.amount.toDouble() }
-    }
+    val (incomeTotal, donationTotal) = rememberTotals(entries)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -451,7 +463,8 @@ private fun AmountTotals(incomeTotal: Double, donationTotal: Double, modifier: M
 private fun HistoryList(
     groups: List<Pair<HistoryPeriod, List<History>>>,
     onClick: (History) -> Unit,
-    onAttachmentSaved: (History, String) -> Unit
+    onAttachmentSaved: (History, String) -> Unit,
+    originalOf: (History) -> History
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -468,7 +481,8 @@ private fun HistoryList(
                     onAttachmentSaved = { onAttachmentSaved(entry, it) },
                     modifier = Modifier
                         .animateItem()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    original = originalOf(entry)
                 )
             }
         }
@@ -477,12 +491,7 @@ private fun HistoryList(
 
 @Composable
 private fun PeriodHeader(period: HistoryPeriod, entries: List<History>) {
-    val incomeTotal = remember(entries) {
-        entries.filter { !it.isDonation }.sumOf { it.amount.toDouble() }
-    }
-    val donationTotal = remember(entries) {
-        entries.filter { it.isDonation }.sumOf { it.amount.toDouble() }
-    }
+    val (incomeTotal, donationTotal) = rememberTotals(entries)
 
     Surface(color = MaterialTheme.colorScheme.background) {
         Row(

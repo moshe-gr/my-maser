@@ -60,7 +60,7 @@ import com.example.mymaser.gui.components.ScreenColumn
 import com.example.mymaser.gui.components.surfaceCardColors
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.sanitizeAmountInput
-import com.example.mymaser.settings.DEFAULT_CURRENCY_SYMBOL
+import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 import com.example.mymaser.settings.PRESET_MASER_PERCENTAGES
 import com.example.mymaser.settings.SettingsKeys
@@ -71,7 +71,6 @@ import com.example.mymaser.settings.isValidMaserPercentage
 
 const val LANGUAGE_HEBREW = "he-IL"
 private const val LEGACY_LANGUAGE_HEBREW = "iw"
-private val CURRENCY_SYMBOLS = listOf("₪", "$", "€", "£")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,8 +82,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
         .collectAsState(initial = "")
     val themeMode by viewModel.getString(SettingsKeys.THEME_MODE, ThemeMode.System.key)
         .collectAsState(initial = ThemeMode.System.key)
-    val currencySymbol by viewModel.getString(SettingsKeys.CURRENCY_SYMBOL, DEFAULT_CURRENCY_SYMBOL)
-        .collectAsState(initial = DEFAULT_CURRENCY_SYMBOL)
+    val rateStatus by viewModel.rateStatus.collectAsState()
     val maserPercentage by viewModel.getFloat(SettingsKeys.MASER_PERCENTAGE, DEFAULT_MASER_PERCENTAGE)
         .collectAsState(initial = DEFAULT_MASER_PERCENTAGE)
 
@@ -169,15 +167,12 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             }
 
             SettingsSection(stringResource(R.string.settings_currency)) {
-                ChipRow {
-                    CURRENCY_SYMBOLS.forEach { symbol ->
-                        FilterChip(
-                            selected = currencySymbol == symbol,
-                            onClick = { viewModel.setString(SettingsKeys.CURRENCY_SYMBOL, symbol) },
-                            label = { Text(symbol) }
-                        )
-                    }
-                }
+                DisplayCurrencySetting(
+                    selected = LocalDisplayCurrency.current,
+                    status = rateStatus,
+                    onConfirm = viewModel::setDisplayCurrency,
+                    onRetry = viewModel::retryRates
+                )
             }
 
             SettingsSection(stringResource(R.string.settings_theme)) {
