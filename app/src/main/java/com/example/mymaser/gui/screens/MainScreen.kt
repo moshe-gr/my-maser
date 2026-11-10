@@ -1,29 +1,36 @@
 package com.example.mymaser.gui.screens
 
 import android.content.Intent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -33,118 +40,162 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
+import com.example.mymaser.gui.theme.MaserMotion
+import com.example.mymaser.history.History
+import com.example.mymaser.history.HistoryViewModel
 import com.example.mymaser.settings.SettingsActivity
+import kotlinx.coroutines.launch
 
-@Composable
-fun MainScreen(totalMaser: Float, onEdit: (Float) -> Unit) {
-    val navController = rememberNavController()
-    val context = LocalContext.current
+private fun NavDestination?.isOn(screen: ScreenTypes) =
+    this?.hierarchy?.any { it.route == screen.route } == true
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colorResource(id = R.color.colorPrimary))
-            .systemBarsPadding(),
-        topBar = {
-            TopNavigationBar(navController = navController)
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    context.startActivity(Intent(context, SettingsActivity::class.java))
-                },
-                backgroundColor = colorResource(id = R.color.colorPrimary),
-                contentColor = colorResource(id = R.color.colorOnPrimary)
-            ) {
-                Icon(
-                    Icons.Default.Settings,
-                    contentDescription = stringResource(R.string.settings)
-                )
-            }
-        },
-        backgroundColor = colorResource(id = R.color.bg_color)
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            NavigationHost(
-                navController = navController,
-                totalMaser = totalMaser,
-                onEdit = onEdit
-            )
-        }
+private fun NavHostController.openTab(screen: ScreenTypes) {
+    navigate(screen.route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopNavigationBar(navController: NavHostController) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
+fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
+    val navController = rememberNavController()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val haptics = LocalHapticFeedback.current
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val destination = backStackEntry?.destination
+    val current = ScreenTypes.entries.firstOrNull { destination.isOn(it) } ?: ScreenTypes.Home
 
-    val selectedTabIndex = ScreenTypes.entries.indexOfFirst { screen ->
-        currentDestination?.hierarchy?.any { destination -> destination.route == screen.route } == true
-    }.takeIf { it >= 0 } ?: 0
+    val history by viewModel.history.collectAsStateWithLifecycle()
+    val totalMaser by viewModel.totalMaser.collectAsStateWithLifecycle()
+    val incomeNames by viewModel.incomeNames.collectAsStateWithLifecycle()
+    val donationNames by viewModel.donationNames.collectAsStateWithLifecycle()
 
-    TabRow(
-        selectedTabIndex = selectedTabIndex,
-        backgroundColor = colorResource(id = R.color.colorPrimary),
-        contentColor = colorResource(id = R.color.colorOnPrimary)
-    ) {
-        ScreenTypes.entries.forEachIndexed { index, screenType ->
-            Tab(
-                text = {
+    val undoLabel = stringResource(R.string.undo)
+    val savedMessage = stringResource(R.string.information_saved_successfully)
+    val deletedMessage = stringResource(R.string.entry_deleted)
+
+    fun offerUndo(message: String, undo: () -> Unit) {
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            val result = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Short
+            )
+            if (result == SnackbarResult.ActionPerformed) undo()
+        }
+    }
+
+    fun saveEntry(name: String, amount: Float, isDonation: Boolean) {
+        viewModel.addEntry(name, amount, isDonation) { saved ->
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            offerUndo(savedMessage) { viewModel.deleteEntry(saved) }
+        }
+    }
+
+    fun deleteEntry(entry: History) {
+        viewModel.deleteEntry(entry)
+        offerUndo(deletedMessage) { viewModel.restoreEntry(entry) }
+    }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
                     Text(
-                        text = stringResource(id = screenType.label)
-                    )
-                },
-                icon = {
-                    Image(
-                        painter = painterResource(id = screenType.icon),
-                        contentDescription = null,
-                        alpha = if (selectedTabIndex == index) 1f else ContentAlpha.medium,
-                        colorFilter = ColorFilter.tint(
-                            colorResource(id = R.color.colorOnPrimary)
+                        stringResource(
+                            if (current == ScreenTypes.Home) R.string.app_name else current.label
                         )
                     )
                 },
-                selected = selectedTabIndex == index,
-                onClick = {
-                    navController.navigate(screenType.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                actions = {
+                    IconButton(
+                        onClick = {
+                            context.startActivity(Intent(context, SettingsActivity::class.java))
                         }
-                        launchSingleTop = true
-                        restoreState = true
+                    ) {
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.settings)
+                        )
                     }
                 }
             )
-        }
-    }
-}
-
-@Composable
-fun NavigationHost(
-    navController: NavHostController,
-    totalMaser: Float,
-    onEdit: (Float) -> Unit
-) {
-    NavHost(
-        navController = navController,
-        startDestination = ScreenTypes.Home.route
-    ) {
-        composable(ScreenTypes.Home.route) {
-            HomeScreen(totalMaser)
-        }
-        composable(ScreenTypes.Income.route) {
-            IncomeScreen(onEdit)
-        }
-        composable(ScreenTypes.Donation.route) {
-            DonationScreen(onEdit)
-        }
-        composable(ScreenTypes.History.route) {
-            HistoryScreen()
+        },
+        bottomBar = {
+            NavigationBar {
+                ScreenTypes.entries.forEach { screen ->
+                    val selected = current == screen
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = { navController.openTab(screen) },
+                        icon = {
+                            Icon(
+                                imageVector = if (selected) screen.selectedIcon else screen.icon,
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text(stringResource(screen.label)) }
+                    )
+                }
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        NavHost(
+            navController = navController,
+            startDestination = ScreenTypes.Home.route,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .consumeWindowInsets(padding)
+                .imePadding(),
+            enterTransition = { MaserMotion.tabEnter },
+            exitTransition = { MaserMotion.tabExit },
+            popEnterTransition = { MaserMotion.tabEnter },
+            popExitTransition = { MaserMotion.tabExit }
+        ) {
+            composable(ScreenTypes.Home.route) {
+                HomeScreen(
+                    history = history,
+                    totalMaser = totalMaser,
+                    lastShownTotal = viewModel.lastShownTotal,
+                    onTotalShown = { viewModel.lastShownTotal = it },
+                    onAddIncome = { navController.openTab(ScreenTypes.Income) },
+                    onAddDonation = { navController.openTab(ScreenTypes.Donation) }
+                )
+            }
+            composable(ScreenTypes.Income.route) {
+                IncomeScreen(
+                    names = incomeNames,
+                    lastEntry = history?.firstOrNull { !it.isDonation },
+                    onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation = false) },
+                    onSave = { name, amount -> saveEntry(name, amount, isDonation = false) }
+                )
+            }
+            composable(ScreenTypes.Donation.route) {
+                DonationScreen(
+                    names = donationNames,
+                    lastEntry = history?.firstOrNull { it.isDonation },
+                    onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation = true) },
+                    onSave = { name, amount -> saveEntry(name, amount, isDonation = true) }
+                )
+            }
+            composable(ScreenTypes.History.route) {
+                HistoryScreen(
+                    history = history,
+                    loadSummary = viewModel::loadSummary,
+                    onEdit = viewModel::editEntry,
+                    onDelete = ::deleteEntry,
+                    onAttachmentSaved = viewModel::setAttachment,
+                    onAddEntry = { navController.openTab(ScreenTypes.Income) }
+                )
+            }
         }
     }
 }

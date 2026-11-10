@@ -4,59 +4,56 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.mymaser.R
+import com.example.mymaser.gui.components.ScreenColumn
+import com.example.mymaser.gui.components.surfaceCardColors
 import com.example.mymaser.settings.SettingsKeys
 import com.example.mymaser.settings.SettingsViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel) {
-
-    /* ---------- Persisted state (DataStore) ---------- */
+fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
     val attachmentDirectoryUri by viewModel.getString(
         SettingsKeys.ATTACHMENT_DIRECTORY_URI,
         ""
     ).collectAsState(initial = "")
 
-    /* ---------- Helpers ---------- */
-
     val context = LocalContext.current
-    rememberCoroutineScope()
-
-    /* ---------- SAVE WHEN SCREEN IS LEFT (ALL CASES) ---------- */
-
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, attachmentDirectoryUri) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
                 viewModel.onPause(
@@ -74,8 +71,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         }
     }
 
-    /* ---------- Directory picker ---------- */
-
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
@@ -92,82 +87,77 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         }
     }
 
-    /* ---------- UI ---------- */
+    val hasDirectory = attachmentDirectoryUri.isNotBlank()
+    val directoryStatus = if (hasDirectory) {
+        stringResource(
+            R.string.selected_directory,
+            DocumentFile.fromTreeUri(context, attachmentDirectoryUri.toUri())?.name.orEmpty()
+        )
+    } else {
+        stringResource(R.string.no_directory_selected)
+    }
+    val disabledHelper: @Composable (() -> Unit)? = if (hasDirectory) {
+        null
+    } else {
+        { Text(stringResource(R.string.select_directory_to_enable)) }
+    }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colorResource(id = R.color.colorPrimary))
-            .systemBarsPadding(),
-        backgroundColor = colorResource(id = R.color.bg_color)
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.settings)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                }
+            )
+        }
     ) { paddingValues ->
-
-        Column(
+        ScreenColumn(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(16.dp)
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .consumeWindowInsets(paddingValues)
+                .imePadding()
         ) {
-
-            Text(
-                text = stringResource(R.string.settings),
-                style = MaterialTheme.typography.h5
-            )
-
-            Spacer(Modifier.size(16.dp))
-
-            Button(onClick = { launcher.launch(null) }) {
-                Text(stringResource(R.string.select_attachments_directory))
-            }
-
-            Spacer(Modifier.size(8.dp))
-
-            if (attachmentDirectoryUri.isNotBlank()) {
-                val rootDir = DocumentFile.fromTreeUri(
-                    context,
-                    attachmentDirectoryUri.toUri()
-                )
-                Text(
-                    text = stringResource(
-                        R.string.selected_directory,
-                        rootDir?.name ?: ""
-                    ),
-                    style = MaterialTheme.typography.body2
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.select_directory_to_enable),
-                    style = MaterialTheme.typography.caption
+            Card(
+                onClick = { launcher.launch(null) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = surfaceCardColors()
+            ) {
+                ListItem(
+                    headlineContent = {
+                        Text(stringResource(R.string.select_attachments_directory))
+                    },
+                    supportingContent = { Text(directoryStatus) },
+                    leadingContent = { Icon(Icons.Outlined.Folder, contentDescription = null) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
             }
-
-            Spacer(Modifier.size(24.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = viewModel.donationDirectoryName,
-                onValueChange = {
-                    viewModel.updateDonationName(it)
-                },
-                label = {
-                    Text(stringResource(R.string.donation_attachments_directory))
-                },
-                enabled = attachmentDirectoryUri.isNotBlank()
+                onValueChange = viewModel::updateDonationName,
+                label = { Text(stringResource(R.string.donation_attachments_directory)) },
+                supportingText = disabledHelper,
+                enabled = hasDirectory,
+                singleLine = true,
+                shape = MaterialTheme.shapes.small
             )
-
-            Spacer(Modifier.size(16.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = viewModel.incomeDirectoryName,
-                onValueChange = {
-                    viewModel.updateIncomeName(it)
-                },
-                label = {
-                    Text(stringResource(R.string.income_attachments_directory))
-                },
-                enabled = attachmentDirectoryUri.isNotBlank()
+                onValueChange = viewModel::updateIncomeName,
+                label = { Text(stringResource(R.string.income_attachments_directory)) },
+                supportingText = disabledHelper,
+                enabled = hasDirectory,
+                singleLine = true,
+                shape = MaterialTheme.shapes.small
             )
         }
     }
