@@ -40,7 +40,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
+import com.example.mymaser.gui.components.DueCards
 import com.example.mymaser.gui.components.RatesNotice
+import com.example.mymaser.history.toPrefill
+import androidx.compose.runtime.LaunchedEffect
 import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryViewModel
@@ -77,6 +80,8 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
     val maserPercentage by viewModel.maserPercentage.collectAsStateWithLifecycle()
     val unconvertedCount by viewModel.unconvertedCount.collectAsStateWithLifecycle()
     val rateStatus by viewModel.rateStatus.collectAsStateWithLifecycle()
+    val predictions by viewModel.predictions.collectAsStateWithLifecycle()
+    val prefill by viewModel.prefill.collectAsStateWithLifecycle()
 
     val undoLabel = stringResource(R.string.undo)
     val savedMessage = stringResource(R.string.information_saved_successfully)
@@ -104,6 +109,19 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
     fun deleteEntry(entry: History) {
         val removed = viewModel.deleteEntry(entry)
         offerUndo(deletedMessage) { viewModel.restoreEntry(removed) }
+    }
+
+    LaunchedEffect(prefill) {
+        prefill?.let { navController.openTab(if (it.isDonation) ScreenTypes.Donation else ScreenTypes.Income) }
+    }
+
+    val dueCards: @Composable () -> Unit = {
+        DueCards(
+            predictions = predictions,
+            onLog = { saveEntry(it.name, it.amount, it.currency, it.isDonation) },
+            onOpen = { viewModel.requestPrefill(it.toPrefill()) },
+            onSkip = viewModel::dismissPrediction
+        )
     }
 
     val ratesNotice: @Composable () -> Unit = {
@@ -181,7 +199,8 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     onAddIncome = { navController.openTab(ScreenTypes.Income) },
                     onAddDonation = { navController.openTab(ScreenTypes.Donation) },
                     maserPercentage = maserPercentage,
-                    notice = ratesNotice
+                    notice = ratesNotice,
+                    dueCards = dueCards
                 )
             }
             composable(ScreenTypes.Income.route) {
@@ -192,7 +211,9 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     onSave = { name, amount, currency ->
                         saveEntry(name, amount, currency, isDonation = false)
                     },
-                    maserPercentage = maserPercentage
+                    maserPercentage = maserPercentage,
+                    prefill = prefill,
+                    onPrefillConsumed = viewModel::consumePrefill
                 )
             }
             composable(ScreenTypes.Donation.route) {
@@ -202,7 +223,9 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation = true) },
                     onSave = { name, amount, currency ->
                         saveEntry(name, amount, currency, isDonation = true)
-                    }
+                    },
+                    prefill = prefill,
+                    onPrefillConsumed = viewModel::consumePrefill
                 )
             }
             composable(ScreenTypes.History.route) {

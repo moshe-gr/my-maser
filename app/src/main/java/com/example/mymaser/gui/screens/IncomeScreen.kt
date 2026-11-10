@@ -6,6 +6,7 @@ import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
 import com.example.mymaser.history.AmountSuggestion
 import com.example.mymaser.history.History
+import com.example.mymaser.history.Prefill
 
 @Composable
 fun IncomeScreen(
@@ -13,7 +14,9 @@ fun IncomeScreen(
     lastEntry: History?,
     onSuggestionPicked: (String) -> AmountSuggestion?,
     onSave: (name: String, amount: Float, currency: String) -> Unit,
-    maserPercentage: Float
+    maserPercentage: Float,
+    prefill: Prefill? = null,
+    onPrefillConsumed: () -> Unit = {}
 ) {
     EntryForm(
         isDonation = false,
@@ -21,7 +24,9 @@ fun IncomeScreen(
         lastEntry = lastEntry,
         onSuggestionPicked = onSuggestionPicked,
         onSave = onSave,
-        maserPercentage = maserPercentage
+        maserPercentage = maserPercentage,
+        prefill = prefill,
+        onPrefillConsumed = onPrefillConsumed
     )
 }
 

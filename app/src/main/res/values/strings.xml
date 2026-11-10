@@ -127,6 +127,19 @@
         <item quantity="one">%d entry in another currency is waiting for exchange rates and isn\'t in the totals yet</item>
         <item quantity="other">%d entries in other currencies are waiting for exchange rates and aren\'t in the totals yet</item>
     </plurals>
+    <string name="due_title">Due around now</string>
+    <string name="due_today">Expected today</string>
+    <plurals name="due_in_days">
+        <item quantity="one">Expected tomorrow</item>
+        <item quantity="other">Expected in %d days</item>
+    </plurals>
+    <plurals name="due_days_ago">
+        <item quantity="one">Expected yesterday</item>
+        <item quantity="other">Expected %d days ago</item>
+    </plurals>
+    <string name="due_log">Log %s</string>
+    <string name="due_skip">Skip this month</string>
+    <string name="due_more">More options</string>
     <plurals name="summary_exported">
         <item quantity="one">Exported %d entry</item>
         <item quantity="other">Exported %d entries</item>

@@ -6,20 +6,25 @@ import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
 import com.example.mymaser.history.AmountSuggestion
 import com.example.mymaser.history.History
+import com.example.mymaser.history.Prefill
 
 @Composable
 fun DonationScreen(
     names: List<String>,
     lastEntry: History?,
     onSuggestionPicked: (String) -> AmountSuggestion?,
-    onSave: (name: String, amount: Float, currency: String) -> Unit
+    onSave: (name: String, amount: Float, currency: String) -> Unit,
+    prefill: Prefill? = null,
+    onPrefillConsumed: () -> Unit = {}
 ) {
     EntryForm(
         isDonation = true,
         names = names,
         lastEntry = lastEntry,
         onSuggestionPicked = onSuggestionPicked,
-        onSave = onSave
+        onSave = onSave,
+        prefill = prefill,
+        onPrefillConsumed = onPrefillConsumed
     )
 }
 

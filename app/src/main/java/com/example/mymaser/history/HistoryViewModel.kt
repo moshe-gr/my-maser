@@ -10,10 +10,16 @@ import com.example.mymaser.currency.RateStatus
 import com.example.mymaser.currency.RateTable
 import com.example.mymaser.currency.maserBalance
 import com.example.mymaser.currency.toDisplay
+import androidx.datastore.preferences.core.edit
+import com.example.mymaser.dataStore
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
+import com.example.mymaser.settings.SettingsKeys
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import com.example.mymaser.settings.balanceSetupFlow
 import com.example.mymaser.settings.displayCurrencyFlow
 import com.example.mymaser.settings.maserPercentageFlow
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlinx.coroutines.NonCancellable
@@ -87,6 +93,36 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 
     /** The value Home last settled on, so it can count up to changes made on other tabs. */
     var lastShownTotal: Float? = null
+
+    private val dismissedFlow = application.dataStore.data
+        .map { it[SettingsKeys.DISMISSED_PREDICTIONS].orEmpty() }
+
+    /** Recurring entries due around today and not logged yet. */
+    val predictions: StateFlow<List<Prediction>> =
+        combine(originals.filterNotNull(), dismissedFlow) { list, dismissed ->
+            predictDueEntries(list, dismissed, ZonedDateTime.now())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+
+    private val _prefill = MutableStateFlow<Prefill?>(null)
+
+    /** A form to open filled in, from a prediction card or a notification. */
+    val prefill: StateFlow<Prefill?> = _prefill.asStateFlow()
+
+    fun requestPrefill(prefill: Prefill) {
+        _prefill.value = prefill
+    }
+
+    fun consumePrefill() {
+        _prefill.value = null
+    }
+
+    fun dismissPrediction(prediction: Prediction) = runChange {
+        getApplication<Application>().dataStore.edit { prefs ->
+            val current = prefs[SettingsKeys.DISMISSED_PREDICTIONS].orEmpty()
+            prefs[SettingsKeys.DISMISSED_PREDICTIONS] =
+                pruneDismissed(current + prediction.key, LocalDate.now())
+        }
+    }
 
     init {
         viewModelScope.launch {

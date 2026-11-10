@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 
 object SettingsKeys {
     val PUBLIC_DONATION_NAME = stringPreferencesKey("public_donation_name")
@@ -22,6 +23,9 @@ object SettingsKeys {
     val BALANCE_ADJUSTMENT_CURRENCY = stringPreferencesKey("balance_adjustment_currency")
     val BALANCE_ADJUSTMENT_DAY = longPreferencesKey("balance_adjustment_day")
     val MULTI_CURRENCY_MIGRATED = booleanPreferencesKey("multi_currency_migrated")
+
+    /** Prediction keys the user chose to skip, see [com.example.mymaser.history.Prediction.key]. */
+    val DISMISSED_PREDICTIONS = stringSetPreferencesKey("dismissed_predictions")
 
     /** Before multi-currency: a display-only symbol. Read once during the upgrade. */
     val LEGACY_CURRENCY_SYMBOL = stringPreferencesKey("currency_symbol")

@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,7 @@ import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.history.AmountSuggestion
 import com.example.mymaser.history.History
+import com.example.mymaser.history.Prefill
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.maserDelta
 import com.example.mymaser.history.matchSuggestions
@@ -61,7 +63,9 @@ fun EntryForm(
     lastEntry: History?,
     onSuggestionPicked: (String) -> AmountSuggestion?,
     onSave: (name: String, amount: Float, currency: String) -> Unit,
-    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
+    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
+    prefill: Prefill? = null,
+    onPrefillConsumed: () -> Unit = {}
 ) {
     val displayCurrency = LocalDisplayCurrency.current
     var name by rememberSaveable { mutableStateOf("") }
@@ -87,6 +91,16 @@ fun EntryForm(
             if (suggested != null) chosenCurrency = suggested.currency
             autoFilledAmount = amountText
         }
+    }
+
+    LaunchedEffect(prefill) {
+        if (prefill == null || prefill.isDonation != isDonation) return@LaunchedEffect
+        name = prefill.name
+        amountText = prefill.amount?.takeIf { it > 0F }?.let(::formatAmountInput).orEmpty()
+        chosenCurrency = prefill.currency
+        autoFilledAmount = amountText
+        menuOpen = false
+        onPrefillConsumed()
     }
 
     fun submit() {

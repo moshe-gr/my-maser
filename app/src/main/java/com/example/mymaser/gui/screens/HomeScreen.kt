@@ -70,7 +70,8 @@ fun HomeScreen(
     onAddIncome: () -> Unit,
     onAddDonation: () -> Unit,
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
-    notice: @Composable () -> Unit = {}
+    notice: @Composable () -> Unit = {},
+    dueCards: @Composable () -> Unit = {}
 ) {
     if (history == null || totalMaser == null) return
     val currency = LocalDisplayCurrency.current
@@ -85,7 +86,8 @@ fun HomeScreen(
         onAddIncome = onAddIncome,
         onAddDonation = onAddDonation,
         maserPercentage = maserPercentage,
-        notice = notice
+        notice = notice,
+        dueCards = dueCards
     )
 }
 
@@ -98,7 +100,8 @@ private fun HomeContent(
     onAddIncome: () -> Unit,
     onAddDonation: () -> Unit,
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
-    notice: @Composable () -> Unit = {}
+    notice: @Composable () -> Unit = {},
+    dueCards: @Composable () -> Unit = {}
 ) {
     ScreenColumn {
         TotalCard(total = total, countFrom = countFrom, onShown = onTotalShown)
@@ -117,6 +120,7 @@ private fun HomeContent(
                 modifier = Modifier.weight(1f)
             )
         }
+        dueCards()
         if (stats.lastActionTime == null) {
             EmptyState(
                 icon = Icons.Filled.VolunteerActivism,

@@ -123,6 +123,21 @@
         <item quantity="two">%d רשומות במטבע אחר ממתינות לשערי חליפין ועדיין לא נכללות בסיכומים</item>
         <item quantity="other">%d רשומות במטבע אחר ממתינות לשערי חליפין ועדיין לא נכללות בסיכומים</item>
     </plurals>
+    <string name="due_title">צפוי בימים אלה</string>
+    <string name="due_today">צפוי היום</string>
+    <plurals name="due_in_days">
+        <item quantity="one">צפוי מחר</item>
+        <item quantity="two">צפוי בעוד יומיים</item>
+        <item quantity="other">צפוי בעוד %d ימים</item>
+    </plurals>
+    <plurals name="due_days_ago">
+        <item quantity="one">היה צפוי אתמול</item>
+        <item quantity="two">היה צפוי לפני יומיים</item>
+        <item quantity="other">היה צפוי לפני %d ימים</item>
+    </plurals>
+    <string name="due_log">רשום %s</string>
+    <string name="due_skip">דלג החודש</string>
+    <string name="due_more">אפשרויות נוספות</string>
     <plurals name="summary_exported">
         <item quantity="one">יוצאה רשומה אחת</item>
         <item quantity="two">יוצאו %d רשומות</item>
