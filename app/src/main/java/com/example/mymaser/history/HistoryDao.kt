@@ -6,59 +6,40 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface HistoryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(history: History)
-
-    @Query("SELECT * FROM History")
-    fun getAll(): List<History>
+    suspend fun insert(history: History): Long
 
     @Delete
-    fun delete(history: History)
-
-    @Query("DELETE FROM History")
-    fun deleteAll()
+    suspend fun delete(history: History)
 
     @Update
-    fun update(history: History)
+    suspend fun update(history: History)
 
-    @Query("SELECT * FROM History ORDER BY timeStamp DESC LIMIT 1")
-    fun getLastHistory(): History?
-
-    @Query("SELECT * FROM History WHERE isDonation == :isDonation ORDER BY timeStamp DESC LIMIT 1")
-    fun getLastHistoryBtType(isDonation: Boolean): History?
-
-    @Query("SELECT SUM(amount) FROM History WHERE isDonation == :isDonation AND timeStamp >= :startOfMonth AND timeStamp < :endOfMonth")
-    fun getHistoryForLastMonth(startOfMonth: Long, endOfMonth: Long, isDonation: Boolean): Double
-
-    @Query("SELECT SUM(amount) FROM History WHERE name = :name AND isDonation == :isDonation AND timeStamp >= :startOfMonth AND timeStamp < :endOfMonth")
-    suspend fun getHistoryForLastMonthByName(name: String, startOfMonth: Long, endOfMonth: Long, isDonation: Boolean): Double?
-
-    @Query("SELECT SUM(amount) FROM History WHERE isDonation == :isDonation AND timeStamp >= :startOfYear AND timeStamp < :endOfYear")
-    fun getHistoryForLastYear(startOfYear: Long, endOfYear: Long, isDonation: Boolean): Double
-
-    @Query("SELECT SUM(amount) FROM History WHERE name = :name AND isDonation == :isDonation AND timeStamp >= :startOfYear AND timeStamp < :endOfYear")
-    suspend fun getHistoryForLastYearByName(name: String, startOfYear: Long, endOfYear: Long, isDonation: Boolean): Double?
-
-    @Query("SELECT SUM(amount) FROM History WHERE name = :name AND isDonation == :isDonation AND timeStamp >= :startOfLastYear AND timeStamp < :endOfLastYear")
-    suspend fun getHistoryForPreviousYearByName(name: String, startOfLastYear: Long, endOfLastYear: Long, isDonation: Boolean): Double?
-
-    @Query("SELECT SUM(amount) FROM History WHERE isDonation")
-    fun getTotalMaser(): Double
+    @Query("SELECT * FROM History ORDER BY timeStamp DESC")
+    fun observeAll(): Flow<List<History>>
 
     @Query("SELECT name FROM History WHERE isDonation == :isDonation ORDER BY CASE WHEN strftime('%d', timeStamp / 1000, 'unixepoch') = strftime('%d', 'now') THEN 0 ELSE 1 END, name ASC")
-    fun getAllNamesByType(isDonation: Boolean): List<String>
+    fun observeNamesByType(isDonation: Boolean): Flow<List<String>>
 
     @Query("SELECT * FROM History WHERE name == :name AND isDonation == :isDonation")
-    fun getAmountByName(name: String, isDonation: Boolean): List<History>
+    suspend fun getByName(name: String, isDonation: Boolean): List<History>
 
-    @Query("SELECT SUM(amount) FROM History WHERE name = :name AND isDonation = :isDonation")
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM History WHERE name = :name AND isDonation = :isDonation AND timeStamp >= :start AND timeStamp < :endExclusive")
+    suspend fun getTotalByNameInRange(
+        name: String,
+        isDonation: Boolean,
+        start: Long,
+        endExclusive: Long
+    ): Double
+
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM History WHERE name = :name AND isDonation = :isDonation")
     suspend fun getTotalByName(name: String, isDonation: Boolean): Double
 
     @Query("SELECT COUNT(*) FROM History WHERE name = :name AND isDonation = :isDonation")
     suspend fun getCountByName(name: String, isDonation: Boolean): Int
-
 }

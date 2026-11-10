@@ -1,145 +1,46 @@
 package com.example.mymaser.history
 
-import android.content.Context
-import android.icu.util.Calendar
-import com.example.mymaser.R
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.ZonedDateTime
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
-class HistoryRepository {
-    companion object {
-        lateinit var historyDao: HistoryDao
-        private val calendar = Calendar.getInstance()
+class HistoryRepository(private val dao: HistoryDao) {
 
-        private fun getAllHistory(): List<History> = historyDao.getAll()
+    fun observeHistory(): Flow<List<History>> = dao.observeAll()
 
-        fun getHistoryForLastMonth(isDonation: Boolean): Double {
-            calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMinimum(Calendar.DAY_OF_MONTH))
-            val startOfMonth = calendar.timeInMillis
-            calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
-            val endOfMonth = calendar.timeInMillis
-            return historyDao.getHistoryForLastMonth(startOfMonth, endOfMonth, isDonation)
-        }
+    fun observeNames(isDonation: Boolean): Flow<List<String>> =
+        dao.observeNamesByType(isDonation).map { it.distinct() }.distinctUntilChanged()
 
-        fun getHistoryForLastYear(isDonation: Boolean): Double {
-            calendar.set(Calendar.DAY_OF_YEAR, 1)
-            val startOfYear = calendar.timeInMillis
-            calendar.set(Calendar.DAY_OF_YEAR, calendar.getActualMaximum(Calendar.DAY_OF_YEAR))
-            val endOfYear = calendar.timeInMillis
-            return historyDao.getHistoryForLastYear(startOfYear, endOfYear, isDonation)
-        }
+    suspend fun insert(history: History): Int = dao.insert(history).toInt()
 
-        fun getLastActionTime(): String = historyDao.getLastHistory()?.let {
-            SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(
-                Date(it.timeStamp)
-            )
-        } ?: "No actions yet"
+    suspend fun update(history: History) = dao.update(history)
 
-        fun getLastHistoryByType(isDonation: Boolean) = historyDao.getLastHistoryBtType(isDonation)
+    suspend fun delete(history: History) = dao.delete(history)
 
-        fun getTotalMaser(): Double = historyDao.getTotalMaser()
+    suspend fun suggestedAmount(name: String, isDonation: Boolean): Float =
+        mostLikelyAmount(dao.getByName(name, isDonation), ZonedDateTime.now())
 
-        fun saveHistory(name: String, amount: Float, isDonation: Boolean) = historyDao.insert(
-            History().apply {
-                this.name = name
-                this.amount = amount
-                this.isDonation = isDonation
-                this.timeStamp = System.currentTimeMillis()
-            }
+    suspend fun loadSummary(history: History): HistorySummary {
+        val now = ZonedDateTime.now()
+        val totalByName = dao.getTotalByName(history.name, history.isDonation)
+        val count = dao.getCountByName(history.name, history.isDonation)
+
+        suspend fun totalIn(range: TimeRange) = dao.getTotalByNameInRange(
+            history.name,
+            history.isDonation,
+            range.start,
+            range.endExclusive
         )
 
-        fun groupHistoryByTimePeriod(context: Context): Map<String, List<History>> {
-            val today = Calendar.getInstance()
-            val thisWeekStart = (today.clone() as Calendar).apply {
-                set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val thisMonthStart = (today.clone() as Calendar).apply {
-                set(Calendar.DAY_OF_MONTH, 1)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-
-            return getAllHistory().reversed().groupBy {
-                val historyDate = Calendar.getInstance().apply { timeInMillis = it.timeStamp }
-                when {
-                    isSameDay(today, historyDate) -> context.getString(R.string.today)
-                    historyDate.after(thisWeekStart) -> context.getString(R.string.this_week)
-                    historyDate.after(thisMonthStart) -> context.getString(R.string.this_monthh)
-                    else -> SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(historyDate.time)
-                }
-            }
-        }
-
-        private fun isSameDay(calendar1: Calendar, calendar2: Calendar): Boolean {
-            return calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR) &&
-                    calendar1.get(Calendar.DAY_OF_YEAR) == calendar2.get(Calendar.DAY_OF_YEAR)
-        }
-
-        fun getAllNamesByType(isDonation: Boolean) = historyDao.getAllNamesByType(isDonation).distinct()
-
-        fun getAmountByName(name: String, isDonation: Boolean): Double {
-            val histories = historyDao.getAmountByName(name, isDonation)
-            val today = Calendar.getInstance()
-            val currentDayOfMonth = today.get(Calendar.DAY_OF_MONTH)
-
-            val prioritizedHistories = histories.filter {
-                val historyCalendar = Calendar.getInstance().apply { timeInMillis = it.timeStamp }
-                val historyDayOfMonth = historyCalendar.get(Calendar.DAY_OF_MONTH)
-                historyDayOfMonth == currentDayOfMonth || historyDayOfMonth == currentDayOfMonth - 1
-            }
-
-            return (if (prioritizedHistories.isNotEmpty()) {
-                prioritizedHistories.groupingBy { it.amount }.eachCount().maxByOrNull { it.value }?.key
-            } else {
-                histories.groupingBy { it.amount }.eachCount().maxByOrNull { it.value }?.key
-            })?.toDouble() ?: 0.0
-        }
-
-        fun updateHistory(history: History) = historyDao.update(history)
-
-        suspend fun loadHistorySummary(
-            history: History,
-            startOfMonth: Long,
-            endOfMonth: Long,
-            startOfYear: Long,
-            endOfYear: Long,
-            startOfLastYear: Long,
-            endOfLastYear: Long
-        ): HistorySummary {
-            val totalByName = historyDao.getTotalByName(history.name, history.isDonation)
-            val count = historyDao.getCountByName(history.name, history.isDonation)
-
-            return HistorySummary(
-                totalByName = totalByName,
-                count = count,
-                monthTotal = historyDao.getHistoryForLastMonthByName(
-                    history.name,
-                    startOfMonth,
-                    endOfMonth,
-                    history.isDonation
-                ) ?: 0.0,
-                yearTotal = historyDao.getHistoryForLastYearByName(
-                    history.name,
-                    startOfYear,
-                    endOfYear,
-                    history.isDonation
-                ) ?: 0.0,
-                lastYearTotal = historyDao.getHistoryForPreviousYearByName(
-                    history.name,
-                    startOfLastYear,
-                    endOfLastYear,
-                    history.isDonation
-                ) ?: 0.0,
-                average = if (count > 0) totalByName / count else 0.0
-            )
-        }
+        return HistorySummary(
+            totalByName = totalByName,
+            count = count,
+            monthTotal = totalIn(monthRange(now)),
+            yearTotal = totalIn(yearRange(now)),
+            lastYearTotal = totalIn(previousYearRange(now)),
+            average = if (count > 0) totalByName / count else 0.0
+        )
     }
 
     data class HistorySummary(

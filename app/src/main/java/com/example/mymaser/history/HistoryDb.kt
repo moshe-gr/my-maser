@@ -17,7 +17,6 @@ abstract class HistoryDb : RoomDatabase() {
         fun getInstance(context: Context): HistoryDb {
             return instance ?: run {
                 instance = Room.databaseBuilder(context, HistoryDb::class.java, DB_NAME)
-                    .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
                     .build()
                 instance!!

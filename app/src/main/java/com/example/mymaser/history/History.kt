@@ -4,13 +4,12 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity
-class History {
-
+data class History(
     @PrimaryKey(autoGenerate = true)
-    var id: Int = 0
-    var timeStamp: Long = 0
-    var name: String = ""
-    var amount: Float = 0F
-    var isDonation: Boolean = false
-    var attachmentUri: String? = null
-}
+    val id: Int = 0,
+    val timeStamp: Long = 0,
+    val name: String = "",
+    val amount: Float = 0F,
+    val isDonation: Boolean = false,
+    val attachmentUri: String? = null
+)
