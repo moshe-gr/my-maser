@@ -28,6 +28,18 @@ class SettingsRepository(context: Context) {
         }
     }
 
+    fun getFloat(key: Preferences.Key<Float>, defaultValue: Float): Flow<Float> {
+        return dataStore.data.map {
+            it[key] ?: defaultValue
+        }
+    }
+
+    suspend fun setFloat(key: Preferences.Key<Float>, value: Float) {
+        dataStore.edit {
+            it[key] = value
+        }
+    }
+
     suspend fun renameDirectory(
         oldName: String,
         newName: String,

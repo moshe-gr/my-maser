@@ -46,7 +46,7 @@
     <string name="donated_title">נתרם</string>
     <string name="add_income">הוסף הכנסה</string>
     <string name="add_donation">הוסף תרומה</string>
-    <string name="home_empty_message">הוסף הכנסה ו־10% ממנה יתווספו למעשר. רשום תרומות כדי להפחית אותו.</string>
+    <string name="home_empty_message">הוסף הכנסה ו־%1$s ממנה יתווספו למעשר. רשום תרומות כדי להפחית אותו.</string>
     <string name="adds_to_maser">מוסיף %s למעשר</string>
     <string name="undo">בטל</string>
     <string name="entry_deleted">הרשומה נמחקה</string>
@@ -58,4 +58,35 @@
     <string name="filter_all">הכל</string>
     <string name="back">חזרה</string>
     <string name="no_directory_selected">לא נבחרה תיקייה</string>
+    <string name="search_hint">חיפוש לפי שם</string>
+    <string name="clear_search">נקה חיפוש</string>
+    <string name="filter_with_attachments">עם קובץ מצורף</string>
+    <string name="filter_all_time">כל הזמנים</string>
+    <string name="filter_today">היום</string>
+    <string name="filter_this_week">השבוע</string>
+    <string name="filter_this_month">החודש</string>
+    <string name="filter_this_year">השנה</string>
+    <string name="filter_last_year">שנה שעברה</string>
+    <string name="filter_specific_month">בחר חודש…</string>
+    <string name="filter_specific_year">בחר שנה…</string>
+    <string name="clear_filters">נקה סינון</string>
+    <string name="no_matching_entries">אין רשומות שמתאימות לסינון</string>
+    <plurals name="results_count">
+        <item quantity="one">רשומה אחת</item>
+        <item quantity="two">%d רשומות</item>
+        <item quantity="other">%d רשומות</item>
+    </plurals>
+    <string name="settings_language">שפה</string>
+    <string name="settings_language_system">לפי המערכת</string>
+    <string name="settings_theme">ערכת נושא</string>
+    <string name="settings_theme_system">לפי המערכת</string>
+    <string name="settings_theme_light">בהירה</string>
+    <string name="settings_theme_dark">כהה</string>
+    <string name="settings_currency">סמל מטבע</string>
+    <string name="settings_maser_percentage">אחוז מעשר</string>
+    <string name="settings_custom">מותאם</string>
+    <string name="settings_custom_percentage">אחוז מותאם</string>
+    <string name="settings_percentage_error">הזן ערך בין 1 ל־100</string>
+    <string name="settings_percentage_hint">חל על הכנסות שיתווספו מעכשיו. רשומות קיימות שומרות על האחוז שבו נשמרו.</string>
+    <string name="settings_attachments">קבצים מצורפים</string>
 </resources>

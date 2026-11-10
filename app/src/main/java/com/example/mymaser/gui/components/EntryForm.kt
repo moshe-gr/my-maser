@@ -47,6 +47,7 @@ import com.example.mymaser.history.History
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.maserDelta
 import com.example.mymaser.history.sanitizeAmountInput
+import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 import kotlinx.coroutines.launch
 
 private const val MAX_SUGGESTIONS = 5
@@ -58,7 +59,8 @@ fun EntryForm(
     names: List<String>,
     lastEntry: History?,
     onSuggestionPicked: suspend (String) -> Float,
-    onSave: (String, Float) -> Unit
+    onSave: (String, Float) -> Unit,
+    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
@@ -148,7 +150,7 @@ fun EntryForm(
                     Text(
                         stringResource(
                             R.string.adds_to_maser,
-                            formatCurrency(maserDelta(amount, false).toDouble())
+                            formatCurrency(maserDelta(amount, false, maserPercentage).toDouble())
                         )
                     )
                 }

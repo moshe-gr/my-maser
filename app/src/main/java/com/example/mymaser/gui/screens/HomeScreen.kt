@@ -51,6 +51,8 @@ import com.example.mymaser.gui.theme.tabular
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HomeStats
 import com.example.mymaser.history.computeHomeStats
+import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
+import com.example.mymaser.settings.formatPercentage
 import java.text.DateFormat
 import java.time.ZonedDateTime
 import java.util.Date
@@ -65,7 +67,8 @@ fun HomeScreen(
     lastShownTotal: Float?,
     onTotalShown: (Float) -> Unit,
     onAddIncome: () -> Unit,
-    onAddDonation: () -> Unit
+    onAddDonation: () -> Unit,
+    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
 ) {
     if (history == null || totalMaser == null) return
     val stats = remember(history) { computeHomeStats(history, ZonedDateTime.now()) }
@@ -75,7 +78,8 @@ fun HomeScreen(
         stats = stats,
         onTotalShown = onTotalShown,
         onAddIncome = onAddIncome,
-        onAddDonation = onAddDonation
+        onAddDonation = onAddDonation,
+        maserPercentage = maserPercentage
     )
 }
 
@@ -86,7 +90,8 @@ private fun HomeContent(
     stats: HomeStats,
     onTotalShown: (Float) -> Unit,
     onAddIncome: () -> Unit,
-    onAddDonation: () -> Unit
+    onAddDonation: () -> Unit,
+    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
 ) {
     ScreenColumn {
         TotalCard(total = total, countFrom = countFrom, onShown = onTotalShown)
@@ -107,7 +112,10 @@ private fun HomeContent(
         if (stats.lastActionTime == null) {
             EmptyState(
                 icon = Icons.Filled.VolunteerActivism,
-                message = stringResource(R.string.home_empty_message),
+                message = stringResource(
+                    R.string.home_empty_message,
+                    formatPercentage(maserPercentage)
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
         } else {

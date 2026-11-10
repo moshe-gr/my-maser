@@ -1,7 +1,9 @@
 package com.example.mymaser.history
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 
 @Entity
 data class History(
@@ -11,5 +13,8 @@ data class History(
     val name: String = "",
     val amount: Float = 0F,
     val isDonation: Boolean = false,
-    val attachmentUri: String? = null
+    val attachmentUri: String? = null,
+    /** The percentage in force when the entry was saved, so later edits reverse exactly what it added. */
+    @ColumnInfo(defaultValue = "10")
+    val maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
 )

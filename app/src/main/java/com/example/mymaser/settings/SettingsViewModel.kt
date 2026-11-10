@@ -1,9 +1,13 @@
 package com.example.mymaser.settings
 
+import android.app.Application
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.os.LocaleListCompat
 import androidx.datastore.preferences.core.Preferences
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -14,7 +18,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class SettingsViewModel(private val repository: SettingsRepository) : ViewModel() {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val repository = SettingsRepository(application)
 
     private var initialDonationName: String? = null
     private var initialIncomeName: String? = null
@@ -44,6 +50,10 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         return repository.getString(key, defaultValue)
     }
 
+    fun getFloat(key: Preferences.Key<Float>, defaultValue: Float): Flow<Float> {
+        return repository.getFloat(key, defaultValue)
+    }
+
     fun setString(key: Preferences.Key<String>, value: String) {
         when (key) {
             SettingsKeys.PUBLIC_DONATION_NAME -> {
@@ -60,11 +70,28 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
                     repository.setString(key, value)
                 }
             }
+            SettingsKeys.LANGUAGE -> {
+                viewModelScope.launch {
+                    repository.setString(key, value)
+                    val locales = if (value.isBlank()) {
+                        LocaleListCompat.getEmptyLocaleList()
+                    } else {
+                        LocaleListCompat.forLanguageTags(value)
+                    }
+                    AppCompatDelegate.setApplicationLocales(locales)
+                }
+            }
             else -> {
                 viewModelScope.launch {
                     repository.setString(key, value)
                 }
             }
+        }
+    }
+
+    fun setFloat(key: Preferences.Key<Float>, value: Float) {
+        viewModelScope.launch {
+            repository.setFloat(key, value)
         }
     }
 
@@ -92,12 +119,12 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
             if (oldDonation != currentDonationName) {
                 renameDirectory(oldDonation, currentDonationName, attachmentDirectoryUri)
-                initialDonationName = currentDonationName // Update cache for next pause
+                initialDonationName = currentDonationName
             }
 
             if (oldIncome != currentIncomeName) {
                 renameDirectory(oldIncome, currentIncomeName, attachmentDirectoryUri)
-                initialIncomeName = currentIncomeName // Update cache for next pause
+                initialIncomeName = currentIncomeName
             }
         }
     }
@@ -111,11 +138,11 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     }
 }
 
-class SettingsViewModelFactory(private val repository: SettingsRepository) : ViewModelProvider.Factory {
+class SettingsViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(repository) as T
+            return SettingsViewModel(application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

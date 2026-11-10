@@ -43,6 +43,9 @@ import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.launch
 
+/** Keeps each row's height while totals load, so the sheet measures its full height up front. */
+private const val LOADING_PLACEHOLDER = "—"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistorySummarySheet(
@@ -82,15 +85,20 @@ fun HistorySummarySheet(
                 DateFormat.getDateInstance().format(Date(history.timeStamp))
             )
 
-            summary?.let {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                SummaryRow(stringResource(R.string.total), formatCurrency(it.totalByName))
-                SummaryRow(stringResource(R.string.entries_count), it.count.toString())
-                SummaryRow(stringResource(R.string.this_month), formatCurrency(it.monthTotal))
-                SummaryRow(stringResource(R.string.this_year), formatCurrency(it.yearTotal))
-                SummaryRow(stringResource(R.string.last_year), formatCurrency(it.lastYearTotal))
-                SummaryRow(stringResource(R.string.average), formatCurrency(it.average))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            val loaded = summary
+            val money: @Composable (Double?) -> String = { value ->
+                value?.let { formatCurrency(it) } ?: LOADING_PLACEHOLDER
             }
+            SummaryRow(stringResource(R.string.total), money(loaded?.totalByName))
+            SummaryRow(
+                stringResource(R.string.entries_count),
+                loaded?.count?.toString() ?: LOADING_PLACEHOLDER
+            )
+            SummaryRow(stringResource(R.string.this_month), money(loaded?.monthTotal))
+            SummaryRow(stringResource(R.string.this_year), money(loaded?.yearTotal))
+            SummaryRow(stringResource(R.string.last_year), money(loaded?.lastYearTotal))
+            SummaryRow(stringResource(R.string.average), money(loaded?.average))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(

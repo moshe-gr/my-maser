@@ -101,6 +101,57 @@ class HistoryCalculationsTest {
     }
 
     @Test
+    fun `an entry reverses with the percentage it was saved with`() {
+        val savedAtTwenty = History(amount = 1000F, isDonation = false, maserPercentage = 20F)
+        assertEquals(200F, savedAtTwenty.maserDelta, 0.001F)
+        assertEquals(100F, maserDeltaForEdit(savedAtTwenty, 1500F), 0.001F)
+    }
+
+    @Test
+    fun `entries default to ten percent`() {
+        assertEquals(100F, History(amount = 1000F).maserDelta, 0.001F)
+    }
+
+    private val filterSample = listOf(
+        History(id = 1, timeStamp = at(2026, 11, 10), name = "Salary", amount = 1F),
+        History(id = 2, timeStamp = at(2026, 11, 2), name = "Local charity", amount = 1F, isDonation = true, attachmentUri = "content://a"),
+        History(id = 3, timeStamp = at(2025, 6, 1), name = "Charity fund", amount = 1F, isDonation = true, attachmentUri = ""),
+        History(id = 4, timeStamp = at(2024, 3, 1), name = "Bonus", amount = 1F)
+    )
+
+    private fun ids(query: HistoryQuery) =
+        filterHistory(filterSample, query, now, DayOfWeek.SUNDAY).map { it.id }
+
+    @Test
+    fun `empty query keeps everything and is inactive`() {
+        assertEquals(listOf(1, 2, 3, 4), ids(HistoryQuery()))
+        assertFalse(HistoryQuery().isActive)
+    }
+
+    @Test
+    fun `search matches names case-insensitively and ignores surrounding spaces`() {
+        assertEquals(listOf(2, 3), ids(HistoryQuery(text = "  CHARITY ")))
+    }
+
+    @Test
+    fun `type and attachment filters combine`() {
+        assertEquals(listOf(2, 3), ids(HistoryQuery(type = TypeFilter.Donations)))
+        assertEquals(listOf(2), ids(HistoryQuery(type = TypeFilter.Donations, withAttachmentOnly = true)))
+    }
+
+    @Test
+    fun `time filters use calendar boundaries`() {
+        assertEquals(listOf(1), ids(HistoryQuery(time = TimeFilter.Today)))
+        assertEquals(listOf(1, 2), ids(HistoryQuery(time = TimeFilter.ThisMonth)))
+        assertEquals(listOf(3), ids(HistoryQuery(time = TimeFilter.LastYear)))
+        assertEquals(listOf(4), ids(HistoryQuery(time = TimeFilter.SpecificYear, year = 2024)))
+        assertEquals(
+            listOf(3),
+            ids(HistoryQuery(time = TimeFilter.SpecificMonth, month = YearMonth.of(2025, 6)))
+        )
+    }
+
+    @Test
     fun `entries group into periods in input order`() {
         val history = listOf(
             donation(at(2026, 11, 10)),

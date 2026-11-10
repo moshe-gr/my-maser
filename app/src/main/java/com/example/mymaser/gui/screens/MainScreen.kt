@@ -73,6 +73,7 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
     val totalMaser by viewModel.totalMaser.collectAsStateWithLifecycle()
     val incomeNames by viewModel.incomeNames.collectAsStateWithLifecycle()
     val donationNames by viewModel.donationNames.collectAsStateWithLifecycle()
+    val maserPercentage by viewModel.maserPercentage.collectAsStateWithLifecycle()
 
     val undoLabel = stringResource(R.string.undo)
     val savedMessage = stringResource(R.string.information_saved_successfully)
@@ -167,7 +168,8 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     lastShownTotal = viewModel.lastShownTotal,
                     onTotalShown = { viewModel.lastShownTotal = it },
                     onAddIncome = { navController.openTab(ScreenTypes.Income) },
-                    onAddDonation = { navController.openTab(ScreenTypes.Donation) }
+                    onAddDonation = { navController.openTab(ScreenTypes.Donation) },
+                    maserPercentage = maserPercentage
                 )
             }
             composable(ScreenTypes.Income.route) {
@@ -175,7 +177,8 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     names = incomeNames,
                     lastEntry = history?.firstOrNull { !it.isDonation },
                     onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation = false) },
-                    onSave = { name, amount -> saveEntry(name, amount, isDonation = false) }
+                    onSave = { name, amount -> saveEntry(name, amount, isDonation = false) },
+                    maserPercentage = maserPercentage
                 )
             }
             composable(ScreenTypes.Donation.route) {

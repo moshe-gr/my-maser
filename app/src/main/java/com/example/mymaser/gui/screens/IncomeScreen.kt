@@ -11,14 +11,16 @@ fun IncomeScreen(
     names: List<String>,
     lastEntry: History?,
     onSuggestionPicked: suspend (String) -> Float,
-    onSave: (String, Float) -> Unit
+    onSave: (String, Float) -> Unit,
+    maserPercentage: Float
 ) {
     EntryForm(
         isDonation = false,
         names = names,
         lastEntry = lastEntry,
         onSuggestionPicked = onSuggestionPicked,
-        onSave = onSave
+        onSave = onSave,
+        maserPercentage = maserPercentage
     )
 }
 
@@ -30,7 +32,8 @@ private fun IncomePreview() {
             names = emptyList(),
             lastEntry = History(name = "Salary", amount = 12000F),
             onSuggestionPicked = { 0F },
-            onSave = { _, _ -> }
+            onSave = { _, _ -> },
+            maserPercentage = 10f
         )
     }
 }

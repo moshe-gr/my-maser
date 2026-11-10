@@ -9,17 +9,33 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,9 +44,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.gui.components.ContentMaxWidth
@@ -45,24 +66,38 @@ import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.gui.theme.tabular
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryPeriod
+import com.example.mymaser.history.HistoryQuery
 import com.example.mymaser.history.HistoryRepository
+import com.example.mymaser.history.TimeFilter
+import com.example.mymaser.history.TypeFilter
+import com.example.mymaser.history.filterHistory
 import com.example.mymaser.history.groupByPeriod
+import java.time.Instant
+import java.time.YearMonth
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.WeekFields
 import java.util.Locale
 
-private enum class HistoryFilter(val label: Int) {
-    All(R.string.filter_all),
-    Income(R.string.incomes),
-    Donations(R.string.donations);
-
-    fun matches(entry: History) = when (this) {
-        All -> true
-        Income -> !entry.isDonation
-        Donations -> entry.isDonation
-    }
+private fun TypeFilter.labelRes() = when (this) {
+    TypeFilter.All -> R.string.filter_all
+    TypeFilter.Income -> R.string.incomes
+    TypeFilter.Donations -> R.string.donations
 }
+
+private fun TimeFilter.labelRes() = when (this) {
+    TimeFilter.AllTime -> R.string.filter_all_time
+    TimeFilter.Today -> R.string.filter_today
+    TimeFilter.ThisWeek -> R.string.filter_this_week
+    TimeFilter.ThisMonth -> R.string.filter_this_month
+    TimeFilter.ThisYear -> R.string.filter_this_year
+    TimeFilter.LastYear -> R.string.filter_last_year
+    TimeFilter.SpecificMonth -> R.string.filter_specific_month
+    TimeFilter.SpecificYear -> R.string.filter_specific_year
+}
+
+private fun YearMonth.label(): String =
+    format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault()))
 
 @Composable
 fun HistoryScreen(
@@ -75,18 +110,49 @@ fun HistoryScreen(
 ) {
     if (history == null) return
 
-    var filter by rememberSaveable { mutableStateOf(HistoryFilter.All) }
+    var searchText by rememberSaveable { mutableStateOf("") }
+    var typeFilter by rememberSaveable { mutableStateOf(TypeFilter.All) }
+    var withAttachmentOnly by rememberSaveable { mutableStateOf(false) }
+    var timeFilter by rememberSaveable { mutableStateOf(TimeFilter.AllTime) }
+    var monthText by rememberSaveable { mutableStateOf<String?>(null) }
+    var year by rememberSaveable { mutableStateOf<Int?>(null) }
+
     var selectedId by rememberSaveable { mutableStateOf<Int?>(null) }
     var editingId by rememberSaveable { mutableStateOf<Int?>(null) }
     val selected = history.firstOrNull { it.id == selectedId }
     val editing = history.firstOrNull { it.id == editingId }
 
-    val groups = remember(history, filter) {
-        groupByPeriod(
-            history = history.filter(filter::matches),
-            now = ZonedDateTime.now(),
-            firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
-        )
+    val query = HistoryQuery(
+        text = searchText,
+        type = typeFilter,
+        withAttachmentOnly = withAttachmentOnly,
+        time = timeFilter,
+        month = monthText?.let(YearMonth::parse),
+        year = year
+    )
+
+    fun clearFilters() {
+        searchText = ""
+        typeFilter = TypeFilter.All
+        withAttachmentOnly = false
+        timeFilter = TimeFilter.AllTime
+        monthText = null
+        year = null
+    }
+
+    val now = remember(history) { ZonedDateTime.now() }
+    val firstDayOfWeek = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
+    val filtered = remember(history, query, now) {
+        filterHistory(history, query, now, firstDayOfWeek)
+    }
+    val groups = remember(filtered, now) { groupByPeriod(filtered, now, firstDayOfWeek) }
+    val availableMonths = remember(history) {
+        history.map { YearMonth.from(Instant.ofEpochMilli(it.timeStamp).atZone(now.zone)) }
+            .distinct()
+            .sortedDescending()
+    }
+    val availableYears = remember(availableMonths) {
+        availableMonths.map { it.year }.distinct()
     }
 
     if (history.isEmpty()) {
@@ -109,6 +175,8 @@ fun HistoryScreen(
                 .widthIn(max = ContentMaxWidth)
                 .fillMaxWidth()
         ) {
+            SearchField(value = searchText, onValueChange = { searchText = it })
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -116,20 +184,44 @@ fun HistoryScreen(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                HistoryFilter.entries.forEach { option ->
+                TimeFilterChip(
+                    query = query,
+                    availableMonths = availableMonths,
+                    availableYears = availableYears,
+                    onSelect = { time, month, selectedYear ->
+                        timeFilter = time
+                        monthText = month?.toString()
+                        year = selectedYear
+                    }
+                )
+                TypeFilter.entries.forEach { option ->
                     FilterChip(
-                        selected = filter == option,
-                        onClick = { filter = option },
-                        label = { Text(stringResource(option.label)) }
+                        selected = typeFilter == option,
+                        onClick = { typeFilter = option },
+                        label = { Text(stringResource(option.labelRes())) }
                     )
                 }
+                FilterChip(
+                    selected = withAttachmentOnly,
+                    onClick = { withAttachmentOnly = !withAttachmentOnly },
+                    label = { Text(stringResource(R.string.filter_with_attachments)) }
+                )
             }
+
+            if (query.isActive) {
+                ResultsSummary(entries = filtered, onClear = ::clearFilters)
+            }
+
             if (groups.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     EmptyState(
-                        icon = Icons.Outlined.History,
-                        message = stringResource(R.string.no_history_found)
-                    )
+                        icon = Icons.Outlined.SearchOff,
+                        message = stringResource(R.string.no_matching_entries)
+                    ) {
+                        TextButton(onClick = ::clearFilters) {
+                            Text(stringResource(R.string.clear_filters))
+                        }
+                    }
                 }
             } else {
                 HistoryList(
@@ -163,6 +255,181 @@ fun HistoryScreen(
             },
             onDismiss = { editingId = null }
         )
+    }
+}
+
+@Composable
+private fun SearchField(value: String, onValueChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(stringResource(R.string.search_hint)) },
+        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+        trailingIcon = if (value.isNotEmpty()) {
+            {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(
+                        Icons.Filled.Clear,
+                        contentDescription = stringResource(R.string.clear_search)
+                    )
+                }
+            }
+        } else {
+            null
+        },
+        singleLine = true,
+        shape = MaterialTheme.shapes.extraLarge,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    )
+}
+
+private enum class TimeMenuLevel { Root, Months, Years }
+
+@Composable
+private fun TimeFilterChip(
+    query: HistoryQuery,
+    availableMonths: List<YearMonth>,
+    availableYears: List<Int>,
+    onSelect: (TimeFilter, YearMonth?, Int?) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var level by remember { mutableStateOf(TimeMenuLevel.Root) }
+    val label = when {
+        query.time == TimeFilter.SpecificMonth && query.month != null -> query.month.label()
+        query.time == TimeFilter.SpecificYear && query.year != null -> query.year.toString()
+        else -> stringResource(query.time.labelRes())
+    }
+
+    fun choose(time: TimeFilter, month: YearMonth? = null, year: Int? = null) {
+        onSelect(time, month, year)
+        expanded = false
+    }
+
+    Box {
+        FilterChip(
+            selected = query.time != TimeFilter.AllTime,
+            onClick = {
+                level = TimeMenuLevel.Root
+                expanded = true
+            },
+            label = { Text(label) },
+            trailingIcon = {
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            }
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (level != TimeMenuLevel.Root) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.back)) },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null) },
+                    onClick = { level = TimeMenuLevel.Root }
+                )
+            }
+            when (level) {
+                TimeMenuLevel.Root -> TimeFilter.entries.forEach { option ->
+                    MenuOption(
+                        text = stringResource(option.labelRes()),
+                        selected = query.time == option,
+                        onClick = {
+                            when (option) {
+                                TimeFilter.SpecificMonth -> level = TimeMenuLevel.Months
+                                TimeFilter.SpecificYear -> level = TimeMenuLevel.Years
+                                else -> choose(option)
+                            }
+                        }
+                    )
+                }
+
+                TimeMenuLevel.Months -> availableMonths.forEach { month ->
+                    MenuOption(
+                        text = month.label(),
+                        selected = query.time == TimeFilter.SpecificMonth && query.month == month,
+                        onClick = { choose(TimeFilter.SpecificMonth, month = month) }
+                    )
+                }
+
+                TimeMenuLevel.Years -> availableYears.forEach { year ->
+                    MenuOption(
+                        text = year.toString(),
+                        selected = query.time == TimeFilter.SpecificYear && query.year == year,
+                        onClick = { choose(TimeFilter.SpecificYear, year = year) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuOption(text: String, selected: Boolean, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(text) },
+        onClick = onClick,
+        trailingIcon = if (selected) {
+            { Icon(Icons.Filled.Check, contentDescription = null) }
+        } else {
+            null
+        }
+    )
+}
+
+@Composable
+private fun ResultsSummary(entries: List<History>, onClear: () -> Unit) {
+    val incomeTotal = remember(entries) {
+        entries.filter { !it.isDonation }.sumOf { it.amount.toDouble() }
+    }
+    val donationTotal = remember(entries) {
+        entries.filter { it.isDonation }.sumOf { it.amount.toDouble() }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 4.dp)
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.results_count, entries.size, entries.size),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        AmountTotals(incomeTotal, donationTotal, Modifier.weight(1f))
+        TextButton(onClick = onClear) {
+            Text(stringResource(R.string.clear_filters))
+        }
+    }
+}
+
+@Composable
+private fun AmountTotals(incomeTotal: Double, donationTotal: Double, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+    ) {
+        if (incomeTotal > 0) {
+            Text(
+                text = formatSignedCurrency(incomeTotal, isNegative = false),
+                style = MaterialTheme.typography.labelMedium.tabular,
+                color = MaterialTheme.maserColors.income
+            )
+        }
+        if (donationTotal > 0) {
+            Text(
+                text = formatSignedCurrency(donationTotal, isNegative = true),
+                style = MaterialTheme.typography.labelMedium.tabular,
+                color = MaterialTheme.maserColors.donation
+            )
+        }
     }
 }
 
@@ -215,24 +482,9 @@ private fun PeriodHeader(period: HistoryPeriod, entries: List<History>) {
                 text = periodLabel(period),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { heading() }
+                modifier = Modifier.semantics { heading() }
             )
-            if (incomeTotal > 0) {
-                Text(
-                    text = formatSignedCurrency(incomeTotal, isNegative = false),
-                    style = MaterialTheme.typography.labelMedium.tabular,
-                    color = MaterialTheme.maserColors.income
-                )
-            }
-            if (donationTotal > 0) {
-                Text(
-                    text = formatSignedCurrency(donationTotal, isNegative = true),
-                    style = MaterialTheme.typography.labelMedium.tabular,
-                    color = MaterialTheme.maserColors.donation
-                )
-            }
+            AmountTotals(incomeTotal, donationTotal, Modifier.weight(1f))
         }
     }
 }
@@ -242,9 +494,7 @@ private fun periodLabel(period: HistoryPeriod): String = when (period) {
     HistoryPeriod.Today -> stringResource(R.string.today)
     HistoryPeriod.ThisWeek -> stringResource(R.string.this_week)
     HistoryPeriod.ThisMonth -> stringResource(R.string.this_monthh)
-    is HistoryPeriod.Month -> remember(period) {
-        period.month.format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault()))
-    }
+    is HistoryPeriod.Month -> remember(period) { period.month.label() }
 }
 
 private val sampleHistory = listOf(

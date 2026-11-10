@@ -6,9 +6,12 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mymaser.dataStore
+import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
+import com.example.mymaser.settings.maserPercentageFlow
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,6 +24,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     private val repository =
         HistoryRepository(HistoryDb.getInstance(application).getHistoryDao())
     private val dataStore = application.dataStore
+    private val percentageFlow = application.maserPercentageFlow()
 
     /** Null until the first load finishes. */
     val history: StateFlow<List<History>?> = repository.observeHistory()
@@ -30,6 +34,9 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     val totalMaser: StateFlow<Float?> = dataStore.data
         .map { it[TOTAL_MASER_KEY] ?: 0F }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    val maserPercentage: StateFlow<Float> = percentageFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), DEFAULT_MASER_PERCENTAGE)
 
     val incomeNames: StateFlow<List<String>> = repository.observeNames(isDonation = false)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
@@ -50,10 +57,11 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             timeStamp = System.currentTimeMillis(),
             name = name,
             amount = amount,
-            isDonation = isDonation
+            isDonation = isDonation,
+            maserPercentage = percentageFlow.first()
         )
         val id = repository.insert(entry)
-        adjustTotal(maserDelta(amount, isDonation))
+        adjustTotal(entry.maserDelta)
         onSaved(entry.copy(id = id))
     }
 
@@ -64,12 +72,12 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 
     fun deleteEntry(entry: History) = runChange {
         repository.delete(entry)
-        adjustTotal(-maserDelta(entry.amount, entry.isDonation))
+        adjustTotal(-entry.maserDelta)
     }
 
     fun restoreEntry(entry: History) = runChange {
         repository.insert(entry)
-        adjustTotal(maserDelta(entry.amount, entry.isDonation))
+        adjustTotal(entry.maserDelta)
     }
 
     fun setAttachment(entry: History, uri: String) = runChange {

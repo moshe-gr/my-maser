@@ -7,6 +7,7 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAdjusters
+import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 
 data class TimeRange(val start: Long, val endExclusive: Long) {
     operator fun contains(time: Long) = time >= start && time < endExclusive
@@ -29,11 +30,65 @@ fun previousYearRange(now: ZonedDateTime): TimeRange {
     return TimeRange(first.minusYears(1).startMillis(now.zone), first.startMillis(now.zone))
 }
 
-fun maserDelta(amount: Float, isDonation: Boolean): Float =
-    if (isDonation) -amount else amount / 10
+fun maserDelta(
+    amount: Float,
+    isDonation: Boolean,
+    percentage: Float = DEFAULT_MASER_PERCENTAGE
+): Float = if (isDonation) -amount else amount * (percentage / 100f)
+
+val History.maserDelta: Float get() = maserDelta(amount, isDonation, maserPercentage)
 
 fun maserDeltaForEdit(original: History, newAmount: Float): Float =
-    maserDelta(newAmount, original.isDonation) - maserDelta(original.amount, original.isDonation)
+    maserDelta(newAmount, original.isDonation, original.maserPercentage) - original.maserDelta
+
+enum class TypeFilter { All, Income, Donations }
+
+enum class TimeFilter { AllTime, Today, ThisWeek, ThisMonth, ThisYear, LastYear, SpecificMonth, SpecificYear }
+
+data class HistoryQuery(
+    val text: String = "",
+    val type: TypeFilter = TypeFilter.All,
+    val withAttachmentOnly: Boolean = false,
+    val time: TimeFilter = TimeFilter.AllTime,
+    val month: YearMonth? = null,
+    val year: Int? = null
+) {
+    val isActive: Boolean
+        get() = text.isNotBlank() || type != TypeFilter.All || withAttachmentOnly || time != TimeFilter.AllTime
+}
+
+fun filterHistory(
+    history: List<History>,
+    query: HistoryQuery,
+    now: ZonedDateTime,
+    firstDayOfWeek: DayOfWeek
+): List<History> {
+    val today = now.toLocalDate()
+    val weekStart = today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+    val yearStart = today.withDayOfYear(1)
+    val text = query.text.trim()
+    return history.filter { entry ->
+        val date = Instant.ofEpochMilli(entry.timeStamp).atZone(now.zone).toLocalDate()
+        val matchesType = when (query.type) {
+            TypeFilter.All -> true
+            TypeFilter.Income -> !entry.isDonation
+            TypeFilter.Donations -> entry.isDonation
+        }
+        val matchesTime = when (query.time) {
+            TimeFilter.AllTime -> true
+            TimeFilter.Today -> date == today
+            TimeFilter.ThisWeek -> !date.isBefore(weekStart)
+            TimeFilter.ThisMonth -> YearMonth.from(date) == YearMonth.from(today)
+            TimeFilter.ThisYear -> date.year == today.year
+            TimeFilter.LastYear -> date.year == yearStart.year - 1
+            TimeFilter.SpecificMonth -> query.month == null || YearMonth.from(date) == query.month
+            TimeFilter.SpecificYear -> query.year == null || date.year == query.year
+        }
+        matchesType && matchesTime &&
+            (text.isEmpty() || entry.name.contains(text, ignoreCase = true)) &&
+            (!query.withAttachmentOnly || !entry.attachmentUri.isNullOrEmpty())
+    }
+}
 
 data class HomeStats(
     val donatedThisMonth: Double = 0.0,

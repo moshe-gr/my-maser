@@ -48,7 +48,7 @@
     <string name="donated_title">Donated</string>
     <string name="add_income">Add income</string>
     <string name="add_donation">Add donation</string>
-    <string name="home_empty_message">Add your income and 10% is set aside as maser. Record donations to bring it down.</string>
+    <string name="home_empty_message">Add your income and %1$s is set aside as maser. Record donations to bring it down.</string>
     <string name="adds_to_maser">Adds %s to your maser</string>
     <string name="undo">Undo</string>
     <string name="entry_deleted">Entry deleted</string>
@@ -60,4 +60,36 @@
     <string name="filter_all">All</string>
     <string name="back">Back</string>
     <string name="no_directory_selected">No directory selected</string>
+    <string name="search_hint">Search by name</string>
+    <string name="clear_search">Clear search</string>
+    <string name="filter_with_attachments">With attachment</string>
+    <string name="filter_all_time">All time</string>
+    <string name="filter_today">Today</string>
+    <string name="filter_this_week">This week</string>
+    <string name="filter_this_month">This month</string>
+    <string name="filter_this_year">This year</string>
+    <string name="filter_last_year">Last year</string>
+    <string name="filter_specific_month">Choose month…</string>
+    <string name="filter_specific_year">Choose year…</string>
+    <string name="clear_filters">Clear filters</string>
+    <string name="no_matching_entries">No entries match these filters</string>
+    <plurals name="results_count">
+        <item quantity="one">%d entry</item>
+        <item quantity="other">%d entries</item>
+    </plurals>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System</string>
+    <string name="settings_language_en" translatable="false">English</string>
+    <string name="settings_language_he" translatable="false">עברית</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_currency">Currency symbol</string>
+    <string name="settings_maser_percentage">Maser percentage</string>
+    <string name="settings_custom">Custom</string>
+    <string name="settings_custom_percentage">Custom percentage</string>
+    <string name="settings_percentage_error">Enter a value from 1 to 100</string>
+    <string name="settings_percentage_hint">Applies to income you add from now on. Existing entries keep the percentage they were saved with.</string>
+    <string name="settings_attachments">Attachments</string>
 </resources>
