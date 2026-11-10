@@ -22,18 +22,4 @@ interface HistoryDao {
 
     @Query("SELECT * FROM History ORDER BY timeStamp DESC")
     fun observeAll(): Flow<List<History>>
-
-    @Query("SELECT COALESCE(SUM(amount), 0) FROM History WHERE name = :name AND isDonation = :isDonation AND timeStamp >= :start AND timeStamp < :endExclusive")
-    suspend fun getTotalByNameInRange(
-        name: String,
-        isDonation: Boolean,
-        start: Long,
-        endExclusive: Long
-    ): Double
-
-    @Query("SELECT COALESCE(SUM(amount), 0) FROM History WHERE name = :name AND isDonation = :isDonation")
-    suspend fun getTotalByName(name: String, isDonation: Boolean): Double
-
-    @Query("SELECT COUNT(*) FROM History WHERE name = :name AND isDonation = :isDonation")
-    suspend fun getCountByName(name: String, isDonation: Boolean): Int
 }

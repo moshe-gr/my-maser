@@ -92,9 +92,6 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     fun suggestedAmount(name: String, isDonation: Boolean): Float? =
         history.value?.let { suggestedAmount(it, name, isDonation, ZonedDateTime.now()) }
 
-    suspend fun loadSummary(entry: History): HistoryRepository.HistorySummary =
-        repository.loadSummary(entry)
-
     /** Runs past ViewModel teardown so an entry and the running total can't get out of sync. */
     private fun runChange(change: suspend () -> Unit) {
         viewModelScope.launch { withContext(NonCancellable) { change() } }

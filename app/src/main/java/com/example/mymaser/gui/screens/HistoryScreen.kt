@@ -67,7 +67,7 @@ import com.example.mymaser.gui.theme.tabular
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryPeriod
 import com.example.mymaser.history.HistoryQuery
-import com.example.mymaser.history.HistoryRepository
+import com.example.mymaser.history.SummaryPeriod
 import com.example.mymaser.history.TimeFilter
 import com.example.mymaser.history.TypeFilter
 import com.example.mymaser.history.filterHistory
@@ -96,13 +96,20 @@ private fun TimeFilter.labelRes() = when (this) {
     TimeFilter.SpecificYear -> R.string.filter_specific_year
 }
 
+/** Last 12 months has no matching History filter, so it widens to all time. */
+private fun SummaryPeriod.toTimeFilter() = when (this) {
+    SummaryPeriod.ThisMonth -> TimeFilter.ThisMonth
+    SummaryPeriod.ThisYear -> TimeFilter.ThisYear
+    SummaryPeriod.LastYear -> TimeFilter.LastYear
+    SummaryPeriod.Last12Months, SummaryPeriod.AllTime -> TimeFilter.AllTime
+}
+
 private fun YearMonth.label(): String =
     format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault()))
 
 @Composable
 fun HistoryScreen(
     history: List<History>?,
-    loadSummary: suspend (History) -> HistoryRepository.HistorySummary,
     onEdit: (History, String, Float) -> Unit,
     onDelete: (History) -> Unit,
     onAttachmentSaved: (History, String) -> Unit,
@@ -236,11 +243,18 @@ fun HistoryScreen(
     selected?.let { entry ->
         HistorySummarySheet(
             history = entry,
-            loadSummary = loadSummary,
+            allHistory = history,
             onEdit = { editingId = entry.id },
             onDelete = {
                 selectedId = null
                 onDelete(entry)
+            },
+            onShowAll = { period ->
+                selectedId = null
+                clearFilters()
+                searchText = entry.name.trim()
+                typeFilter = if (entry.isDonation) TypeFilter.Donations else TypeFilter.Income
+                timeFilter = period.toTimeFilter()
             },
             onDismiss = { selectedId = null }
         )
@@ -508,7 +522,6 @@ private fun HistoryPreview() {
     MaserPreview {
         HistoryScreen(
             history = sampleHistory,
-            loadSummary = { HistoryRepository.HistorySummary(0.0, 0, 0.0, 0.0, 0.0, 0.0) },
             onEdit = { _, _, _ -> },
             onDelete = {},
             onAttachmentSaved = { _, _ -> },

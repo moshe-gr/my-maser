@@ -35,10 +35,7 @@
     <string name="show_attachment">הצג קובץ מצורף</string>
     <string name="selected_directory">התיקייה שנבחרה: %s</string>
     <string name="amount">סכום</string>
-    <string name="type">סוג</string>
-    <string name="date">תאריך</string>
-    <string name="entries_count">ערכים</string>
-    <string name="last_year">שנה שעברה</string>
+    <string name="entries_count">רשומות</string>
     <string name="average">ממוצע</string>
     <string name="maser_to_give">מעשר שנותר לתת</string>
     <string name="maser_all_given">המעשר ניתן במלואו</string>
@@ -89,4 +86,28 @@
     <string name="settings_percentage_error">הזן ערך בין 1 ל־100</string>
     <string name="settings_percentage_hint">חל על הכנסות שיתווספו מעכשיו. רשומות קיימות שומרות על האחוז שבו נשמרו.</string>
     <string name="settings_attachments">קבצים מצורפים</string>
+    <string name="summary_last_12_months">12 החודשים האחרונים</string>
+    <string name="summary_change_month">%1$s לעומת החודש הקודם</string>
+    <string name="summary_change_ytd">%1$s לעומת התקופה המקבילה אשתקד</string>
+    <string name="summary_change_year">%1$s לעומת השנה שלפניה</string>
+    <string name="summary_change_12m">%1$s לעומת 12 החודשים שלפניהם</string>
+    <string name="summary_share_income">%1$s מכלל ההכנסות</string>
+    <string name="summary_share_donation">%1$s מכלל התרומות</string>
+    <string name="summary_added_to_maser">נוסף למעשר</string>
+    <string name="summary_maser_reduced">הופחת מהמעשר</string>
+    <string name="summary_recurring">בדרך כלל סביב ה־%1$d בחודש · צפוי בפעם הבאה ב־%2$s</string>
+    <string name="summary_highest">הגבוה ביותר</string>
+    <string name="summary_lowest">הנמוך ביותר</string>
+    <string name="summary_first">ראשון</string>
+    <string name="summary_last">אחרון</string>
+    <string name="summary_entry_percentage">אחוז מעשר לרשומה זו</string>
+    <string name="summary_no_entries_in_period">אין רשומות בתקופה זו</string>
+    <string name="summary_show_all">כל הרשומות</string>
+    <string name="summary_export">ייצוא CSV</string>
+    <string name="summary_export_failed">הייצוא נכשל</string>
+    <plurals name="summary_exported">
+        <item quantity="one">יוצאה רשומה אחת</item>
+        <item quantity="two">יוצאו %d רשומות</item>
+        <item quantity="other">יוצאו %d רשומות</item>
+    </plurals>
 </resources>

@@ -192,7 +192,6 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
             composable(ScreenTypes.History.route) {
                 HistoryScreen(
                     history = history,
-                    loadSummary = viewModel::loadSummary,
                     onEdit = viewModel::editEntry,
                     onDelete = ::deleteEntry,
                     onAttachmentSaved = viewModel::setAttachment,

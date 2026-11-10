@@ -37,10 +37,7 @@
     <string name="attachment_prefix" translatable="false">attachment_</string>
     <string name="selected_directory">Selected directory: %s</string>
     <string name="amount">Amount</string>
-    <string name="type">Type</string>
-    <string name="date">Date</string>
     <string name="entries_count">Entries</string>
-    <string name="last_year">Last year</string>
     <string name="average">Average</string>
     <string name="maser_to_give">Maser to give</string>
     <string name="maser_all_given">All given</string>
@@ -92,4 +89,29 @@
     <string name="settings_percentage_error">Enter a value from 1 to 100</string>
     <string name="settings_percentage_hint">Applies to income you add from now on. Existing entries keep the percentage they were saved with.</string>
     <string name="settings_attachments">Attachments</string>
+    <string name="summary_entry_subtitle" translatable="false">%1$s · %2$s</string>
+    <string name="summary_last_12_months">Last 12 months</string>
+    <string name="summary_bar_description" translatable="false">%1$s: %2$s</string>
+    <string name="summary_change_month">%1$s vs last month</string>
+    <string name="summary_change_ytd">%1$s vs this time last year</string>
+    <string name="summary_change_year">%1$s vs the year before</string>
+    <string name="summary_change_12m">%1$s vs the previous 12 months</string>
+    <string name="summary_share_income">%1$s of all income</string>
+    <string name="summary_share_donation">%1$s of all donations</string>
+    <string name="summary_added_to_maser">Added to maser</string>
+    <string name="summary_maser_reduced">Maser reduced by</string>
+    <string name="summary_recurring">Usually around the %1$d of the month · next expected %2$s</string>
+    <string name="summary_highest">Highest</string>
+    <string name="summary_lowest">Lowest</string>
+    <string name="summary_first">First</string>
+    <string name="summary_last">Most recent</string>
+    <string name="summary_entry_percentage">Maser percentage for this entry</string>
+    <string name="summary_no_entries_in_period">No entries in this period</string>
+    <string name="summary_show_all">All entries</string>
+    <string name="summary_export">Export CSV</string>
+    <string name="summary_export_failed">Export failed</string>
+    <plurals name="summary_exported">
+        <item quantity="one">Exported %d entry</item>
+        <item quantity="other">Exported %d entries</item>
+    </plurals>
 </resources>
