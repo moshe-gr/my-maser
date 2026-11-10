@@ -1,7 +1,9 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.MyMaser" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:statusBarColor" >@color/colorPrimary</item>
-        <item name="android:windowSplashscreenContent">@drawable/ic_splash</item>
+<resources>
+    <style name="Theme.MyMaser" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <style name="Theme.MyMaser.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_primary</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyMaser</item>
     </style>
 </resources>
