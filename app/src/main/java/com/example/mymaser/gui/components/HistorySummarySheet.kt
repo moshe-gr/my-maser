@@ -1,145 +1,124 @@
 package com.example.mymaser.gui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.gui.formatCurrency
+import com.example.mymaser.gui.theme.tabular
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryRepository
-import com.example.mymaser.history.HistoryRepository.Companion.loadHistorySummary
 import java.text.DateFormat
-import java.util.Calendar
 import java.util.Date
-import kotlin.math.absoluteValue
-import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistorySummarySheet(
     history: History,
+    loadSummary: suspend (History) -> HistoryRepository.HistorySummary,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var offsetY by remember { mutableStateOf(0f) }
-    val animatedOffsetY by animateFloatAsState(targetValue = offsetY)
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 32.dp)
-            .shadow(16.dp, RoundedCornerShape(24.dp))
-            .alpha(1f - (offsetY.absoluteValue / 600).coerceIn(0f, 1f))
-            .offset { IntOffset(0, animatedOffsetY.roundToInt()) }
-            .pointerInput(Unit) {
-                detectVerticalDragGestures(
-                    onDragEnd = {
-                        if (offsetY.absoluteValue > 200) {
-                            onDismiss()
-                        } else {
-                            offsetY = 0f
-                        }
-                    },
-                    onDragCancel = { offsetY = 0f },
-                    onVerticalDrag = { _, dragAmount ->
-                        offsetY += dragAmount
-                    }
-                )
-            },
-        shape = RoundedCornerShape(24.dp),
-        elevation = 16.dp,
-        color = androidx.compose.ui.graphics.Color.White
-    ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            HistorySummaryContent(history)
-        }
-    }
-}
-
-@Composable
-fun HistorySummaryContent(
-    history: History
-) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
     var summary by remember { mutableStateOf<HistoryRepository.HistorySummary?>(null) }
 
-    LaunchedEffect(history.id) {
-        val calendar = Calendar.getInstance()
-
-        // Current year
-        val now = calendar.timeInMillis
-        calendar.set(Calendar.DAY_OF_YEAR, 1)
-        val startOfYear = calendar.timeInMillis
-
-        // Previous year
-        calendar.add(Calendar.YEAR, -1)
-        val startOfLastYear = calendar.timeInMillis
-        calendar.set(Calendar.DAY_OF_YEAR, calendar.getActualMaximum(Calendar.DAY_OF_YEAR))
-        val endOfLastYear = calendar.timeInMillis
-
-        // Current month
-        calendar.timeInMillis = now // reset
-        calendar.set(Calendar.DAY_OF_MONTH, 1)
-        val startOfMonth = calendar.timeInMillis
-
-        summary = loadHistorySummary(
-            history,
-            startOfMonth,
-            now,
-            startOfYear,
-            now,
-            startOfLastYear,
-            endOfLastYear
-        )
+    LaunchedEffect(history) {
+        summary = loadSummary(history)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-    ) {
-        Text(history.name, style = MaterialTheme.typography.h5)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 16.dp)
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(history.name, style = MaterialTheme.typography.headlineSmall)
 
-        Spacer(Modifier.height(16.dp))
+            SummaryRow(stringResource(R.string.amount), formatCurrency(history.amount.toDouble()))
+            SummaryRow(
+                stringResource(R.string.type),
+                stringResource(if (history.isDonation) R.string.donation else R.string.income)
+            )
+            SummaryRow(
+                stringResource(R.string.date),
+                DateFormat.getDateInstance().format(Date(history.timeStamp))
+            )
 
-        SummaryRow(stringResource(R.string.amount), stringResource(R.string.formated_with_nis,history.amount))
-        SummaryRow(
-            stringResource(R.string.type),
-            stringResource(if (history.isDonation) R.string.donation else R.string.income)
-        )
-        SummaryRow(
-            stringResource(R.string.date),
-            DateFormat.getDateInstance().format(Date(history.timeStamp))
-        )
+            summary?.let {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SummaryRow(stringResource(R.string.total), formatCurrency(it.totalByName))
+                SummaryRow(stringResource(R.string.entries_count), it.count.toString())
+                SummaryRow(stringResource(R.string.this_month), formatCurrency(it.monthTotal))
+                SummaryRow(stringResource(R.string.this_year), formatCurrency(it.yearTotal))
+                SummaryRow(stringResource(R.string.last_year), formatCurrency(it.lastYearTotal))
+                SummaryRow(stringResource(R.string.average), formatCurrency(it.average))
+            }
 
-        summary?.let {
-            Spacer(Modifier.height(16.dp))
-            SummaryRow(stringResource(R.string.total), stringResource(R.string.formated_with_nis,it.totalByName))
-            SummaryRow(stringResource(R.string.entries_count), it.count.toString())
-            SummaryRow(stringResource(R.string.this_month), stringResource(R.string.formated_with_nis,it.monthTotal))
-            SummaryRow(stringResource(R.string.this_year), stringResource(R.string.formated_with_nis,it.yearTotal))
-            SummaryRow(stringResource(R.string.last_year), stringResource(R.string.formated_with_nis,it.lastYearTotal))
-            SummaryRow(stringResource(R.string.average), stringResource(R.string.formated_with_nis, it.average))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(
+                    onClick = onEdit,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Icon(Icons.Outlined.Edit, null, Modifier.size(18.dp))
+                    Text(stringResource(R.string.edit), Modifier.padding(start = 8.dp))
+                }
+                OutlinedButton(
+                    onClick = {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion { onDelete() }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+                    shape = MaterialTheme.shapes.small,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(Icons.Outlined.Delete, null, Modifier.size(18.dp))
+                    Text(stringResource(R.string.delete), Modifier.padding(start = 8.dp))
+                }
+            }
         }
     }
 }
@@ -147,10 +126,17 @@ fun HistorySummaryContent(
 @Composable
 private fun SummaryRow(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.body1)
-        Text(value, style = MaterialTheme.typography.body1)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(value, style = MaterialTheme.typography.bodyLarge.tabular)
     }
 }

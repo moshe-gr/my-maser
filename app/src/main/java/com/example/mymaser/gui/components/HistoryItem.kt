@@ -7,67 +7,63 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.Card
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.VolunteerActivism
+import androidx.compose.material.icons.outlined.UploadFile
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.datastore.preferences.core.Preferences
 import androidx.documentfile.provider.DocumentFile
 import com.example.mymaser.R
 import com.example.mymaser.dataStore
+import com.example.mymaser.gui.formatSignedCurrency
+import com.example.mymaser.gui.theme.maserColors
+import com.example.mymaser.gui.theme.tabular
 import com.example.mymaser.history.History
-import com.example.mymaser.history.HistoryRepository.Companion.updateHistory
 import com.example.mymaser.settings.SettingsKeys
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
-import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-@Preview
 @Composable
 fun HistoryItem(
-    history: History = History(),
-    onClick: () -> Unit = {}
+    history: History,
+    onClick: () -> Unit,
+    onAttachmentSaved: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val dateFormatter = remember {
-        DateFormat.getDateTimeInstance(
-            DateFormat.MEDIUM,
-            DateFormat.SHORT,
-            Locale.getDefault()
-        )
+        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
     }
-    var attachmentUri by remember { mutableStateOf(history.attachmentUri) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(
@@ -75,76 +71,91 @@ fun HistoryItem(
     ) { uri ->
         uri?.let {
             scope.launch {
-                val newUri = saveAttachment(context, history, it)
-                if (newUri != null) {
-                    history.attachmentUri = newUri.toString()
-                    updateHistory(history)
-                    attachmentUri = newUri.toString()
+                saveAttachment(context, history, it)?.let { saved ->
+                    onAttachmentSaved(saved.toString())
                 }
             }
         }
     }
+
+    val colors = MaterialTheme.maserColors
+    val accent = if (history.isDonation) colors.donation else colors.income
+    val hasAttachment = !history.attachmentUri.isNullOrEmpty()
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .clickable { onClick() }
-            .animateContentSize(),
-        elevation = 6.dp
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = surfaceCardColors()
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = colorResource(id = if (history.isDonation) R.color.donation_red else R.color.income_green))
-                .padding(12.dp)
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            IconButton(
-                onClick = {
-                    if (attachmentUri.isNullOrEmpty()) {
-                        launcher.launch(arrayOf("image/*", "application/pdf"))
-                    } else {
-                        attachmentUri?.let { uriString ->
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(
-                                    uriString.toUri(),
-                                    context.contentResolver.getType(uriString.toUri())
-                                )
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            context.startActivity(intent)
-                        }
-                    }
-                },
-                modifier = Modifier.size(16.dp)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = if (history.isDonation) colors.donationContainer else colors.incomeContainer,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (attachmentUri.isNullOrEmpty()) Icons.Filled.Add else Icons.Filled.AttachFile,
-                    contentDescription = if (attachmentUri.isNullOrEmpty()) stringResource(id = R.string.add_attachment) else stringResource(
-                        id = R.string.show_attachment
+                    imageVector = if (history.isDonation) {
+                        Icons.Filled.VolunteerActivism
+                    } else {
+                        Icons.Filled.AccountBalanceWallet
+                    },
+                    contentDescription = stringResource(
+                        if (history.isDonation) R.string.donation else R.string.income
                     ),
-                    tint = colorResource(id = R.color.colorPrimary)
+                    tint = accent,
+                    modifier = Modifier.size(20.dp)
                 )
             }
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = history.name,
-                    color = colorResource(id = R.color.colorPrimary),
-                    style = MaterialTheme.typography.h6
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.padding(vertical = 2.dp))
-                Text(
-                    text = stringResource(id = R.string.amount_format, history.amount),
-                    color = colorResource(id = R.color.colorPrimary),
-                    style = MaterialTheme.typography.body1
-                )
-                Spacer(modifier = Modifier.padding(vertical = 2.dp))
                 Text(
                     text = dateFormatter.format(Date(history.timeStamp)),
-                    color = colorResource(id = R.color.colorPrimary).copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.caption
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = formatSignedCurrency(history.amount.toDouble(), history.isDonation),
+                style = MaterialTheme.typography.titleMedium.tabular,
+                color = accent
+            )
+            IconButton(
+                onClick = {
+                    if (hasAttachment) {
+                        val uri = history.attachmentUri.orEmpty().toUri()
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, context.contentResolver.getType(uri))
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(intent)
+                    } else {
+                        launcher.launch(arrayOf("image/*", "application/pdf"))
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = if (hasAttachment) Icons.Filled.Description else Icons.Outlined.UploadFile,
+                    contentDescription = stringResource(
+                        if (hasAttachment) R.string.show_attachment else R.string.add_attachment
+                    ),
+                    tint = if (hasAttachment) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
             }
         }
@@ -178,7 +189,6 @@ private fun getFileName(context: Context, uri: Uri): String {
     return result ?: "${context.getString(R.string.attachment_prefix)}${System.currentTimeMillis()}"
 }
 
-
 private suspend fun saveAttachment(context: Context, history: History, uri: Uri): Uri? {
     val attachmentDirectoryUriString = context.dataStore.data.map { preferences ->
         preferences[SettingsKeys.ATTACHMENT_DIRECTORY_URI] ?: ""
@@ -193,9 +203,6 @@ private suspend fun saveAttachment(context: Context, history: History, uri: Uri)
         return null
     }
 
-    val treeUri = attachmentDirectoryUriString.toUri()
-    val rootDir = DocumentFile.fromTreeUri(context, treeUri) ?: return null
-
     val folderNameKey: Preferences.Key<String>
     val defaultFolderName: String
     if (history.isDonation) {
@@ -209,18 +216,30 @@ private suspend fun saveAttachment(context: Context, history: History, uri: Uri)
         preferences[folderNameKey] ?: defaultFolderName
     }.first()
 
+    return withContext(Dispatchers.IO) {
+        copyToAttachmentFolder(context, attachmentDirectoryUriString, publicFolderName, history, uri)
+    }
+}
+
+private fun copyToAttachmentFolder(
+    context: Context,
+    attachmentDirectoryUri: String,
+    publicFolderName: String,
+    history: History,
+    uri: Uri
+): Uri? {
+    val rootDir = DocumentFile.fromTreeUri(context, attachmentDirectoryUri.toUri()) ?: return null
     val year = Calendar.getInstance().get(Calendar.YEAR).toString()
-    val historyName = history.name
     val fileName = getFileName(context, uri)
 
     var currentDir: DocumentFile? = rootDir
-    listOf(publicFolderName, year, historyName).forEach { segment ->
-        if (currentDir == null) return@forEach
-        val nextDir = currentDir.findFile(segment)
+    listOf(publicFolderName, year, history.name).forEach { segment ->
+        val parent = currentDir ?: return@forEach
+        val nextDir = parent.findFile(segment)
         currentDir = if (nextDir != null && nextDir.isDirectory) {
             nextDir
         } else {
-            currentDir.createDirectory(segment)
+            parent.createDirectory(segment)
         }
     }
 

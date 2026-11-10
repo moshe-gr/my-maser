@@ -1,20 +1,36 @@
 package com.example.mymaser.gui
 
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.VolunteerActivism
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.VolunteerActivism
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.mymaser.R
 
 enum class ScreenTypes(
     val route: String,
-    @StringRes var label: Int = -1,
-    @DrawableRes var icon: Int = -1
+    @StringRes val label: Int,
+    val selectedIcon: ImageVector,
+    val icon: ImageVector
 ) {
-    Home(route = "home", label = R.string.home, icon = R.drawable.twotone_home_24),
-    Income(route = "income", label = R.string.income, icon = R.drawable.twotone_attach_money_24),
-    Donation(
-        route = "donation",
-        label = R.string.donate,
-        icon = R.drawable.twotone_currency_exchange_24
+    Home("home", R.string.home, Icons.Filled.Home, Icons.Outlined.Home),
+    Income(
+        "income",
+        R.string.income,
+        Icons.Filled.AccountBalanceWallet,
+        Icons.Outlined.AccountBalanceWallet
     ),
-    History(route = "history", label = R.string.history, icon = R.drawable.twotone_history_24)
+    Donation(
+        "donation",
+        R.string.donate,
+        Icons.Filled.VolunteerActivism,
+        Icons.Outlined.VolunteerActivism
+    ),
+    History("history", R.string.history, Icons.Filled.History, Icons.Outlined.History)
 }
