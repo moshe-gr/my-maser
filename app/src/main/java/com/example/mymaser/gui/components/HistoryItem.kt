@@ -135,7 +135,7 @@ fun HistoryItem(
             IconButton(
                 onClick = {
                     if (hasAttachment) {
-                        val uri = history.attachmentUri.orEmpty().toUri()
+                        val uri = history.attachmentUri.toUri()
                         val intent = Intent(Intent.ACTION_VIEW).apply {
                             setDataAndType(uri, context.contentResolver.getType(uri))
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -166,15 +166,13 @@ private fun getFileName(context: Context, uri: Uri): String {
     var result: String? = null
     if (uri.scheme == "content") {
         val cursor = context.contentResolver.query(uri, null, null, null, null)
-        try {
+        cursor.use { cursor ->
             if (cursor != null && cursor.moveToFirst()) {
                 val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 if (columnIndex != -1) {
                     result = cursor.getString(columnIndex)
                 }
             }
-        } finally {
-            cursor?.close()
         }
     }
     if (result == null) {

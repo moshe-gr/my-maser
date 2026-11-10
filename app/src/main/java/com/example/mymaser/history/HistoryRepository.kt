@@ -2,24 +2,16 @@ package com.example.mymaser.history
 
 import java.time.ZonedDateTime
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 
 class HistoryRepository(private val dao: HistoryDao) {
 
     fun observeHistory(): Flow<List<History>> = dao.observeAll()
-
-    fun observeNames(isDonation: Boolean): Flow<List<String>> =
-        dao.observeNamesByType(isDonation).map { it.distinct() }.distinctUntilChanged()
 
     suspend fun insert(history: History): Int = dao.insert(history).toInt()
 
     suspend fun update(history: History) = dao.update(history)
 
     suspend fun delete(history: History) = dao.delete(history)
-
-    suspend fun suggestedAmount(name: String, isDonation: Boolean): Float =
-        mostLikelyAmount(dao.getByName(name, isDonation), ZonedDateTime.now())
 
     suspend fun loadSummary(history: History): HistorySummary {
         val now = ZonedDateTime.now()

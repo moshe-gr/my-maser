@@ -10,7 +10,7 @@ import com.example.mymaser.history.History
 fun IncomeScreen(
     names: List<String>,
     lastEntry: History?,
-    onSuggestionPicked: suspend (String) -> Float,
+    onSuggestionPicked: (String) -> Float?,
     onSave: (String, Float) -> Unit,
     maserPercentage: Float
 ) {

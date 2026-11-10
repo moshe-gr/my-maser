@@ -10,7 +10,7 @@ import java.time.temporal.TemporalAdjusters
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 
 data class TimeRange(val start: Long, val endExclusive: Long) {
-    operator fun contains(time: Long) = time >= start && time < endExclusive
+    operator fun contains(time: Long) = time in start..<endExclusive
 }
 
 private fun LocalDate.startMillis(zone: ZoneId) = atStartOfDay(zone).toInstant().toEpochMilli()
@@ -134,23 +134,6 @@ fun groupByPeriod(
             else -> HistoryPeriod.Month(YearMonth.from(date))
         }
     }.toList()
-}
-
-/**
- * The amount most often used for this name, preferring entries made around the same day of the
- * month, since recurring payments tend to land on the same date.
- */
-fun mostLikelyAmount(entries: List<History>, now: ZonedDateTime): Float {
-    val dayOfMonth = now.dayOfMonth
-    val sameTimeOfMonth = entries.filter {
-        val entryDay = Instant.ofEpochMilli(it.timeStamp).atZone(now.zone).dayOfMonth
-        entryDay == dayOfMonth || entryDay == dayOfMonth - 1
-    }
-    return sameTimeOfMonth.ifEmpty { entries }
-        .groupingBy { it.amount }
-        .eachCount()
-        .maxByOrNull { it.value }
-        ?.key ?: 0F
 }
 
 fun formatAmountInput(amount: Float): String =

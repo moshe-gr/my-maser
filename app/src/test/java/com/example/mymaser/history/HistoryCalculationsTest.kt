@@ -172,26 +172,6 @@ class HistoryCalculationsTest {
     }
 
     @Test
-    fun `suggested amount prefers the same time of month`() {
-        val entries = listOf(
-            donation(at(2026, 10, 10), 180F),
-            donation(at(2026, 9, 20), 50F),
-            donation(at(2026, 8, 20), 50F)
-        )
-        assertEquals(180F, mostLikelyAmount(entries, now), 0.001F)
-    }
-
-    @Test
-    fun `suggested amount falls back to the most common`() {
-        val entries = listOf(
-            donation(at(2026, 9, 20), 50F),
-            donation(at(2026, 8, 20), 50F),
-            donation(at(2026, 7, 20), 75F)
-        )
-        assertEquals(50F, mostLikelyAmount(entries, now), 0.001F)
-    }
-
-    @Test
     fun `whole amounts are filled without a decimal point`() {
         assertEquals("1000", formatAmountInput(1000F))
         assertEquals("12.5", formatAmountInput(12.5F))

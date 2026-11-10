@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,9 +45,9 @@ import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.history.History
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.maserDelta
+import com.example.mymaser.history.matchSuggestions
 import com.example.mymaser.history.sanitizeAmountInput
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
-import kotlinx.coroutines.launch
 
 private const val MAX_SUGGESTIONS = 5
 
@@ -58,22 +57,32 @@ fun EntryForm(
     isDonation: Boolean,
     names: List<String>,
     lastEntry: History?,
-    onSuggestionPicked: suspend (String) -> Float,
+    onSuggestionPicked: (String) -> Float?,
     onSave: (String, Float) -> Unit,
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
+    var autoFilledAmount by rememberSaveable { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    val scope = rememberCoroutineScope()
 
     val amount = amountText.toFloatOrNull() ?: 0F
     val canSave = amount > 0F && name.isNotBlank()
-    val suggestions = remember(names, name) {
-        val query = name.trim()
-        names.filter { it.contains(query, ignoreCase = true) && !it.equals(query, ignoreCase = true) }
-            .take(MAX_SUGGESTIONS)
+    val suggestions = remember(names, name) { matchSuggestions(names, name, MAX_SUGGESTIONS) }
+
+    fun pick(suggestion: String) {
+        name = suggestion
+        menuOpen = false
+        focusManager.moveFocus(FocusDirection.Down)
+        val amountIsOurs = amountText.isEmpty() || amountText == autoFilledAmount
+        if (amountIsOurs) {
+            amountText = onSuggestionPicked(suggestion)
+                ?.takeIf { it > 0F }
+                ?.let(::formatAmountInput)
+                .orEmpty()
+            autoFilledAmount = amountText
+        }
     }
 
     fun submit() {
@@ -82,6 +91,7 @@ fun EntryForm(
         onSave(name.trim(), amount)
         name = ""
         amountText = ""
+        autoFilledAmount = null
     }
 
     ScreenColumn(
@@ -91,13 +101,13 @@ fun EntryForm(
     ) {
         ExposedDropdownMenuBox(
             expanded = menuOpen && suggestions.isNotEmpty(),
-            onExpandedChange = { menuOpen = it && name.isNotBlank() }
+            onExpandedChange = { menuOpen = it }
         ) {
             OutlinedTextField(
                 value = name,
                 onValueChange = {
                     name = it
-                    menuOpen = it.isNotBlank()
+                    menuOpen = true
                 },
                 label = {
                     Text(
@@ -107,7 +117,7 @@ fun EntryForm(
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
-                    .onFocusChanged { if (!it.isFocused) menuOpen = false },
+                    .onFocusChanged { menuOpen = it.isFocused },
                 singleLine = true,
                 shape = MaterialTheme.shapes.small,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -126,14 +136,7 @@ fun EntryForm(
                             Text(suggestion, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
                         contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                        onClick = {
-                            name = suggestion
-                            menuOpen = false
-                            focusManager.moveFocus(FocusDirection.Down)
-                            scope.launch {
-                                amountText = formatAmountInput(onSuggestionPicked(suggestion))
-                            }
-                        }
+                        onClick = { pick(suggestion) }
                     )
                 }
             }

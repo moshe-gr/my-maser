@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.mymaser.dataStore
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 import com.example.mymaser.settings.maserPercentageFlow
+import java.time.ZonedDateTime
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -38,10 +40,13 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     val maserPercentage: StateFlow<Float> = percentageFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), DEFAULT_MASER_PERCENTAGE)
 
-    val incomeNames: StateFlow<List<String>> = repository.observeNames(isDonation = false)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+    val incomeNames: StateFlow<List<String>> = rankedNames(isDonation = false)
 
-    val donationNames: StateFlow<List<String>> = repository.observeNames(isDonation = true)
+    val donationNames: StateFlow<List<String>> = rankedNames(isDonation = true)
+
+    private fun rankedNames(isDonation: Boolean): StateFlow<List<String>> = history
+        .filterNotNull()
+        .map { all -> rankSuggestedNames(all.filter { it.isDonation == isDonation }, ZonedDateTime.now()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
     /** The value Home last settled on, so it can count up to changes made on other tabs. */
@@ -84,8 +89,8 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         repository.update(entry.copy(attachmentUri = uri))
     }
 
-    suspend fun suggestedAmount(name: String, isDonation: Boolean): Float =
-        repository.suggestedAmount(name, isDonation)
+    fun suggestedAmount(name: String, isDonation: Boolean): Float? =
+        history.value?.let { suggestedAmount(it, name, isDonation, ZonedDateTime.now()) }
 
     suspend fun loadSummary(entry: History): HistoryRepository.HistorySummary =
         repository.loadSummary(entry)
