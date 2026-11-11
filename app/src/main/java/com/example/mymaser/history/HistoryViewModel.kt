@@ -83,6 +83,19 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         else maserBalance(shown, setup.adjustment, currency, table).toFloat()
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** Projected year-end balance from recurring sources, or null when nothing recurs. */
+    val forecast: StateFlow<YearEndForecast?> =
+        combine(display, displayCurrency, totalMaser) { shown, currency, total ->
+            if (shown == null || total == null) null
+            else forecastYearEnd(shown.countable(currency), total.toDouble(), ZonedDateTime.now())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    /** A likely mistake in a new entry, checked against what's stored. */
+    fun checkNewEntry(name: String, amount: Float, currency: String, isDonation: Boolean): EntryWarning? =
+        originals.value?.let {
+            checkEntry(it, name, amount, currency, isDonation, System.currentTimeMillis())
+        }
+
     val maserPercentage: StateFlow<Float> = percentageFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), DEFAULT_MASER_PERCENTAGE)
 

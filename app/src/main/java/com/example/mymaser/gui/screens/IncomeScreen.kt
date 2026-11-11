@@ -5,6 +5,7 @@ import com.example.mymaser.gui.components.EntryForm
 import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
 import com.example.mymaser.history.AmountSuggestion
+import com.example.mymaser.history.EntryWarning
 import com.example.mymaser.history.History
 import com.example.mymaser.history.Prefill
 
@@ -16,7 +17,8 @@ fun IncomeScreen(
     onSave: (name: String, amount: Float, currency: String) -> Unit,
     maserPercentage: Float,
     prefill: Prefill? = null,
-    onPrefillConsumed: () -> Unit = {}
+    onPrefillConsumed: () -> Unit = {},
+    onCheck: (String, Float, String) -> EntryWarning? = { _, _, _ -> null }
 ) {
     EntryForm(
         isDonation = false,
@@ -26,7 +28,8 @@ fun IncomeScreen(
         onSave = onSave,
         maserPercentage = maserPercentage,
         prefill = prefill,
-        onPrefillConsumed = onPrefillConsumed
+        onPrefillConsumed = onPrefillConsumed,
+        onCheck = onCheck
     )
 }
 

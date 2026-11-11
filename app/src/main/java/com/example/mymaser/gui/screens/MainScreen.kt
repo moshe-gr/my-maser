@@ -41,6 +41,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
 import com.example.mymaser.gui.components.DueCards
+import com.example.mymaser.gui.components.ForecastLine
 import com.example.mymaser.gui.components.RatesNotice
 import com.example.mymaser.gui.components.ReminderPromptCard
 import com.example.mymaser.reminders.AppDestination
@@ -87,6 +88,7 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
     val requestedDestination by viewModel.destinationRequest.collectAsStateWithLifecycle()
     val missingReceipts by viewModel.missingReceiptsRequest.collectAsStateWithLifecycle()
     val reminderPrompt by viewModel.reminderPrompt.collectAsStateWithLifecycle()
+    val forecast by viewModel.forecast.collectAsStateWithLifecycle()
 
     val undoLabel = stringResource(R.string.undo)
     val savedMessage = stringResource(R.string.information_saved_successfully)
@@ -153,6 +155,11 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
             status = rateStatus,
             onRetry = viewModel::retryRates
         )
+    }
+
+    val homeNotice: @Composable () -> Unit = {
+        forecast?.let { ForecastLine(it) }
+        ratesNotice()
     }
 
     Scaffold(
@@ -222,7 +229,7 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     onAddIncome = { navController.openTab(ScreenTypes.Income) },
                     onAddDonation = { navController.openTab(ScreenTypes.Donation) },
                     maserPercentage = maserPercentage,
-                    notice = ratesNotice,
+                    notice = homeNotice,
                     dueCards = dueCards
                 )
             }
@@ -236,7 +243,10 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     },
                     maserPercentage = maserPercentage,
                     prefill = prefill,
-                    onPrefillConsumed = viewModel::consumePrefill
+                    onPrefillConsumed = viewModel::consumePrefill,
+                    onCheck = { name, amount, currency ->
+                        viewModel.checkNewEntry(name, amount, currency, isDonation = false)
+                    }
                 )
             }
             composable(ScreenTypes.Donation.route) {
@@ -248,7 +258,10 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                         saveEntry(name, amount, currency, isDonation = true)
                     },
                     prefill = prefill,
-                    onPrefillConsumed = viewModel::consumePrefill
+                    onPrefillConsumed = viewModel::consumePrefill,
+                    onCheck = { name, amount, currency ->
+                        viewModel.checkNewEntry(name, amount, currency, isDonation = true)
+                    }
                 )
             }
             composable(ScreenTypes.History.route) {

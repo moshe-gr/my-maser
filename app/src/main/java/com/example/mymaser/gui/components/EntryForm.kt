@@ -45,6 +45,7 @@ import com.example.mymaser.R
 import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.history.AmountSuggestion
+import com.example.mymaser.history.EntryWarning
 import com.example.mymaser.history.History
 import com.example.mymaser.history.Prefill
 import com.example.mymaser.history.formatAmountInput
@@ -65,9 +66,11 @@ fun EntryForm(
     onSave: (name: String, amount: Float, currency: String) -> Unit,
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
     prefill: Prefill? = null,
-    onPrefillConsumed: () -> Unit = {}
+    onPrefillConsumed: () -> Unit = {},
+    onCheck: (name: String, amount: Float, currency: String) -> EntryWarning? = { _, _, _ -> null }
 ) {
     val displayCurrency = LocalDisplayCurrency.current
+    var warning by remember { mutableStateOf<EntryWarning?>(null) }
     var name by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
     var chosenCurrency by rememberSaveable { mutableStateOf<String?>(null) }
@@ -103,14 +106,32 @@ fun EntryForm(
         onPrefillConsumed()
     }
 
-    fun submit() {
-        if (!canSave) return
+    fun save() {
         focusManager.clearFocus()
         onSave(name.trim(), amount, currency)
         name = ""
         amountText = ""
         chosenCurrency = null
         autoFilledAmount = null
+    }
+
+    fun submit() {
+        if (!canSave) return
+        warning = onCheck(name.trim(), amount, currency)
+        if (warning == null) save()
+    }
+
+    warning?.let { current ->
+        EntryWarningDialog(
+            warning = current,
+            name = name.trim(),
+            amount = formatCurrency(amount.toDouble(), currencyCode = currency),
+            onSaveAnyway = {
+                warning = null
+                save()
+            },
+            onFix = { warning = null }
+        )
     }
 
     ScreenColumn(

@@ -175,6 +175,14 @@
     <string name="notify_review_title">הנתינה שלך ב־%1$d</string>
     <string name="notify_review_text">נתת %1$s.</string>
     <string name="notify_review_text_change">נתת %1$s, %2$s לעומת %3$d.</string>
+    <string name="guard_duplicate_title">כבר נרשם?</string>
+    <string name="guard_duplicate_body">רשמת %1$s עבור %2$s ב־%3$s.</string>
+    <string name="guard_unusual_title">האם הסכום נכון?</string>
+    <string name="guard_unusual_body">%1$s רחוק מהסכום הרגיל, %2$s, עבור %3$s.</string>
+    <string name="guard_save_anyway">שמור בכל זאת</string>
+    <string name="guard_fix">תקן</string>
+    <string name="forecast_owed">בקצב הנוכחי: %1$s מעשר עד 31 בדצמבר. תן כ־%2$s בחודש כדי לסיים באפס.</string>
+    <string name="forecast_clear">בקצב הנוכחי המעשר יינתן במלואו עד 31 בדצמבר.</string>
     <plurals name="summary_exported">
         <item quantity="one">יוצאה רשומה אחת</item>
         <item quantity="two">יוצאו %d רשומות</item>
