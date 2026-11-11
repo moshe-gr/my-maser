@@ -13,7 +13,11 @@ import com.example.mymaser.currency.toDisplay
 import androidx.datastore.preferences.core.edit
 import com.example.mymaser.dataStore
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
+import com.example.mymaser.reminders.AppDestination
+import com.example.mymaser.reminders.DeepLink
+import com.example.mymaser.reminders.ReminderScheduler
 import com.example.mymaser.settings.SettingsKeys
+import com.example.mymaser.settings.reminderSettingsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.example.mymaser.settings.balanceSetupFlow
@@ -114,6 +118,60 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 
     fun consumePrefill() {
         _prefill.value = null
+    }
+
+    private val _destination = MutableStateFlow<AppDestination?>(null)
+
+    /** A screen a notification asked to open. */
+    val destinationRequest: StateFlow<AppDestination?> = _destination.asStateFlow()
+
+    private val _missingReceipts = MutableStateFlow(false)
+
+    /** Whether History should show this year's donations without a receipt. */
+    val missingReceiptsRequest: StateFlow<Boolean> = _missingReceipts.asStateFlow()
+
+    fun openLink(link: DeepLink) {
+        when (link) {
+            is DeepLink.OpenForm -> requestPrefill(link.prefill)
+            is DeepLink.Open -> _destination.value = link.destination
+            DeepLink.MissingReceipts -> {
+                _missingReceipts.value = true
+                _destination.value = AppDestination.History
+            }
+        }
+    }
+
+    fun consumeDestination() {
+        _destination.value = null
+    }
+
+    fun consumeMissingReceipts() {
+        _missingReceipts.value = false
+    }
+
+    /**
+     * A recurring source to mention when inviting the user to turn on reminders, or null when the
+     * invitation shouldn't show (already on, dismissed, or nothing recurs yet).
+     */
+    val reminderPrompt: StateFlow<String?> = combine(
+        originals.filterNotNull(),
+        application.reminderSettingsFlow(),
+        application.dataStore.data.map { it[SettingsKeys.REMINDER_PROMPT_DISMISSED] == true }
+    ) { list, settings, dismissed ->
+        if (settings.enabled || dismissed) null
+        else recurringSourceNames(list, ZonedDateTime.now()).firstOrNull()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    fun enableReminders() = runChange {
+        val app = getApplication<Application>()
+        app.dataStore.edit { it[SettingsKeys.REMINDERS_ENABLED] = true }
+        ReminderScheduler.sync(app)
+    }
+
+    fun dismissReminderPrompt() = runChange {
+        getApplication<Application>().dataStore.edit {
+            it[SettingsKeys.REMINDER_PROMPT_DISMISSED] = true
+        }
     }
 
     fun dismissPrediction(prediction: Prediction) = runChange {

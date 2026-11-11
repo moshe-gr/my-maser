@@ -92,6 +92,17 @@ fun predictDueEntries(
         .sortedBy { it.expectedDate }
 }
 
+/** Names of sources that recur monthly, most recently used first. */
+fun recurringSourceNames(history: List<History>, now: ZonedDateTime): List<String> =
+    history
+        .groupBy { it.isDonation to nameKey(it.name) }
+        .filterKeys { (_, key) -> key.isNotEmpty() }
+        .values
+        .filter { detectRecurrence(it, now) != null }
+        .map { entries -> entries.maxBy { it.timeStamp } }
+        .sortedByDescending { it.timeStamp }
+        .map { it.name.trim() }
+
 /** Dismissal keys still worth keeping: only those for last, this or next month. */
 fun pruneDismissed(keys: Set<String>, today: LocalDate): Set<String> {
     val month = YearMonth.from(today)

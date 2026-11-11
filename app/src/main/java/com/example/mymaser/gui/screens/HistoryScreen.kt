@@ -65,6 +65,8 @@ import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
 import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.gui.theme.tabular
+import androidx.compose.runtime.LaunchedEffect
+import com.example.mymaser.history.AttachmentFilter
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryPeriod
 import com.example.mymaser.history.HistoryQuery
@@ -116,13 +118,15 @@ fun HistoryScreen(
     onAttachmentSaved: (History, String) -> Unit,
     onAddEntry: () -> Unit,
     originalOf: (History) -> History = { it },
-    notice: @Composable () -> Unit = {}
+    notice: @Composable () -> Unit = {},
+    showMissingReceipts: Boolean = false,
+    onMissingReceiptsShown: () -> Unit = {}
 ) {
     if (history == null) return
 
     var searchText by rememberSaveable { mutableStateOf("") }
     var typeFilter by rememberSaveable { mutableStateOf(TypeFilter.All) }
-    var withAttachmentOnly by rememberSaveable { mutableStateOf(false) }
+    var attachmentFilter by rememberSaveable { mutableStateOf(AttachmentFilter.Any) }
     var timeFilter by rememberSaveable { mutableStateOf(TimeFilter.AllTime) }
     var monthText by rememberSaveable { mutableStateOf<String?>(null) }
     var year by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -135,7 +139,7 @@ fun HistoryScreen(
     val query = HistoryQuery(
         text = searchText,
         type = typeFilter,
-        withAttachmentOnly = withAttachmentOnly,
+        attachment = attachmentFilter,
         time = timeFilter,
         month = monthText?.let(YearMonth::parse),
         year = year
@@ -144,10 +148,19 @@ fun HistoryScreen(
     fun clearFilters() {
         searchText = ""
         typeFilter = TypeFilter.All
-        withAttachmentOnly = false
+        attachmentFilter = AttachmentFilter.Any
         timeFilter = TimeFilter.AllTime
         monthText = null
         year = null
+    }
+
+    LaunchedEffect(showMissingReceipts) {
+        if (!showMissingReceipts) return@LaunchedEffect
+        clearFilters()
+        typeFilter = TypeFilter.Donations
+        attachmentFilter = AttachmentFilter.Without
+        timeFilter = TimeFilter.ThisYear
+        onMissingReceiptsShown()
     }
 
     val now = remember(history) { ZonedDateTime.now() }
@@ -212,11 +225,7 @@ fun HistoryScreen(
                         label = { Text(stringResource(option.labelRes())) }
                     )
                 }
-                FilterChip(
-                    selected = withAttachmentOnly,
-                    onClick = { withAttachmentOnly = !withAttachmentOnly },
-                    label = { Text(stringResource(R.string.filter_with_attachments)) }
-                )
+                AttachmentFilterChip(selected = attachmentFilter, onSelect = { attachmentFilter = it })
             }
 
             if (query.isActive) {
@@ -384,6 +393,45 @@ private fun TimeFilterChip(
                         onClick = { choose(TimeFilter.SpecificYear, year = year) }
                     )
                 }
+            }
+        }
+    }
+}
+
+private fun AttachmentFilter.labelRes() = when (this) {
+    AttachmentFilter.Any -> R.string.filter_receipts
+    AttachmentFilter.With -> R.string.filter_with_attachments
+    AttachmentFilter.Without -> R.string.filter_without_attachments
+}
+
+@Composable
+private fun AttachmentFilterChip(selected: AttachmentFilter, onSelect: (AttachmentFilter) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        FilterChip(
+            selected = selected != AttachmentFilter.Any,
+            onClick = { expanded = true },
+            label = { Text(stringResource(selected.labelRes())) },
+            trailingIcon = {
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            }
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            AttachmentFilter.entries.forEach { option ->
+                MenuOption(
+                    text = stringResource(
+                        if (option == AttachmentFilter.Any) R.string.filter_all else option.labelRes()
+                    ),
+                    selected = selected == option,
+                    onClick = {
+                        onSelect(option)
+                        expanded = false
+                    }
+                )
             }
         }
     }

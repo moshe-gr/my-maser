@@ -11,7 +11,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.datastore.preferences.core.edit
 import com.example.mymaser.currency.CurrencyRepository
+import com.example.mymaser.dataStore
+import com.example.mymaser.reminders.ReminderScheduler
+import com.example.mymaser.reminders.ReminderSettings
+import com.example.mymaser.settings.gui.ReminderToggle
 import com.example.mymaser.currency.RateStatus
 import com.example.mymaser.settings.data.SettingsRepository
 import kotlinx.coroutines.flow.StateFlow
@@ -105,6 +110,36 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun retryRates() {
         viewModelScope.launch { currencyRepository.ensureRates() }
+    }
+
+    val reminderSettings: Flow<ReminderSettings> = application.reminderSettingsFlow()
+    val reminderMinuteOfDay: Flow<Int> = application.reminderMinuteOfDayFlow()
+
+    fun setReminder(toggle: ReminderToggle, on: Boolean) {
+        val key = when (toggle) {
+            ReminderToggle.Master -> SettingsKeys.REMINDERS_ENABLED
+            ReminderToggle.Expected -> SettingsKeys.REMINDER_EXPECTED
+            ReminderToggle.Balance -> SettingsKeys.REMINDER_BALANCE
+            ReminderToggle.Receipts -> SettingsKeys.REMINDER_RECEIPTS
+            ReminderToggle.Review -> SettingsKeys.REMINDER_REVIEW
+        }
+        viewModelScope.launch {
+            getApplication<Application>().dataStore.edit { it[key] = on }
+            if (toggle == ReminderToggle.Master) ReminderScheduler.sync(getApplication())
+        }
+    }
+
+    fun setReminderTime(minuteOfDay: Int) {
+        viewModelScope.launch {
+            getApplication<Application>().dataStore.edit {
+                it[SettingsKeys.REMINDER_MINUTE_OF_DAY] = minuteOfDay
+            }
+            ReminderScheduler.sync(getApplication(), rescheduleTime = true)
+        }
+    }
+
+    fun runRemindersNow() {
+        ReminderScheduler.runNow(getApplication())
     }
 
     fun setFloat(key: Preferences.Key<Float>, value: Float) {

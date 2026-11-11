@@ -61,6 +61,8 @@ import com.example.mymaser.gui.components.surfaceCardColors
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.sanitizeAmountInput
 import com.example.mymaser.gui.LocalDisplayCurrency
+import com.example.mymaser.reminders.ReminderSettings
+import com.example.mymaser.settings.DEFAULT_REMINDER_MINUTE_OF_DAY
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 import com.example.mymaser.settings.PRESET_MASER_PERCENTAGES
 import com.example.mymaser.settings.SettingsKeys
@@ -83,6 +85,8 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val themeMode by viewModel.getString(SettingsKeys.THEME_MODE, ThemeMode.System.key)
         .collectAsState(initial = ThemeMode.System.key)
     val rateStatus by viewModel.rateStatus.collectAsState()
+    val reminderSettings by viewModel.reminderSettings.collectAsState(initial = ReminderSettings())
+    val reminderMinute by viewModel.reminderMinuteOfDay.collectAsState(initial = DEFAULT_REMINDER_MINUTE_OF_DAY)
     val maserPercentage by viewModel.getFloat(SettingsKeys.MASER_PERCENTAGE, DEFAULT_MASER_PERCENTAGE)
         .collectAsState(initial = DEFAULT_MASER_PERCENTAGE)
 
@@ -172,6 +176,16 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                     status = rateStatus,
                     onConfirm = viewModel::setDisplayCurrency,
                     onRetry = viewModel::retryRates
+                )
+            }
+
+            SettingsSection(stringResource(R.string.settings_reminders)) {
+                RemindersSetting(
+                    settings = reminderSettings,
+                    minuteOfDay = reminderMinute,
+                    onToggle = viewModel::setReminder,
+                    onTimeChange = viewModel::setReminderTime,
+                    onRunNow = viewModel::runRemindersNow
                 )
             }
 

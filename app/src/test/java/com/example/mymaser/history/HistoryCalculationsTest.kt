@@ -136,7 +136,8 @@ class HistoryCalculationsTest {
     @Test
     fun `type and attachment filters combine`() {
         assertEquals(listOf(2, 3), ids(HistoryQuery(type = TypeFilter.Donations)))
-        assertEquals(listOf(2), ids(HistoryQuery(type = TypeFilter.Donations, withAttachmentOnly = true)))
+        assertEquals(listOf(2), ids(HistoryQuery(type = TypeFilter.Donations, attachment = AttachmentFilter.With)))
+        assertEquals(listOf(3), ids(HistoryQuery(type = TypeFilter.Donations, attachment = AttachmentFilter.Without)))
     }
 
     @Test

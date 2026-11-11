@@ -5,6 +5,7 @@ import com.example.mymaser.currency.BalanceAdjustment
 import com.example.mymaser.currency.DEFAULT_CURRENCY
 import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.dataStore
+import com.example.mymaser.reminders.ReminderSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -65,6 +66,25 @@ fun Context.balanceSetupFlow(): Flow<BalanceSetup?> = dataStore.data
             }
         )
     }
+    .distinctUntilChanged()
+
+/** Reminders are posted around this time of day unless the user picks another. */
+const val DEFAULT_REMINDER_MINUTE_OF_DAY = 19 * 60
+
+fun Context.reminderSettingsFlow(): Flow<ReminderSettings> = dataStore.data
+    .map {
+        ReminderSettings(
+            enabled = it[SettingsKeys.REMINDERS_ENABLED] ?: false,
+            expectedEntries = it[SettingsKeys.REMINDER_EXPECTED] ?: true,
+            balance = it[SettingsKeys.REMINDER_BALANCE] ?: true,
+            receipts = it[SettingsKeys.REMINDER_RECEIPTS] ?: true,
+            yearInReview = it[SettingsKeys.REMINDER_REVIEW] ?: true
+        )
+    }
+    .distinctUntilChanged()
+
+fun Context.reminderMinuteOfDayFlow(): Flow<Int> = dataStore.data
+    .map { it[SettingsKeys.REMINDER_MINUTE_OF_DAY] ?: DEFAULT_REMINDER_MINUTE_OF_DAY }
     .distinctUntilChanged()
 
 fun isValidMaserPercentage(value: Float) = value in MIN_MASER_PERCENTAGE..MAX_MASER_PERCENTAGE

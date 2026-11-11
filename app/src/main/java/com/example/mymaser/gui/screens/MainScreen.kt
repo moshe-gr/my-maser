@@ -42,6 +42,8 @@ import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
 import com.example.mymaser.gui.components.DueCards
 import com.example.mymaser.gui.components.RatesNotice
+import com.example.mymaser.gui.components.ReminderPromptCard
+import com.example.mymaser.reminders.AppDestination
 import com.example.mymaser.history.toPrefill
 import androidx.compose.runtime.LaunchedEffect
 import com.example.mymaser.gui.theme.MaserMotion
@@ -82,6 +84,9 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
     val rateStatus by viewModel.rateStatus.collectAsStateWithLifecycle()
     val predictions by viewModel.predictions.collectAsStateWithLifecycle()
     val prefill by viewModel.prefill.collectAsStateWithLifecycle()
+    val requestedDestination by viewModel.destinationRequest.collectAsStateWithLifecycle()
+    val missingReceipts by viewModel.missingReceiptsRequest.collectAsStateWithLifecycle()
+    val reminderPrompt by viewModel.reminderPrompt.collectAsStateWithLifecycle()
 
     val undoLabel = stringResource(R.string.undo)
     val savedMessage = stringResource(R.string.information_saved_successfully)
@@ -115,6 +120,17 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
         prefill?.let { navController.openTab(if (it.isDonation) ScreenTypes.Donation else ScreenTypes.Income) }
     }
 
+    LaunchedEffect(requestedDestination) {
+        val target = when (requestedDestination) {
+            AppDestination.Home -> ScreenTypes.Home
+            AppDestination.Donation -> ScreenTypes.Donation
+            AppDestination.History -> ScreenTypes.History
+            null -> return@LaunchedEffect
+        }
+        navController.openTab(target)
+        viewModel.consumeDestination()
+    }
+
     val dueCards: @Composable () -> Unit = {
         DueCards(
             predictions = predictions,
@@ -122,6 +138,13 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
             onOpen = { viewModel.requestPrefill(it.toPrefill()) },
             onSkip = viewModel::dismissPrediction
         )
+        reminderPrompt?.let { source ->
+            ReminderPromptCard(
+                sourceName = source,
+                onEnable = viewModel::enableReminders,
+                onDismiss = viewModel::dismissReminderPrompt
+            )
+        }
     }
 
     val ratesNotice: @Composable () -> Unit = {
@@ -236,7 +259,9 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     onAttachmentSaved = viewModel::setAttachment,
                     onAddEntry = { navController.openTab(ScreenTypes.Income) },
                     originalOf = viewModel::original,
-                    notice = ratesNotice
+                    notice = ratesNotice,
+                    showMissingReceipts = missingReceipts,
+                    onMissingReceiptsShown = viewModel::consumeMissingReceipts
                 )
             }
         }

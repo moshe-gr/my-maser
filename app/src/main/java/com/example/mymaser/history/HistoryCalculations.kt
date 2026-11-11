@@ -43,18 +43,21 @@ fun maserDeltaForEdit(original: History, newAmount: Float): Float =
 
 enum class TypeFilter { All, Income, Donations }
 
+enum class AttachmentFilter { Any, With, Without }
+
 enum class TimeFilter { AllTime, Today, ThisWeek, ThisMonth, ThisYear, LastYear, SpecificMonth, SpecificYear }
 
 data class HistoryQuery(
     val text: String = "",
     val type: TypeFilter = TypeFilter.All,
-    val withAttachmentOnly: Boolean = false,
+    val attachment: AttachmentFilter = AttachmentFilter.Any,
     val time: TimeFilter = TimeFilter.AllTime,
     val month: YearMonth? = null,
     val year: Int? = null
 ) {
     val isActive: Boolean
-        get() = text.isNotBlank() || type != TypeFilter.All || withAttachmentOnly || time != TimeFilter.AllTime
+        get() = text.isNotBlank() || type != TypeFilter.All ||
+            attachment != AttachmentFilter.Any || time != TimeFilter.AllTime
 }
 
 fun filterHistory(
@@ -86,7 +89,11 @@ fun filterHistory(
         }
         matchesType && matchesTime &&
             (text.isEmpty() || entry.name.contains(text, ignoreCase = true)) &&
-            (!query.withAttachmentOnly || !entry.attachmentUri.isNullOrEmpty())
+            when (query.attachment) {
+                AttachmentFilter.Any -> true
+                AttachmentFilter.With -> !entry.attachmentUri.isNullOrEmpty()
+                AttachmentFilter.Without -> entry.attachmentUri.isNullOrEmpty()
+            }
     }
 }
 

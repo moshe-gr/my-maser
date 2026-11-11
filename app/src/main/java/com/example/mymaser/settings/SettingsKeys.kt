@@ -3,6 +3,7 @@ package com.example.mymaser.settings
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -26,6 +27,15 @@ object SettingsKeys {
 
     /** Prediction keys the user chose to skip, see [com.example.mymaser.history.Prediction.key]. */
     val DISMISSED_PREDICTIONS = stringSetPreferencesKey("dismissed_predictions")
+
+    val REMINDERS_ENABLED = booleanPreferencesKey("reminders_enabled")
+    val REMINDER_EXPECTED = booleanPreferencesKey("reminder_expected")
+    val REMINDER_BALANCE = booleanPreferencesKey("reminder_balance")
+    val REMINDER_RECEIPTS = booleanPreferencesKey("reminder_receipts")
+    val REMINDER_REVIEW = booleanPreferencesKey("reminder_review")
+    val REMINDER_MINUTE_OF_DAY = intPreferencesKey("reminder_minute_of_day")
+    val SENT_REMINDERS = stringSetPreferencesKey("sent_reminders")
+    val REMINDER_PROMPT_DISMISSED = booleanPreferencesKey("reminder_prompt_dismissed")
 
     /** Before multi-currency: a display-only symbol. Read once during the upgrade. */
     val LEGACY_CURRENCY_SYMBOL = stringPreferencesKey("currency_symbol")

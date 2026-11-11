@@ -21,6 +21,9 @@ interface ExchangeRateDao {
     @Query("SELECT * FROM ExchangeRate")
     fun observeAll(): Flow<List<ExchangeRate>>
 
+    @Query("SELECT * FROM ExchangeRate")
+    suspend fun getAll(): List<ExchangeRate>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(rates: List<ExchangeRate>)
 

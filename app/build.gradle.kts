@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.ui.viewbinding)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.documentfile)
+    implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
     testImplementation(libs.org.json)

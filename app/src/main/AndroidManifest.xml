@@ -3,6 +3,8 @@
 
     <!-- Downloads exchange rates; only currency codes and dates are sent. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Reminders; requested in context only after the user turns them on. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -15,6 +17,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.MyMaser.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -26,6 +29,10 @@
             android:name=".settings.SettingsActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+
+        <receiver
+            android:name=".reminders.ReminderReceiver"
+            android:exported="false" />
 
         <!-- Persists the in-app language choice on Android 12L and below. -->
         <service
