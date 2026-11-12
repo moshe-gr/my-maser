@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.firebase.ai)
     implementation(libs.firebase.appcheck.playintegrity)
     debugImplementation(libs.firebase.appcheck.debug)
+    implementation(libs.mlkit.document.scanner)
 
     testImplementation(libs.junit)
     testImplementation(libs.org.json)

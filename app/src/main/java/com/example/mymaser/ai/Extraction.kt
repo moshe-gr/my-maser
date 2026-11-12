@@ -3,6 +3,8 @@ package com.example.mymaser.ai
 import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.settings.MaserBasis
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeParseException
 import org.json.JSONArray
 import org.json.JSONException
@@ -16,6 +18,10 @@ data class ExtractedEntry(
     val currency: String,
     val date: LocalDate?
 )
+
+/** Noon on the document's date, so it lands on that day in any nearby zone; now when undated. */
+fun documentTimeStamp(date: LocalDate?, zone: ZoneId, nowMillis: Long): Long =
+    date?.atTime(LocalTime.NOON)?.atZone(zone)?.toInstant()?.toEpochMilli() ?: nowMillis
 
 /** Instructions sent with every document; the reply must use [ExtractionFields]. */
 const val EXTRACTION_PROMPT = """

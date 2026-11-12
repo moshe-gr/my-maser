@@ -69,7 +69,8 @@ fun EntryForm(
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
     prefill: Prefill? = null,
     onPrefillConsumed: () -> Unit = {},
-    onCheck: (name: String, amount: Float, currency: String) -> EntryWarning? = { _, _, _ -> null }
+    onCheck: (name: String, amount: Float, currency: String) -> EntryWarning? = { _, _, _ -> null },
+    header: @Composable () -> Unit = {}
 ) {
     val displayCurrency = LocalDisplayCurrency.current
     var warning by remember { mutableStateOf<EntryWarning?>(null) }
@@ -141,6 +142,7 @@ fun EntryForm(
             detectTapGestures(onTap = { focusManager.clearFocus() })
         }
     ) {
+        header()
         ExposedDropdownMenuBox(
             expanded = menuOpen && suggestions.isNotEmpty(),
             onExpandedChange = { menuOpen = it }

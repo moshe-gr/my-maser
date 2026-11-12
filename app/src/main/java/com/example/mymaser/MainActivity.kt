@@ -12,6 +12,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.lifecycleScope
+import com.example.mymaser.ai.ImportViewModel
+import com.example.mymaser.ai.isDocumentShare
 import com.example.mymaser.gui.screens.MainScreen
 import com.example.mymaser.gui.theme.MaserAppTheme
 import com.example.mymaser.history.HistoryViewModel
@@ -25,6 +27,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "my
 class MainActivity : AppCompatActivity() {
     private var appearanceLoaded = false
     private val historyViewModel: HistoryViewModel by viewModels()
+    private val importViewModel: ImportViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition { !appearanceLoaded }
@@ -35,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) handleLink(intent)
         setContent {
             MaserAppTheme(onLoaded = { appearanceLoaded = true }) {
-                MainScreen(historyViewModel)
+                MainScreen(historyViewModel, importViewModel)
             }
         }
     }
@@ -46,6 +49,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleLink(intent: Intent?) {
-        intent?.toDeepLink()?.let(historyViewModel::openLink)
+        if (intent == null) return
+        if (intent.isDocumentShare()) {
+            importViewModel.readShare(intent)
+        } else {
+            intent.toDeepLink()?.let(historyViewModel::openLink)
+        }
     }
 }

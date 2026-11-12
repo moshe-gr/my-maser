@@ -1,6 +1,7 @@
 package com.example.mymaser.history
 
 import java.time.Duration
+import kotlin.math.abs
 
 /** Something about a new entry that looks like a mistake; the user can still save it. */
 sealed interface EntryWarning {
@@ -14,9 +15,9 @@ private const val USUAL_LOOKBACK = 6
 private const val UNUSUAL_FACTOR = 5f
 
 /**
- * Warns about a likely duplicate (same source, amount and currency within a day) or a likely
- * typo (at least [UNUSUAL_FACTOR] times above or below the source's usual amount). Returns null
- * when nothing looks off.
+ * Warns about a likely duplicate (same source, amount and currency within a day of [nowMillis],
+ * the new entry's time) or a likely typo (at least [UNUSUAL_FACTOR] times above or below the
+ * source's usual amount). Returns null when nothing looks off.
  */
 fun checkEntry(
     history: List<History>,
@@ -32,7 +33,7 @@ fun checkEntry(
         .sortedByDescending { it.timeStamp }
 
     sameSource.firstOrNull {
-        it.amount == amount && nowMillis - it.timeStamp in 0..DUPLICATE_WINDOW.toMillis()
+        it.amount == amount && abs(nowMillis - it.timeStamp) <= DUPLICATE_WINDOW.toMillis()
     }?.let { return EntryWarning.Duplicate(it) }
 
     if (sameSource.size < MIN_HISTORY_FOR_USUAL) return null

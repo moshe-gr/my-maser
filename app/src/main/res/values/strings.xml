@@ -171,4 +171,27 @@
         <item quantity="one">Exported %d entry</item>
         <item quantity="other">Exported %d entries</item>
     </plurals>
+    <string name="close">Close</string>
+    <string name="import_from_document">Read from document</string>
+    <string name="import_scan">Scan document</string>
+    <string name="import_choose_file">Choose photo or PDF</string>
+    <string name="import_reading">Reading the document…</string>
+    <string name="import_review_title">Found in the document</string>
+    <string name="import_add_selected">Add selected</string>
+    <string name="import_nothing_found">No income or donation was found in this document.</string>
+    <string name="import_error_disabled">Smart import is off. Turn it on in Settings to read documents.</string>
+    <string name="import_error_not_configured">Smart import isn\'t set up in this version of the app yet.</string>
+    <string name="import_error_quota">The daily AI limit was reached. Try again later.</string>
+    <string name="import_error_network">No connection. Check your internet and try again.</string>
+    <string name="import_error_failed">This document couldn\'t be read.</string>
+    <string name="import_warning_duplicate">Looks like a duplicate of an entry from %1$s</string>
+    <string name="import_warning_unusual">Unusual amount — usually %1$s</string>
+    <plurals name="import_skipped">
+        <item quantity="one">%d file was skipped: not a photo or PDF, or over 15 MB.</item>
+        <item quantity="other">%d files were skipped: not a photo or PDF, or over 15 MB.</item>
+    </plurals>
+    <plurals name="import_saved">
+        <item quantity="one">Added %d entry</item>
+        <item quantity="other">Added %d entries</item>
+    </plurals>
 </resources>

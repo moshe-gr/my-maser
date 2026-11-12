@@ -170,4 +170,29 @@
         <item quantity="two">יוצאו %d רשומות</item>
         <item quantity="other">יוצאו %d רשומות</item>
     </plurals>
+    <string name="close">סגירה</string>
+    <string name="import_from_document">קריאה ממסמך</string>
+    <string name="import_scan">סריקת מסמך</string>
+    <string name="import_choose_file">בחירת תמונה או PDF</string>
+    <string name="import_reading">קורא את המסמך…</string>
+    <string name="import_review_title">נמצא במסמך</string>
+    <string name="import_add_selected">הוסף את הנבחרים</string>
+    <string name="import_nothing_found">לא נמצאו הכנסה או תרומה במסמך הזה.</string>
+    <string name="import_error_disabled">הייבוא החכם כבוי. הפעל אותו בהגדרות כדי לקרוא מסמכים.</string>
+    <string name="import_error_not_configured">הייבוא החכם עדיין לא הוגדר בגרסה זו של האפליקציה.</string>
+    <string name="import_error_quota">הגעת למגבלת השימוש היומית ב־AI. נסה שוב מאוחר יותר.</string>
+    <string name="import_error_network">אין חיבור. בדוק את האינטרנט ונסה שוב.</string>
+    <string name="import_error_failed">לא ניתן היה לקרוא את המסמך.</string>
+    <string name="import_warning_duplicate">נראה ככפילות של רשומה מתאריך %1$s</string>
+    <string name="import_warning_unusual">סכום חריג — בדרך כלל %1$s</string>
+    <plurals name="import_skipped">
+        <item quantity="one">קובץ אחד דולג: לא תמונה או PDF, או מעל 15MB.</item>
+        <item quantity="two">%d קבצים דולגו: לא תמונה או PDF, או מעל 15MB.</item>
+        <item quantity="other">%d קבצים דולגו: לא תמונה או PDF, או מעל 15MB.</item>
+    </plurals>
+    <plurals name="import_saved">
+        <item quantity="one">נוספה רשומה אחת</item>
+        <item quantity="two">נוספו %d רשומות</item>
+        <item quantity="other">נוספו %d רשומות</item>
+    </plurals>
 </resources>

@@ -90,11 +90,15 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             else forecastYearEnd(shown.countable(currency), total.toDouble(), ZonedDateTime.now())
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
-    /** A likely mistake in a new entry, checked against what's stored. */
-    fun checkNewEntry(name: String, amount: Float, currency: String, isDonation: Boolean): EntryWarning? =
-        originals.value?.let {
-            checkEntry(it, name, amount, currency, isDonation, System.currentTimeMillis())
-        }
+    /** A likely mistake in a new entry made at [timeStamp], checked against what's stored. */
+    fun checkNewEntry(
+        name: String,
+        amount: Float,
+        currency: String,
+        isDonation: Boolean,
+        timeStamp: Long = System.currentTimeMillis()
+    ): EntryWarning? =
+        originals.value?.let { checkEntry(it, name, amount, currency, isDonation, timeStamp) }
 
     val maserPercentage: StateFlow<Float> = percentageFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), DEFAULT_MASER_PERCENTAGE)
@@ -215,6 +219,23 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         )
         val id = repository.insert(entry)
         onSaved(entry.copy(id = id))
+    }
+
+    /** Saves several entries at their own times, e.g. from a document import. */
+    fun addEntries(entries: List<NewEntry>, onSaved: (List<History>) -> Unit) = runChange {
+        val percentage = percentageFlow.first()
+        val saved = entries.map {
+            val entry = History(
+                timeStamp = it.timeStamp,
+                name = it.name,
+                amount = it.amount,
+                isDonation = it.isDonation,
+                maserPercentage = percentage,
+                currency = it.currency
+            )
+            entry.copy(id = repository.insert(entry))
+        }
+        onSaved(saved)
     }
 
     fun editEntry(entry: History, name: String, amount: Float) {

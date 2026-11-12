@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Downloads exchange rates; only currency codes and dates are sent. -->
+    <!-- Downloads exchange rates, and sends documents to Gemini once the user turns on smart import. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Reminders; requested in context only after the user turns them on. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -23,6 +23,15 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Share a payslip, receipt or email into the app to read it. -->
+            <intent-filter android:label="@string/import_from_document">
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
             </intent-filter>
         </activity>
         <activity

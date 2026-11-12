@@ -30,6 +30,14 @@ class EntryChecksAndForecastTest {
     }
 
     @Test
+    fun `an imported entry dated before an existing one is still a duplicate`() {
+        val logged = History(timeStamp = nowMillis, name = "Acme", amount = 9000F)
+        val docTime = nowMillis - 3 * 3_600_000
+        assertEquals(EntryWarning.Duplicate(logged), checkEntry(listOf(logged), "Acme", 9000F, "ILS", false, docTime))
+        assertNull(checkEntry(listOf(logged), "Acme", 9000F, "ILS", false, nowMillis - 48 * 3_600_000))
+    }
+
+    @Test
     fun `different amount, currency or type is not a duplicate`() {
         val earlier = History(timeStamp = nowMillis - 3_600_000, name = "Charity", amount = 180F, isDonation = true)
         assertNull(checkEntry(listOf(earlier), "Charity", 181F, "ILS", true, nowMillis))

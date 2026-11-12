@@ -43,6 +43,11 @@ import com.example.mymaser.gui.ScreenTypes
 import com.example.mymaser.gui.components.DueCards
 import com.example.mymaser.gui.components.EntryForm
 import com.example.mymaser.gui.components.ForecastLine
+import com.example.mymaser.gui.components.ImportButton
+import com.example.mymaser.gui.components.ImportReviewSheet
+import com.example.mymaser.ai.ImportViewModel
+import com.example.mymaser.history.NewEntry
+import androidx.compose.ui.platform.LocalResources
 import com.example.mymaser.gui.components.RatesNotice
 import com.example.mymaser.gui.components.ReminderPromptCard
 import com.example.mymaser.reminders.AppDestination
@@ -67,7 +72,10 @@ private fun NavHostController.openTab(screen: ScreenTypes) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
+fun MainScreen(
+    viewModel: HistoryViewModel = viewModel(),
+    importViewModel: ImportViewModel = viewModel()
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -89,6 +97,8 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
     val requestedDestination by viewModel.destinationRequest.collectAsStateWithLifecycle()
     val reminderPrompt by viewModel.reminderPrompt.collectAsStateWithLifecycle()
     val forecast by viewModel.forecast.collectAsStateWithLifecycle()
+    val importState by importViewModel.state.collectAsStateWithLifecycle()
+    val aiEnabled by importViewModel.aiEnabled.collectAsStateWithLifecycle()
 
     val undoLabel = stringResource(R.string.undo)
     val savedMessage = stringResource(R.string.information_saved_successfully)
@@ -110,6 +120,18 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
         viewModel.addEntry(name, amount, currency, isDonation) { saved ->
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             offerUndo(savedMessage) { viewModel.deleteEntry(saved) }
+        }
+    }
+
+    val resources = LocalResources.current
+
+    fun saveImported(entries: List<NewEntry>) {
+        importViewModel.dismiss()
+        viewModel.addEntries(entries) { saved ->
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            offerUndo(resources.getQuantityString(R.plurals.import_saved, saved.size, saved.size)) {
+                saved.forEach(viewModel::deleteEntry)
+            }
         }
     }
 
@@ -175,9 +197,24 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
             onPrefillConsumed = viewModel::consumePrefill,
             onCheck = { name, amount, currency ->
                 viewModel.checkNewEntry(name, amount, currency, isDonation)
+            },
+            header = {
+                if (aiEnabled) ImportButton(onDocuments = importViewModel::readUris)
             }
         )
     }
+
+    ImportReviewSheet(
+        state = importState,
+        onCheck = { viewModel.checkNewEntry(it.name, it.amount, it.currency, it.isDonation, it.timeStamp) },
+        onConfirm = ::saveImported,
+        onRetry = importViewModel::retry,
+        onOpenSettings = {
+            importViewModel.dismiss()
+            context.startActivity(Intent(context, SettingsActivity::class.java))
+        },
+        onDismiss = importViewModel::dismiss
+    )
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
