@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.map
 const val DEFAULT_MASER_PERCENTAGE = 10f
 const val MIN_MASER_PERCENTAGE = 1f
 const val MAX_MASER_PERCENTAGE = 100f
-val PRESET_MASER_PERCENTAGES = listOf(10f, 15f, 20f)
+val PRESET_MASER_PERCENTAGES = listOf(10f, 20f)
 
 enum class ThemeMode(val key: String) {
     System("system"),
