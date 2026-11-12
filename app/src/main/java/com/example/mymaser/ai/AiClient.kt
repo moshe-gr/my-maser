@@ -27,6 +27,9 @@ sealed interface AiResult<out T> {
 enum class AiError {
     /** google-services.json is missing, so Firebase never started. */
     NotConfigured,
+
+    /** The user hasn't turned on AI features in Settings. */
+    Disabled,
     QuotaExceeded,
     Network,
     Failed
@@ -37,7 +40,9 @@ interface AiClient {
     suspend fun extract(inputs: List<AiInput>): AiResult<String>
 }
 
-class GeminiAiClient private constructor(private val context: Context) : AiClient {
+class GeminiAiClient private constructor(context: Context) : AiClient {
+
+    private val appContext: Context = context.applicationContext
 
     private val model by lazy {
         installAppCheck()
@@ -52,7 +57,7 @@ class GeminiAiClient private constructor(private val context: Context) : AiClien
     }
 
     override suspend fun extract(inputs: List<AiInput>): AiResult<String> {
-        if (FirebaseApp.getApps(context).isEmpty()) return AiResult.Error(AiError.NotConfigured)
+        if (FirebaseApp.getApps(appContext).isEmpty()) return AiResult.Error(AiError.NotConfigured)
         val request = content {
             inputs.forEach {
                 when (it) {
@@ -105,7 +110,7 @@ class GeminiAiClient private constructor(private val context: Context) : AiClien
 
         fun getInstance(context: Context): GeminiAiClient =
             instance ?: synchronized(this) {
-                instance ?: GeminiAiClient(context.applicationContext).also { instance = it }
+                instance ?: GeminiAiClient(context).also { instance = it }
             }
     }
 }

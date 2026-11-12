@@ -130,7 +130,7 @@
     <string name="maser_basis_title">Count payslip income from</string>
     <string name="maser_basis_net">Net pay</string>
     <string name="maser_basis_gross">Gross pay</string>
-    <string name="maser_basis_hint">Opinions differ on whether ma\'aser is taken from gross or net pay. Ask your rabbi if unsure.</string>
+    <string name="maser_basis_hint">Opinions differ on whether maser is taken from gross or net pay. Ask your rabbi if unsure.</string>
     <string name="reminders_master">Send reminders</string>
     <string name="reminders_master_description">Based on your own history. Nothing leaves your phone.</string>
     <string name="notifications_blocked">Notifications are turned off for My Maser</string>

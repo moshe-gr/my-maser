@@ -12,7 +12,7 @@ class ExtractionTest {
     private val today = LocalDate.of(2026, 11, 12)
 
     private fun parse(json: String, basis: MaserBasis = MaserBasis.Net) =
-        parseExtraction(json, basis, "ILS", today)
+        parseExtraction(json, basis, "ILS", today)!!
 
     private val payslip = """
         {"entries":[{"kind":"income","name":"Acme Ltd","amount":12000,
@@ -50,10 +50,19 @@ class ExtractionTest {
     }
 
     @Test
-    fun `future or malformed dates are dropped`() {
-        val json = """{"entries":[{"kind":"donation","name":"X","amount":5,"date":"2027-01-01"},
+    fun `future dates become today and malformed dates are dropped`() {
+        val json = """{"entries":[{"kind":"income","name":"X","amount":5,"date":"2026-11-30"},
             {"kind":"donation","name":"Y","amount":5,"date":"31/10/2026"}]}"""
-        assertEquals(listOf(null, null), parse(json).map { it.date })
+        assertEquals(listOf(today, null), parse(json).map { it.date })
+    }
+
+    @Test
+    fun `json null fields count as missing`() {
+        val json = """{"entries":[{"kind":"donation","name":null,"amount":5},
+            {"kind":"donation","name":"X","amount":5,"currency":null,"date":null}]}"""
+        val entry = parse(json).single()
+        assertEquals("ILS", entry.currency)
+        assertNull(entry.date)
     }
 
     @Test
@@ -66,10 +75,18 @@ class ExtractionTest {
     }
 
     @Test
-    fun `invalid or fenced json`() {
-        assertTrue(parse("not json").isEmpty())
-        val fenced = "```json\n{\"entries\":[{\"kind\":\"income\",\"name\":\"A\",\"amount\":1}]}\n```"
-        assertEquals(1, parse(fenced).size)
+    fun `unreadable replies are null, an empty list is not`() {
+        assertNull(parseExtraction("not json", MaserBasis.Net, "ILS", today))
+        assertNull(parseExtraction("""{"entries":[{"kind":"""", MaserBasis.Net, "ILS", today))
+        assertNull(parseExtraction("{}", MaserBasis.Net, "ILS", today))
+        assertTrue(parse("""{"entries":[]}""").isEmpty())
+    }
+
+    @Test
+    fun `fenced json with or without a language tag`() {
+        val body = "{\"entries\":[{\"kind\":\"income\",\"name\":\"A\",\"amount\":1}]}"
+        assertEquals(1, parse("```json\n$body\n```").size)
+        assertEquals(1, parse("```\n$body\n```").size)
     }
 
     @Test

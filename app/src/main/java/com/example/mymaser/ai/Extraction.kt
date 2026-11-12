@@ -1,7 +1,6 @@
 package com.example.mymaser.ai
 
 import com.example.mymaser.currency.SupportedCurrency
-import com.example.mymaser.history.Prefill
 import com.example.mymaser.settings.MaserBasis
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
@@ -17,8 +16,6 @@ data class ExtractedEntry(
     val currency: String,
     val date: LocalDate?
 )
-
-fun ExtractedEntry.toPrefill() = Prefill(name, amount, currency, isDonation)
 
 /** Instructions sent with every document; the reply must use [ExtractionFields]. */
 const val EXTRACTION_PROMPT = """
@@ -49,35 +46,41 @@ object ExtractionFields {
 }
 
 /**
- * Reads the model's JSON reply. Entries without a name or a positive amount are dropped, a
- * currency the app doesn't support falls back to [fallbackCurrency], and dates after [today] are
- * ignored. Payslip income uses gross or net per [basis] when the document shows both.
+ * Reads the model's JSON reply, or returns null when the reply isn't readable at all. Entries
+ * without a name or a positive amount are dropped, a currency the app doesn't support falls back
+ * to [fallbackCurrency], and dates after [today] become [today]. Payslip income uses gross or net
+ * per [basis] when the document shows both.
  */
 fun parseExtraction(
     json: String,
     basis: MaserBasis,
     fallbackCurrency: String,
     today: LocalDate
-): List<ExtractedEntry> {
+): List<ExtractedEntry>? {
     val entries = try {
-        JSONObject(json.trim().removeSurrounding("```json", "```").trim())
-            .optJSONArray(ExtractionFields.ENTRIES)
+        JSONObject(json.withoutCodeFence()).optJSONArray(ExtractionFields.ENTRIES)
     } catch (_: JSONException) {
         null
-    } ?: return emptyList()
+    } ?: return null
     return entries.objects().mapNotNull { it.toEntry(basis, fallbackCurrency, today) }
+}
+
+private fun String.withoutCodeFence(): String {
+    val text = trim()
+    if (!text.startsWith("```")) return text
+    return text.removePrefix("```").removePrefix("json").removeSuffix("```").trim()
 }
 
 private fun JSONArray.objects(): List<JSONObject> = (0 until length()).mapNotNull { optJSONObject(it) }
 
 private fun JSONObject.toEntry(basis: MaserBasis, fallbackCurrency: String, today: LocalDate): ExtractedEntry? {
     val f = ExtractionFields
-    val isDonation = when (optString(f.KIND).lowercase()) {
+    val isDonation = when (text(f.KIND)?.lowercase()) {
         f.KIND_DONATION -> true
         f.KIND_INCOME -> false
         else -> return null
     }
-    val name = optString(f.NAME).trim().takeIf { it.isNotEmpty() } ?: return null
+    val name = text(f.NAME) ?: return null
     val chosen = if (isDonation) null else when (basis) {
         MaserBasis.Gross -> positive(f.GROSS)
         MaserBasis.Net -> positive(f.NET)
@@ -87,10 +90,14 @@ private fun JSONObject.toEntry(basis: MaserBasis, fallbackCurrency: String, toda
         isDonation = isDonation,
         name = name,
         amount = amount.toFloat(),
-        currency = normalizeCurrency(optString(f.CURRENCY)) ?: fallbackCurrency,
-        date = parseDate(optString(f.DATE))?.takeUnless { it.isAfter(today) }
+        currency = normalizeCurrency(text(f.CURRENCY)) ?: fallbackCurrency,
+        date = text(f.DATE)?.let(::parseDate)?.let { minOf(it, today) }
     )
 }
+
+/** The trimmed value, or null when it's missing, JSON null or blank. */
+private fun JSONObject.text(key: String): String? =
+    if (isNull(key)) null else optString(key).trim().takeIf { it.isNotEmpty() }
 
 private fun JSONObject.positive(key: String): Double? =
     optDouble(key).takeIf { !it.isNaN() && it > 0 }
