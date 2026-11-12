@@ -16,28 +16,11 @@ class SettingsRepository(context: Context) {
     private val dataStore = context.dataStore
     private val appContext: Context = context.applicationContext
 
-    fun getString(key: Preferences.Key<String>, defaultValue: String): Flow<String> {
-        return dataStore.data.map {
-            it[key] ?: defaultValue
-        }
-    }
+    fun <T> get(key: Preferences.Key<T>, defaultValue: T): Flow<T> =
+        dataStore.data.map { it[key] ?: defaultValue }
 
-    suspend fun setString(key: Preferences.Key<String>, value: String) {
-        dataStore.edit {
-            it[key] = value
-        }
-    }
-
-    fun getFloat(key: Preferences.Key<Float>, defaultValue: Float): Flow<Float> {
-        return dataStore.data.map {
-            it[key] ?: defaultValue
-        }
-    }
-
-    suspend fun setFloat(key: Preferences.Key<Float>, value: Float) {
-        dataStore.edit {
-            it[key] = value
-        }
+    suspend fun <T> set(key: Preferences.Key<T>, value: T) {
+        dataStore.edit { it[key] = value }
     }
 
     suspend fun renameDirectory(

@@ -2,7 +2,6 @@ package com.example.mymaser.settings.gui
 
 import android.Manifest
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,6 +33,9 @@ import com.example.mymaser.BuildConfig
 import com.example.mymaser.R
 import com.example.mymaser.reminders.ReminderSettings
 import com.example.mymaser.reminders.canPostNotifications
+import com.example.mymaser.reminders.needsNotificationPermission
+import com.example.mymaser.settings.minuteOfDayToTime
+import com.example.mymaser.settings.toMinuteOfDay
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -59,11 +61,10 @@ fun RemindersSetting(
         if (granted) onToggle(ReminderToggle.Master, true)
     }
     val notificationsBlocked = settings.enabled && !canPostNotifications(context)
+    val time = minuteOfDayToTime(minuteOfDay)
 
     fun setMaster(on: Boolean) {
-        val needsPermission = on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !canPostNotifications(context)
-        if (needsPermission) {
+        if (on && needsNotificationPermission(context)) {
             permission.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             onToggle(ReminderToggle.Master, on)
@@ -109,7 +110,6 @@ fun RemindersSetting(
                 onCheckedChange = { onToggle(toggle, it) }
             )
         }
-        val time = LocalTime.of(minuteOfDay / 60, minuteOfDay % 60)
         ListItem(
             headlineContent = { Text(stringResource(R.string.reminder_time)) },
             supportingContent = {
@@ -130,14 +130,14 @@ fun RemindersSetting(
     }
 
     if (pickingTime) {
-        val state = rememberTimePickerState(initialHour = minuteOfDay / 60, initialMinute = minuteOfDay % 60)
+        val state = rememberTimePickerState(initialHour = time.hour, initialMinute = time.minute)
         AlertDialog(
             onDismissRequest = { pickingTime = false },
             title = { Text(stringResource(R.string.reminder_time)) },
             text = { TimePicker(state = state) },
             confirmButton = {
                 TextButton(onClick = {
-                    onTimeChange(state.hour * 60 + state.minute)
+                    onTimeChange(LocalTime.of(state.hour, state.minute).toMinuteOfDay())
                     pickingTime = false
                 }) { Text(stringResource(R.string.save)) }
             },

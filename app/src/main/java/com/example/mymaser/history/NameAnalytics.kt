@@ -6,6 +6,7 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.abs
 
@@ -47,10 +48,18 @@ private const val RECURRENCE_MIN_MONTHS = 3
 private const val RECURRENCE_DAY_TOLERANCE = 3
 private const val RECURRENCE_MIN_SHARE = 0.75
 
-private fun LocalDate.startMillis(zone: ZoneId) = atStartOfDay(zone).toInstant().toEpochMilli()
+/** An entry this close to the expected date counts as that occurrence being logged. */
+private const val LOGGED_TOLERANCE_DAYS = 5
 
-private fun History.date(zone: ZoneId): LocalDate =
-    Instant.ofEpochMilli(timeStamp).atZone(zone).toLocalDate()
+/** [day] of this month, or its last day when the month is shorter. */
+internal fun YearMonth.atDayClamped(day: Int): LocalDate = atDay(minOf(day, lengthOfMonth()))
+
+internal fun List<LocalDate>.hasEntryNear(expected: LocalDate): Boolean =
+    any { abs(ChronoUnit.DAYS.between(it, expected)) <= LOGGED_TOLERANCE_DAYS }
+
+/** Entries grouped by type and name, the unit recurrence is detected on; unnamed entries are left out. */
+internal fun List<History>.bySource(): Map<Pair<Boolean, String>, List<History>> =
+    groupBy { it.isDonation to nameKey(it.name) }.filterKeys { (_, key) -> key.isNotEmpty() }
 
 fun periodRange(period: SummaryPeriod, now: ZonedDateTime): TimeRange? = when (period) {
     SummaryPeriod.ThisMonth -> monthRange(now)
@@ -128,7 +137,7 @@ fun computeNameAnalytics(
         maserEffect = inPeriod.sumOf { it.maserDelta.toDouble() },
         monthly = (MONTHS_IN_CHART - 1 downTo 0).map { back ->
             val month = currentMonth.minusMonths(back.toLong())
-            MonthTotal(month, forName.filter { YearMonth.from(it.date(now.zone)) == month }.sumAmounts())
+            MonthTotal(month, forName.filter { YearMonth.from(it.localDate(now.zone)) == month }.sumAmounts())
         },
         recurrence = detectRecurrence(forName, now)
     )
@@ -145,7 +154,7 @@ private fun circularDayDistance(a: Int, b: Int): Int {
  */
 fun detectRecurrence(entries: List<History>, now: ZonedDateTime): Recurrence? {
     val since = now.minusDays(RECURRENCE_LOOKBACK_DAYS).toInstant().toEpochMilli()
-    val dates = entries.filter { it.timeStamp >= since }.map { it.date(now.zone) }
+    val dates = entries.filter { it.timeStamp >= since }.map { it.localDate(now.zone) }
     if (dates.map(YearMonth::from).distinct().size < RECURRENCE_MIN_MONTHS) return null
 
     val days = dates.map { it.dayOfMonth }
@@ -158,7 +167,7 @@ fun detectRecurrence(entries: List<History>, now: ZonedDateTime): Recurrence? {
     val nextMonth = if (paidThisMonth) currentMonth.plusMonths(1) else currentMonth
     return Recurrence(
         typicalDay = typicalDay,
-        nextExpected = nextMonth.atDay(minOf(typicalDay, nextMonth.lengthOfMonth()))
+        nextExpected = nextMonth.atDayClamped(typicalDay)
     )
 }
 
@@ -199,7 +208,7 @@ fun entriesToCsv(
                 original.currency,
                 entry.maserPercentage.csvNumber(),
                 entry.maserDelta.csvNumber(),
-                (!entry.attachmentUri.isNullOrEmpty()).toString()
+                entry.hasAttachment.toString()
             ).joinToString(",")
         )
     }

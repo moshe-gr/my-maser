@@ -1,6 +1,5 @@
 package com.example.mymaser.gui.screens
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -54,11 +52,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.currency.countable
+import com.example.mymaser.gui.components.ChipRow
 import com.example.mymaser.gui.components.ContentMaxWidth
 import com.example.mymaser.gui.components.EditEntryDialog
 import com.example.mymaser.gui.components.EmptyState
 import com.example.mymaser.gui.components.HistoryItem
 import com.example.mymaser.gui.components.HistorySummarySheet
+import com.example.mymaser.gui.components.monthYearLabel
 import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatSignedCurrency
 import com.example.mymaser.gui.theme.MaserPreview
@@ -75,10 +76,9 @@ import com.example.mymaser.history.TimeFilter
 import com.example.mymaser.history.TypeFilter
 import com.example.mymaser.history.filterHistory
 import com.example.mymaser.history.groupByPeriod
-import java.time.Instant
+import com.example.mymaser.history.localDate
 import java.time.YearMonth
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.time.temporal.WeekFields
 import java.util.Locale
 
@@ -106,9 +106,6 @@ private fun SummaryPeriod.toTimeFilter() = when (this) {
     SummaryPeriod.LastYear -> TimeFilter.LastYear
     SummaryPeriod.Last12Months, SummaryPeriod.AllTime -> TimeFilter.AllTime
 }
-
-private fun YearMonth.label(): String =
-    format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault()))
 
 @Composable
 fun HistoryScreen(
@@ -170,7 +167,7 @@ fun HistoryScreen(
     }
     val groups = remember(filtered, now) { groupByPeriod(filtered, now, firstDayOfWeek) }
     val availableMonths = remember(history) {
-        history.map { YearMonth.from(Instant.ofEpochMilli(it.timeStamp).atZone(now.zone)) }
+        history.map { YearMonth.from(it.localDate(now.zone)) }
             .distinct()
             .sortedDescending()
     }
@@ -201,13 +198,7 @@ fun HistoryScreen(
             SearchField(value = searchText, onValueChange = { searchText = it })
             Box(Modifier.padding(horizontal = 16.dp)) { notice() }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            ChipRow(contentPadding = 16.dp) {
                 TimeFilterChip(
                     query = query,
                     availableMonths = availableMonths,
@@ -329,7 +320,7 @@ private fun TimeFilterChip(
     var expanded by remember { mutableStateOf(false) }
     var level by remember { mutableStateOf(TimeMenuLevel.Root) }
     val label = when {
-        query.time == TimeFilter.SpecificMonth && query.month != null -> query.month.label()
+        query.time == TimeFilter.SpecificMonth && query.month != null -> query.month.monthYearLabel()
         query.time == TimeFilter.SpecificYear && query.year != null -> query.year.toString()
         else -> stringResource(query.time.labelRes())
     }
@@ -380,7 +371,7 @@ private fun TimeFilterChip(
 
                 TimeMenuLevel.Months -> availableMonths.forEach { month ->
                     MenuOption(
-                        text = month.label(),
+                        text = month.monthYearLabel(),
                         selected = query.time == TimeFilter.SpecificMonth && query.month == month,
                         onClick = { choose(TimeFilter.SpecificMonth, month = month) }
                     )
@@ -455,7 +446,7 @@ private fun MenuOption(text: String, selected: Boolean, onClick: () -> Unit) {
 private fun rememberTotals(entries: List<History>): Pair<Double, Double> {
     val currency = LocalDisplayCurrency.current
     return remember(entries, currency) {
-        val countable = entries.filter { it.currency == currency }
+        val countable = entries.countable(currency)
         countable.filter { !it.isDonation }.sumOf { it.amount.toDouble() } to
             countable.filter { it.isDonation }.sumOf { it.amount.toDouble() }
     }
@@ -564,8 +555,8 @@ private fun PeriodHeader(period: HistoryPeriod, entries: List<History>) {
 private fun periodLabel(period: HistoryPeriod): String = when (period) {
     HistoryPeriod.Today -> stringResource(R.string.today)
     HistoryPeriod.ThisWeek -> stringResource(R.string.this_week)
-    HistoryPeriod.ThisMonth -> stringResource(R.string.this_monthh)
-    is HistoryPeriod.Month -> remember(period) { period.month.label() }
+    HistoryPeriod.ThisMonth -> stringResource(R.string.this_month)
+    is HistoryPeriod.Month -> remember(period) { period.month.monthYearLabel() }
 }
 
 private val sampleHistory = listOf(

@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.currency.SupportedCurrency
 
+@Composable
+fun SupportedCurrency.label(): String = "$symbol  ${stringResource(nameRes)}"
+
 /** A compact symbol button inside an amount field that opens the list of currencies. */
 @Composable
 fun CurrencyPicker(selected: String, onSelect: (String) -> Unit) {
@@ -43,7 +46,7 @@ fun CurrencyPicker(selected: String, onSelect: (String) -> Unit) {
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             SupportedCurrency.entries.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text("${option.symbol}  ${stringResource(option.nameRes)}") },
+                    text = { Text(option.label()) },
                     trailingIcon = if (option.code == selected) {
                         { Icon(Icons.Filled.Check, contentDescription = null) }
                     } else {

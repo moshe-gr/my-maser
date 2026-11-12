@@ -3,7 +3,8 @@ package com.example.mymaser.reminders
 import com.example.mymaser.history.DueStatus
 import com.example.mymaser.history.History
 import com.example.mymaser.history.Prediction
-import java.time.Instant
+import com.example.mymaser.history.hasAttachment
+import com.example.mymaser.history.localDate
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZonedDateTime
@@ -59,8 +60,7 @@ private val MONTHLY_WINDOW = 1..7
 private val YEAR_END_WINDOW = 15..31
 private val REVIEW_WINDOW = 2..14
 
-private fun History.date(input: ReminderInput): LocalDate =
-    Instant.ofEpochMilli(timeStamp).atZone(input.now.zone).toLocalDate()
+private fun History.date(input: ReminderInput): LocalDate = localDate(input.now.zone)
 
 /**
  * Decides which reminders to post today. Each rule fires inside a window of days rather than on
@@ -95,7 +95,7 @@ fun computeReminders(input: ReminderInput): List<Reminder> {
 
     if (settings.receipts && today.monthValue == 12) {
         val missing = input.history.count {
-            it.isDonation && it.attachmentUri.isNullOrEmpty() && it.date(input).year == today.year
+            it.isDonation && !it.hasAttachment && it.date(input).year == today.year
         }
         if (missing > 0) reminders += Reminder.MissingReceipts(missing, today.year)
     }

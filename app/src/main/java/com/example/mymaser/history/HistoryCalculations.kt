@@ -1,7 +1,6 @@
 package com.example.mymaser.history
 
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -13,7 +12,7 @@ data class TimeRange(val start: Long, val endExclusive: Long) {
     operator fun contains(time: Long) = time in start..<endExclusive
 }
 
-private fun LocalDate.startMillis(zone: ZoneId) = atStartOfDay(zone).toInstant().toEpochMilli()
+internal fun LocalDate.startMillis(zone: ZoneId) = atStartOfDay(zone).toInstant().toEpochMilli()
 
 fun monthRange(now: ZonedDateTime): TimeRange {
     val first = now.toLocalDate().withDayOfMonth(1)
@@ -71,7 +70,7 @@ fun filterHistory(
     val yearStart = today.withDayOfYear(1)
     val text = query.text.trim()
     return history.filter { entry ->
-        val date = Instant.ofEpochMilli(entry.timeStamp).atZone(now.zone).toLocalDate()
+        val date = entry.localDate(now.zone)
         val matchesType = when (query.type) {
             TypeFilter.All -> true
             TypeFilter.Income -> !entry.isDonation
@@ -91,8 +90,8 @@ fun filterHistory(
             (text.isEmpty() || entry.name.contains(text, ignoreCase = true)) &&
             when (query.attachment) {
                 AttachmentFilter.Any -> true
-                AttachmentFilter.With -> !entry.attachmentUri.isNullOrEmpty()
-                AttachmentFilter.Without -> entry.attachmentUri.isNullOrEmpty()
+                AttachmentFilter.With -> entry.hasAttachment
+                AttachmentFilter.Without -> !entry.hasAttachment
             }
     }
 }
@@ -133,7 +132,7 @@ fun groupByPeriod(
     val weekStart = today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
     val monthStart = today.withDayOfMonth(1)
     return history.groupBy { entry ->
-        val date = Instant.ofEpochMilli(entry.timeStamp).atZone(now.zone).toLocalDate()
+        val date = entry.localDate(now.zone)
         when {
             date == today -> HistoryPeriod.Today
             !date.isBefore(weekStart) -> HistoryPeriod.ThisWeek
@@ -146,7 +145,7 @@ fun groupByPeriod(
 fun formatAmountInput(amount: Float): String =
     if (amount == amount.toLong().toFloat()) amount.toLong().toString() else amount.toString()
 
-private val AMOUNT_INPUT = Regex("^\\d*\\.?\\d{0,5}$")
+private val AMOUNT_INPUT = Regex("^\\d{0,12}\\.?\\d{0,5}$")
 
 /** Returns the normalized text when [input] is a valid partial amount, otherwise null. */
 fun sanitizeAmountInput(input: String): String? =

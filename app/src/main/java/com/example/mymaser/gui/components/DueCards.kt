@@ -1,18 +1,13 @@
 package com.example.mymaser.gui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -23,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,7 +32,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.gui.formatCurrency
-import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.history.DueStatus
 import com.example.mymaser.history.Prediction
 import java.time.LocalDate
@@ -58,7 +53,9 @@ fun DueCards(
             modifier = Modifier.semantics { heading() }
         )
         predictions.forEach { prediction ->
-            DueCard(prediction, onLog, onOpen, onSkip)
+            key(prediction.key) {
+                DueCard(prediction, onLog, onOpen, onSkip)
+            }
         }
     }
 }
@@ -70,9 +67,9 @@ private fun DueCard(
     onOpen: (Prediction) -> Unit,
     onSkip: (Prediction) -> Unit
 ) {
-    val colors = MaterialTheme.maserColors
     val amount = formatCurrency(prediction.amount.toDouble(), currencyCode = prediction.currency)
     var menuOpen by remember { mutableStateOf(false) }
+    var logged by remember { mutableStateOf(false) }
 
     Card(
         onClick = { onOpen(prediction) },
@@ -84,28 +81,7 @@ private fun DueCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            if (prediction.isDonation) colors.donationContainer else colors.incomeContainer,
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (prediction.isDonation) {
-                            Icons.Filled.VolunteerActivism
-                        } else {
-                            Icons.Filled.AccountBalanceWallet
-                        },
-                        contentDescription = stringResource(
-                            if (prediction.isDonation) R.string.donation else R.string.income
-                        ),
-                        tint = if (prediction.isDonation) colors.donation else colors.income,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                EntryTypeBadge(prediction.isDonation)
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = prediction.name,
@@ -139,7 +115,11 @@ private fun DueCard(
                 }
             }
             FilledTonalButton(
-                onClick = { onLog(prediction) },
+                onClick = {
+                    logged = true
+                    onLog(prediction)
+                },
+                enabled = !logged,
                 modifier = Modifier.padding(start = 52.dp, top = 8.dp),
                 shape = MaterialTheme.shapes.small
             ) {

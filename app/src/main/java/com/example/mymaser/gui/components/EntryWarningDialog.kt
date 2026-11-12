@@ -11,7 +11,6 @@ import androidx.compose.ui.res.stringResource
 import com.example.mymaser.R
 import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.history.EntryWarning
-import java.text.DateFormat
 import java.util.Date
 
 /** Asks before saving an entry that looks like a duplicate or a typo; never blocks saving. */
@@ -23,13 +22,13 @@ fun EntryWarningDialog(
     onSaveAnyway: () -> Unit,
     onFix: () -> Unit
 ) {
+    val dateFormat = rememberDateTimeFormat()
     val (title, body) = when (warning) {
         is EntryWarning.Duplicate -> stringResource(R.string.guard_duplicate_title) to stringResource(
             R.string.guard_duplicate_body,
             amount,
             name,
-            DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-                .format(Date(warning.existing.timeStamp))
+            dateFormat.format(Date(warning.existing.timeStamp))
         )
         is EntryWarning.UnusualAmount -> stringResource(R.string.guard_unusual_title) to stringResource(
             R.string.guard_unusual_body,

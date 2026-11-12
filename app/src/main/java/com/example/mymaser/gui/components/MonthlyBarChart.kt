@@ -41,9 +41,6 @@ import java.util.Locale
 private const val DIMMED_ALPHA = 0.45f
 private val BarShape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
 
-private fun YearMonth.longLabel() =
-    format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault()))
-
 private fun YearMonth.shortLabel() =
     format(DateTimeFormatter.ofPattern("LLL", Locale.getDefault()))
 
@@ -69,7 +66,7 @@ fun MonthlyBarChart(
             modifier = Modifier.semantics { heading() }
         )
         Text(
-            text = "${selectedMonth.month.longLabel()} · ${formatCurrency(selectedMonth.total)}",
+            text = "${selectedMonth.month.monthYearLabel()} · ${formatCurrency(selectedMonth.total)}",
             style = MaterialTheme.typography.bodyMedium.tabular,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -86,7 +83,7 @@ fun MonthlyBarChart(
                 )
                 val description = stringResource(
                     R.string.summary_bar_description,
-                    month.month.longLabel(),
+                    month.month.monthYearLabel(),
                     formatCurrency(month.total)
                 )
                 Box(

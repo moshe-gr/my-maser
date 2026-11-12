@@ -10,9 +10,7 @@ import com.example.mymaser.settings.gui.SettingsScreen
 
 class SettingsActivity : AppCompatActivity() {
 
-    private val settingsViewModel: SettingsViewModel by viewModels {
-        SettingsViewModelFactory(application)
-    }
+    private val settingsViewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()

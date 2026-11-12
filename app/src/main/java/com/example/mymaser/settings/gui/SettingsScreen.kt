@@ -4,16 +4,13 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -56,6 +54,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.mymaser.R
+import com.example.mymaser.gui.components.ChipRow
 import com.example.mymaser.gui.components.ScreenColumn
 import com.example.mymaser.gui.components.surfaceCardColors
 import com.example.mymaser.history.formatAmountInput
@@ -70,24 +69,26 @@ import com.example.mymaser.settings.SettingsViewModel
 import com.example.mymaser.settings.ThemeMode
 import com.example.mymaser.settings.formatPercentage
 import com.example.mymaser.settings.isValidMaserPercentage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-const val LANGUAGE_HEBREW = "he-IL"
+private const val LANGUAGE_HEBREW = "he-IL"
 private const val LEGACY_LANGUAGE_HEBREW = "iw"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
-    val attachmentDirectoryUri by viewModel.getString(SettingsKeys.ATTACHMENT_DIRECTORY_URI, "")
+    val attachmentDirectoryUri by viewModel.get(SettingsKeys.ATTACHMENT_DIRECTORY_URI, "")
         .collectAsState(initial = "")
-    val language by viewModel.getString(SettingsKeys.LANGUAGE, "")
+    val language by viewModel.get(SettingsKeys.LANGUAGE, "")
         .collectAsState(initial = "")
-    val themeMode by viewModel.getString(SettingsKeys.THEME_MODE, ThemeMode.System.key)
+    val themeMode by viewModel.get(SettingsKeys.THEME_MODE, ThemeMode.System.key)
         .collectAsState(initial = ThemeMode.System.key)
     val rateStatus by viewModel.rateStatus.collectAsState()
     val reminderSettings by viewModel.reminderSettings.collectAsState(initial = ReminderSettings())
     val reminderMinute by viewModel.reminderMinuteOfDay.collectAsState(initial = DEFAULT_REMINDER_MINUTE_OF_DAY)
-    val maserPercentage by viewModel.getFloat(SettingsKeys.MASER_PERCENTAGE, DEFAULT_MASER_PERCENTAGE)
+    val maserPercentage by viewModel.get(SettingsKeys.MASER_PERCENTAGE, DEFAULT_MASER_PERCENTAGE)
         .collectAsState(initial = DEFAULT_MASER_PERCENTAGE)
 
     val context = LocalContext.current
@@ -96,11 +97,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     DisposableEffect(lifecycleOwner, attachmentDirectoryUri) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
-                viewModel.onPause(
-                    currentDonationName = viewModel.donationDirectoryName,
-                    currentIncomeName = viewModel.incomeDirectoryName,
-                    attachmentDirectoryUri = attachmentDirectoryUri
-                )
+                viewModel.onPause(attachmentDirectoryUri)
             }
         }
 
@@ -128,11 +125,17 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     }
 
     val hasDirectory = attachmentDirectoryUri.isNotBlank()
+    val directoryName by produceState("", attachmentDirectoryUri) {
+        value = if (attachmentDirectoryUri.isBlank()) {
+            ""
+        } else {
+            withContext(Dispatchers.IO) {
+                DocumentFile.fromTreeUri(context, attachmentDirectoryUri.toUri())?.name.orEmpty()
+            }
+        }
+    }
     val directoryStatus = if (hasDirectory) {
-        stringResource(
-            R.string.selected_directory,
-            DocumentFile.fromTreeUri(context, attachmentDirectoryUri.toUri())?.name.orEmpty()
-        )
+        stringResource(R.string.selected_directory, directoryName)
     } else {
         stringResource(R.string.no_directory_selected)
     }
@@ -166,7 +169,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             SettingsSection(stringResource(R.string.settings_maser_percentage)) {
                 MaserPercentageSetting(
                     percentage = maserPercentage,
-                    onChange = { viewModel.setFloat(SettingsKeys.MASER_PERCENTAGE, it) }
+                    onChange = { viewModel.set(SettingsKeys.MASER_PERCENTAGE, it) }
                 )
             }
 
@@ -277,18 +280,6 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.semantics { heading() }
         )
-        content()
-    }
-}
-
-@Composable
-private fun ChipRow(content: @Composable () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
         content()
     }
 }

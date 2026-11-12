@@ -4,11 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationManagerCompat
-import androidx.datastore.preferences.core.edit
-import com.example.mymaser.dataStore
-import com.example.mymaser.history.pruneDismissed
-import com.example.mymaser.settings.SettingsKeys
-import java.time.LocalDate
+import com.example.mymaser.settings.dismissPrediction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,10 +20,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                context.applicationContext.dataStore.edit {
-                    val current = it[SettingsKeys.DISMISSED_PREDICTIONS].orEmpty()
-                    it[SettingsKeys.DISMISSED_PREDICTIONS] = pruneDismissed(current + key, LocalDate.now())
-                }
+                context.applicationContext.dismissPrediction(key)
             } finally {
                 pending.finish()
             }

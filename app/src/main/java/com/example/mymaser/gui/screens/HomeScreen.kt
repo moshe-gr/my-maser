@@ -39,8 +39,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mymaser.R
+import com.example.mymaser.currency.countable
 import com.example.mymaser.gui.components.EmptyState
+import com.example.mymaser.gui.components.LabelValueRow
 import com.example.mymaser.gui.components.ScreenColumn
+import com.example.mymaser.gui.components.rememberDateTimeFormat
 import com.example.mymaser.gui.components.surfaceCardColors
 import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
@@ -54,7 +57,6 @@ import com.example.mymaser.history.HomeStats
 import com.example.mymaser.history.computeHomeStats
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 import com.example.mymaser.settings.formatPercentage
-import java.text.DateFormat
 import java.time.ZonedDateTime
 import java.util.Date
 import kotlin.math.abs
@@ -76,7 +78,7 @@ fun HomeScreen(
     if (history == null || totalMaser == null) return
     val currency = LocalDisplayCurrency.current
     val stats = remember(history, currency) {
-        computeHomeStats(history.filter { it.currency == currency }, ZonedDateTime.now())
+        computeHomeStats(history.countable(currency), ZonedDateTime.now())
     }
     HomeContent(
         total = totalMaser,
@@ -237,31 +239,17 @@ private fun DonatedCard(stats: HomeStats) {
 
 @Composable
 private fun StatRow(label: String, amount: Double) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {},
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = formatCurrency(amount),
-            style = MaterialTheme.typography.titleMedium.tabular,
-            color = MaterialTheme.maserColors.donation
-        )
-    }
+    LabelValueRow(
+        label = label,
+        value = formatCurrency(amount),
+        valueStyle = MaterialTheme.typography.titleMedium.tabular,
+        valueColor = MaterialTheme.maserColors.donation
+    )
 }
 
 @Composable
 private fun LastAction(time: Long) {
-    val formatter = remember {
-        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-    }
+    val formatter = rememberDateTimeFormat()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,

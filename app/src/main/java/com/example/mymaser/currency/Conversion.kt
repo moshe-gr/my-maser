@@ -1,8 +1,8 @@
 package com.example.mymaser.currency
 
 import com.example.mymaser.history.History
+import com.example.mymaser.history.localDate
 import com.example.mymaser.history.maserDelta
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.TreeMap
@@ -32,15 +32,17 @@ class RateTable(rates: List<ExchangeRate>) {
     }
 }
 
-fun History.epochDay(zone: ZoneId): Long =
-    Instant.ofEpochMilli(timeStamp).atZone(zone).toLocalDate().toEpochDay()
+fun History.epochDay(zone: ZoneId): Long = localDate(zone).toEpochDay()
+
+/** Entries already in [displayCurrency]; the rest are still waiting for a rate. */
+fun List<History>.countable(displayCurrency: String) = filter { it.currency == displayCurrency }
 
 /**
  * Entries as shown in [displayCurrency]. Entries that can't be converted yet keep their original
  * amount and currency and are counted in [unconverted], so totals can leave them out.
  */
 data class DisplayHistory(val entries: List<History>, val unconverted: Int) {
-    fun countable(displayCurrency: String) = entries.filter { it.currency == displayCurrency }
+    fun countable(displayCurrency: String) = entries.countable(displayCurrency)
 }
 
 fun toDisplay(

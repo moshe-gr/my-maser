@@ -5,11 +5,13 @@ import androidx.datastore.preferences.core.edit
 import com.example.mymaser.dataStore
 import com.example.mymaser.history.HistoryDb
 import com.example.mymaser.settings.SettingsKeys
+import com.example.mymaser.settings.displayCurrency
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +22,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.json.JSONException
 
 enum class RateStatus { Idle, Loading, Failed }
 
@@ -49,7 +50,7 @@ class CurrencyRepository private constructor(context: Context) {
         val prefs = appContext.dataStore.data.first()
         val entries = historyDao.getAll()
         val zone = ZoneId.systemDefault()
-        val display = prefs[SettingsKeys.DISPLAY_CURRENCY] ?: DEFAULT_CURRENCY
+        val display = prefs.displayCurrency()
         val adjustmentCurrency = prefs[SettingsKeys.BALANCE_ADJUSTMENT_CURRENCY]
         val inUse = entries.map { it.currency }.toSet() + display + listOfNotNull(adjustmentCurrency)
         if (inUse.size <= 1) return@withLock true
@@ -80,10 +81,10 @@ class CurrencyRepository private constructor(context: Context) {
             appContext.dataStore.edit { it[SettingsKeys.LAST_RATES_FETCH_DAY] = today }
             _status.value = RateStatus.Idle
             true
-        } catch (e: IOException) {
-            _status.value = RateStatus.Failed
-            false
-        } catch (e: JSONException) {
+        } catch (e: CancellationException) {
+            _status.value = RateStatus.Idle
+            throw e
+        } catch (_: Exception) {
             _status.value = RateStatus.Failed
             false
         }

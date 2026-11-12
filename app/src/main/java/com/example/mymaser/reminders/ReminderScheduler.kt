@@ -5,11 +5,11 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.mymaser.settings.minuteOfDayToTime
 import com.example.mymaser.settings.reminderMinuteOfDayFlow
 import com.example.mymaser.settings.reminderSettingsFlow
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 
@@ -18,15 +18,16 @@ object ReminderScheduler {
 
     /** Delay from [now] until the next [minuteOfDay]. */
     fun delayUntil(now: LocalDateTime, minuteOfDay: Int): Duration {
-        val time = LocalTime.of(minuteOfDay / 60, minuteOfDay % 60)
-        var next = now.toLocalDate().atTime(time)
+        var next = now.toLocalDate().atTime(minuteOfDayToTime(minuteOfDay))
         if (!next.isAfter(now)) next = next.plusDays(1)
         return Duration.between(now, next)
     }
 
     /**
      * Matches the scheduled work to the current settings. [rescheduleTime] replaces existing work,
-     * needed when the reminder time changed; otherwise existing work is kept.
+     * needed when the reminder time changed; otherwise existing work is kept. Replacing has to
+     * cancel and re-enqueue: an UPDATE keeps the old run's schedule once it has run, so the new
+     * initial delay would be ignored.
      */
     suspend fun sync(context: Context, rescheduleTime: Boolean = false) {
         val workManager = WorkManager.getInstance(context)
@@ -40,7 +41,11 @@ object ReminderScheduler {
             .build()
         workManager.enqueueUniquePeriodicWork(
             WORK_NAME,
-            if (rescheduleTime) ExistingPeriodicWorkPolicy.UPDATE else ExistingPeriodicWorkPolicy.KEEP,
+            if (rescheduleTime) {
+                ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE
+            } else {
+                ExistingPeriodicWorkPolicy.KEEP
+            },
             request
         )
     }

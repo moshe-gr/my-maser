@@ -1,11 +1,17 @@
 package com.example.mymaser.settings
 
 import android.content.Context
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import com.example.mymaser.currency.BalanceAdjustment
 import com.example.mymaser.currency.DEFAULT_CURRENCY
 import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.dataStore
+import com.example.mymaser.history.formatAmountInput
+import com.example.mymaser.history.pruneDismissed
 import com.example.mymaser.reminders.ReminderSettings
+import java.time.LocalDate
+import java.time.LocalTime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -30,13 +36,17 @@ data class Appearance(
     val displayCurrency: String = DEFAULT_CURRENCY
 )
 
+/** The chosen display currency, else the one the old single-currency setting implied. */
+fun Preferences.displayCurrency(): String =
+    this[SettingsKeys.DISPLAY_CURRENCY]
+        ?: SupportedCurrency.fromSymbol(this[SettingsKeys.LEGACY_CURRENCY_SYMBOL])?.code
+        ?: DEFAULT_CURRENCY
+
 fun Context.appearanceFlow(): Flow<Appearance> = dataStore.data
     .map {
         Appearance(
             themeMode = ThemeMode.fromKey(it[SettingsKeys.THEME_MODE]),
-            displayCurrency = it[SettingsKeys.DISPLAY_CURRENCY]
-                ?: SupportedCurrency.fromSymbol(it[SettingsKeys.LEGACY_CURRENCY_SYMBOL])?.code
-                ?: DEFAULT_CURRENCY
+            displayCurrency = it.displayCurrency()
         )
     }
     .distinctUntilChanged()
@@ -71,6 +81,10 @@ fun Context.balanceSetupFlow(): Flow<BalanceSetup?> = dataStore.data
 /** Reminders are posted around this time of day unless the user picks another. */
 const val DEFAULT_REMINDER_MINUTE_OF_DAY = 19 * 60
 
+fun minuteOfDayToTime(minuteOfDay: Int): LocalTime = LocalTime.of(minuteOfDay / 60, minuteOfDay % 60)
+
+fun LocalTime.toMinuteOfDay(): Int = hour * 60 + minute
+
 fun Context.reminderSettingsFlow(): Flow<ReminderSettings> = dataStore.data
     .map {
         ReminderSettings(
@@ -87,8 +101,15 @@ fun Context.reminderMinuteOfDayFlow(): Flow<Int> = dataStore.data
     .map { it[SettingsKeys.REMINDER_MINUTE_OF_DAY] ?: DEFAULT_REMINDER_MINUTE_OF_DAY }
     .distinctUntilChanged()
 
+/** Hides a due prediction (by its key) until its month has passed. */
+suspend fun Context.dismissPrediction(key: String) {
+    dataStore.edit {
+        val current = it[SettingsKeys.DISMISSED_PREDICTIONS].orEmpty()
+        it[SettingsKeys.DISMISSED_PREDICTIONS] = pruneDismissed(current + key, LocalDate.now())
+    }
+}
+
 fun isValidMaserPercentage(value: Float) = value in MIN_MASER_PERCENTAGE..MAX_MASER_PERCENTAGE
 
 /** "10%" for whole values, "12.5%" otherwise. */
-fun formatPercentage(value: Float): String =
-    if (value == value.toLong().toFloat()) "${value.toLong()}%" else "$value%"
+fun formatPercentage(value: Float): String = "${formatAmountInput(value)}%"

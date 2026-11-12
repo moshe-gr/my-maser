@@ -1,11 +1,8 @@
 package com.example.mymaser.settings.gui
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -27,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.currency.RateStatus
 import com.example.mymaser.currency.SupportedCurrency
+import com.example.mymaser.gui.components.ChipRow
+import com.example.mymaser.gui.components.label
 
 /**
  * Display-currency chips. Switching asks for confirmation first, since it changes every amount
@@ -41,17 +40,12 @@ fun DisplayCurrencySetting(
 ) {
     var pending by rememberSaveable { mutableStateOf<String?>(null) }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    ChipRow {
         SupportedCurrency.entries.forEach { currency ->
             FilterChip(
                 selected = selected == currency.code,
                 onClick = { if (currency.code != selected) pending = currency.code },
-                label = { Text("${currency.symbol}  ${stringResource(currency.nameRes)}") }
+                label = { Text(currency.label()) }
             )
         }
     }

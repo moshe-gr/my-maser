@@ -4,10 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,12 +13,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventRepeat
@@ -56,6 +50,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.currency.countable
 import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.gui.theme.maserColors
@@ -66,7 +61,6 @@ import com.example.mymaser.history.SummaryPeriod
 import com.example.mymaser.history.computeNameAnalytics
 import com.example.mymaser.history.entriesToCsv
 import com.example.mymaser.settings.formatPercentage
-import java.text.DateFormat
 import java.text.NumberFormat
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -128,7 +122,7 @@ fun HistorySummarySheet(
     var period by rememberSaveable(history.id) { mutableStateOf(SummaryPeriod.ThisYear) }
     val analytics = remember(allHistory, history, period, displayCurrency) {
         computeNameAnalytics(
-            allHistory.filter { it.currency == displayCurrency },
+            allHistory.countable(displayCurrency),
             history,
             period,
             ZonedDateTime.now()
@@ -177,13 +171,7 @@ fun HistorySummarySheet(
         ) {
             SheetHeader(history, Modifier.padding(horizontal = 24.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            ChipRow(contentPadding = 24.dp) {
                 SummaryPeriod.entries.forEach { option ->
                     FilterChip(
                         selected = period == option,
@@ -280,33 +268,13 @@ fun HistorySummarySheet(
 
 @Composable
 private fun SheetHeader(history: History, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.maserColors
+    val dateFormat = rememberDateFormat()
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .background(
-                    if (history.isDonation) colors.donationContainer else colors.incomeContainer,
-                    CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (history.isDonation) {
-                    Icons.Filled.VolunteerActivism
-                } else {
-                    Icons.Filled.AccountBalanceWallet
-                },
-                contentDescription = stringResource(
-                    if (history.isDonation) R.string.donation else R.string.income
-                ),
-                tint = if (history.isDonation) colors.donation else colors.income
-            )
-        }
+        EntryTypeBadge(history.isDonation, size = 48.dp, iconSize = 24.dp)
         Column {
             Text(
                 text = history.name,
@@ -318,7 +286,7 @@ private fun SheetHeader(history: History, modifier: Modifier = Modifier) {
                 text = stringResource(
                     R.string.summary_entry_subtitle,
                     formatCurrency(history.amount.toDouble(), currencyCode = history.currency),
-                    DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(history.timeStamp))
+                    dateFormat.format(Date(history.timeStamp))
                 ),
                 style = MaterialTheme.typography.bodyMedium.tabular,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -414,7 +382,7 @@ private fun InfoLine(icon: ImageVector, text: String) {
 
 @Composable
 private fun DetailRows(history: History, analytics: NameAnalytics) {
-    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    val dateFormat = rememberDateFormat()
     fun date(time: Long?) = time?.let { dateFormat.format(Date(it)) } ?: EMPTY_VALUE
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -448,18 +416,5 @@ private fun DetailRows(history: History, analytics: NameAnalytics) {
 
 @Composable
 private fun SummaryRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {},
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(value, style = MaterialTheme.typography.bodyLarge.tabular)
-    }
+    LabelValueRow(label, value, MaterialTheme.typography.bodyLarge.tabular)
 }

@@ -21,9 +21,9 @@ import com.example.mymaser.settings.reminderSettingsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.example.mymaser.settings.balanceSetupFlow
+import com.example.mymaser.settings.dismissPrediction
 import com.example.mymaser.settings.displayCurrencyFlow
 import com.example.mymaser.settings.maserPercentageFlow
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlinx.coroutines.NonCancellable
@@ -49,7 +49,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     private val originals: StateFlow<List<History>?> = repository.observeHistory()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val displayCurrency: StateFlow<String> = application.displayCurrencyFlow()
+    private val displayCurrency: StateFlow<String> = application.displayCurrencyFlow()
         .stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_CURRENCY)
 
     private val rates: StateFlow<RateTable> = currencyRepository.rates
@@ -188,11 +188,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun dismissPrediction(prediction: Prediction) = runChange {
-        getApplication<Application>().dataStore.edit { prefs ->
-            val current = prefs[SettingsKeys.DISMISSED_PREDICTIONS].orEmpty()
-            prefs[SettingsKeys.DISMISSED_PREDICTIONS] =
-                pruneDismissed(current + prediction.key, LocalDate.now())
-        }
+        getApplication<Application>().dismissPrediction(prediction.key)
     }
 
     init {

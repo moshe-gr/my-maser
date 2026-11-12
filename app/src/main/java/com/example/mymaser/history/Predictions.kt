@@ -1,6 +1,5 @@
 package com.example.mymaser.history
 
-import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZonedDateTime
@@ -32,9 +31,6 @@ private const val UPCOMING_DAYS = 3
 private const val DUE_NOW_DAYS = 2
 private const val OVERDUE_DAYS = 10
 
-/** An entry this close to the expected date counts as that occurrence being logged. */
-private const val LOGGED_TOLERANCE_DAYS = 5
-
 private fun statusFor(daysUntil: Long): DueStatus? = when {
     daysUntil in -DUE_NOW_DAYS..DUE_NOW_DAYS -> DueStatus.DueNow
     daysUntil in (DUE_NOW_DAYS + 1)..UPCOMING_DAYS -> DueStatus.Upcoming
@@ -54,27 +50,19 @@ fun predictDueEntries(
 ): List<Prediction> {
     val today = now.toLocalDate()
     val currentMonth = YearMonth.from(today)
-    return history
-        .groupBy { it.isDonation to nameKey(it.name) }
-        .filterKeys { (_, key) -> key.isNotEmpty() }
+    return history.bySource()
         .mapNotNull { (group, entries) ->
             val (isDonation, _) = group
             val recurrence = detectRecurrence(entries, now) ?: return@mapNotNull null
-            val dates = entries.map { Instant.ofEpochMilli(it.timeStamp).atZone(now.zone).toLocalDate() }
+            val dates = entries.map { it.localDate(now.zone) }
             val latestName = entries.maxBy { it.timeStamp }.name.trim()
 
             (-1L..1L)
-                .map { offset ->
-                    val month = currentMonth.plusMonths(offset)
-                    month.atDay(minOf(recurrence.typicalDay, month.lengthOfMonth()))
-                }
+                .map { offset -> currentMonth.plusMonths(offset).atDayClamped(recurrence.typicalDay) }
                 .mapNotNull { expected ->
                     val daysUntil = ChronoUnit.DAYS.between(today, expected)
                     val status = statusFor(daysUntil) ?: return@mapNotNull null
-                    val logged = dates.any {
-                        abs(ChronoUnit.DAYS.between(it, expected)) <= LOGGED_TOLERANCE_DAYS
-                    }
-                    if (logged) return@mapNotNull null
+                    if (dates.hasEntryNear(expected)) return@mapNotNull null
                     val suggestion = suggestAmount(entries, latestName, isDonation, now)
                         ?: return@mapNotNull null
                     Prediction(
@@ -94,9 +82,7 @@ fun predictDueEntries(
 
 /** Names of sources that recur monthly, most recently used first. */
 fun recurringSourceNames(history: List<History>, now: ZonedDateTime): List<String> =
-    history
-        .groupBy { it.isDonation to nameKey(it.name) }
-        .filterKeys { (_, key) -> key.isNotEmpty() }
+    history.bySource()
         .values
         .filter { detectRecurrence(it, now) != null }
         .map { entries -> entries.maxBy { it.timeStamp } }

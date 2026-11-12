@@ -3,10 +3,10 @@ package com.example.mymaser.history
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import com.example.mymaser.currency.DEFAULT_CURRENCY
-import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.currency.openingAdjustment
 import com.example.mymaser.dataStore
 import com.example.mymaser.settings.SettingsKeys
+import com.example.mymaser.settings.displayCurrency
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 
@@ -20,9 +20,7 @@ suspend fun migrateToMultiCurrency(context: Context) {
     val prefs = context.dataStore.data.first()
     if (prefs[SettingsKeys.MULTI_CURRENCY_MIGRATED] == true) return
 
-    val currency = prefs[SettingsKeys.DISPLAY_CURRENCY]
-        ?: SupportedCurrency.fromSymbol(prefs[SettingsKeys.LEGACY_CURRENCY_SYMBOL])?.code
-        ?: DEFAULT_CURRENCY
+    val currency = prefs.displayCurrency()
     val dao = HistoryDb.getInstance(context).getHistoryDao()
     if (currency != DEFAULT_CURRENCY) dao.setCurrencyForAll(currency)
     val adjustment = openingAdjustment(prefs[SettingsKeys.LEGACY_TOTAL_MASER], dao.getAll())

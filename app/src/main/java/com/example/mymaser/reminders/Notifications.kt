@@ -39,7 +39,7 @@ fun createNotificationChannels(context: Context) {
     )
 }
 
-fun notificationId(reminder: Reminder): Int = reminder.key.hashCode()
+private fun notificationId(reminder: Reminder): Int = reminder.key.hashCode()
 
 private fun Context.openIntent(link: DeepLink, requestCode: Int): PendingIntent =
     PendingIntent.getActivity(
@@ -56,6 +56,10 @@ fun canPostNotifications(context: Context): Boolean {
         PackageManager.PERMISSION_GRANTED
     return granted && NotificationManagerCompat.from(context).areNotificationsEnabled()
 }
+
+/** Whether turning reminders on should first ask for the Android 13+ notification permission. */
+fun needsNotificationPermission(context: Context): Boolean =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !canPostNotifications(context)
 
 /** Posts [reminder] if the user allows notifications; returns whether it was shown. */
 fun postReminder(context: Context, reminder: Reminder): Boolean {

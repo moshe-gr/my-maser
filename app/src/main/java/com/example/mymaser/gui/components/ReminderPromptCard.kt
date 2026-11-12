@@ -1,7 +1,6 @@
 package com.example.mymaser.gui.components
 
 import android.Manifest
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
-import com.example.mymaser.reminders.canPostNotifications
+import com.example.mymaser.reminders.needsNotificationPermission
 
 /**
  * Invites the user to turn on reminders once a recurring source exists, asking for the
@@ -70,9 +69,7 @@ fun ReminderPromptCard(
             ) {
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.not_now)) }
                 FilledTonalButton(onClick = {
-                    val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                        !canPostNotifications(context)
-                    if (needsPermission) {
+                    if (needsNotificationPermission(context)) {
                         permission.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
                         onEnable()

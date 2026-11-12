@@ -1,6 +1,5 @@
 package com.example.mymaser.history
 
-import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZonedDateTime
@@ -27,16 +26,12 @@ fun nameKey(name: String): String = name.trim().lowercase(Locale.ROOT)
  */
 fun daysFromSameDayOfMonth(entry: LocalDate, now: LocalDate): Long =
     (-1L..1L).minOf { offset ->
-        val month = YearMonth.from(now).plusMonths(offset)
-        val target = month.atDay(minOf(entry.dayOfMonth, month.lengthOfMonth()))
+        val target = YearMonth.from(now).plusMonths(offset).atDayClamped(entry.dayOfMonth)
         abs(ChronoUnit.DAYS.between(now, target))
     }
 
-private fun History.date(now: ZonedDateTime): LocalDate =
-    Instant.ofEpochMilli(timeStamp).atZone(now.zone).toLocalDate()
-
 private fun History.isDueAround(now: ZonedDateTime): Boolean =
-    daysFromSameDayOfMonth(date(now), now.toLocalDate()) <= DUE_WINDOW_DAYS
+    daysFromSameDayOfMonth(localDate(now.zone), now.toLocalDate()) <= DUE_WINDOW_DAYS
 
 private data class RankedName(val name: String, val dueNow: Boolean, val lastUsed: Long)
 

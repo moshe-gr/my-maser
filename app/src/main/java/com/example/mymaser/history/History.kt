@@ -5,6 +5,9 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.mymaser.currency.DEFAULT_CURRENCY
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 @Entity
 data class History(
@@ -22,3 +25,8 @@ data class History(
     @ColumnInfo(defaultValue = DEFAULT_CURRENCY)
     val currency: String = DEFAULT_CURRENCY
 )
+
+fun History.localDate(zone: ZoneId): LocalDate =
+    Instant.ofEpochMilli(timeStamp).atZone(zone).toLocalDate()
+
+val History.hasAttachment: Boolean get() = !attachmentUri.isNullOrEmpty()

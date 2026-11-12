@@ -8,33 +8,35 @@ import androidx.compose.runtime.setValue
 import androidx.core.os.LocaleListCompat
 import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.datastore.preferences.core.edit
 import com.example.mymaser.currency.CurrencyRepository
-import com.example.mymaser.dataStore
+import com.example.mymaser.currency.RateStatus
+import com.example.mymaser.history.attachmentFolderName
 import com.example.mymaser.reminders.ReminderScheduler
 import com.example.mymaser.reminders.ReminderSettings
-import com.example.mymaser.settings.gui.ReminderToggle
-import com.example.mymaser.currency.RateStatus
 import com.example.mymaser.settings.data.SettingsRepository
-import kotlinx.coroutines.flow.StateFlow
+import com.example.mymaser.settings.gui.ReminderToggle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+
+private const val NAME_DEBOUNCE_MS = 400L
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = SettingsRepository(application)
     private val currencyRepository = CurrencyRepository.getInstance(application)
 
-    private var initialDonationName: String? = null
-    private var initialIncomeName: String? = null
-    private var donationNameUpdateJob: Job? = null
-    private var incomeNameUpdateJob: Job? = null
+    private val nameSaveJobs = mutableMapOf<Preferences.Key<String>, Job>()
+
+    /** The attachment folder names as they are on disk; null until loaded. */
+    private var savedDonationFolder: String? = null
+    private var savedIncomeFolder: String? = null
+
     var donationDirectoryName by mutableStateOf("")
         private set
     var incomeDirectoryName by mutableStateOf("")
@@ -42,46 +44,40 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     init {
         viewModelScope.launch {
-            donationDirectoryName = repository
-                .getString(SettingsKeys.PUBLIC_DONATION_NAME, "")
-                .first()
-
-            incomeDirectoryName = repository
-                .getString(SettingsKeys.PUBLIC_INCOME_NAME, "")
-                .first()
-
-            initialDonationName = donationDirectoryName
-            initialIncomeName = incomeDirectoryName
+            donationDirectoryName = storedFolderName(isDonation = true)
+            incomeDirectoryName = storedFolderName(isDonation = false)
+            savedDonationFolder = donationDirectoryName
+            savedIncomeFolder = incomeDirectoryName
         }
     }
 
-    fun getString(key: Preferences.Key<String>, defaultValue: String): Flow<String> {
-        return repository.getString(key, defaultValue)
-    }
+    private fun folderKey(isDonation: Boolean) =
+        if (isDonation) SettingsKeys.PUBLIC_DONATION_NAME else SettingsKeys.PUBLIC_INCOME_NAME
 
-    fun getFloat(key: Preferences.Key<Float>, defaultValue: Float): Flow<Float> {
-        return repository.getFloat(key, defaultValue)
+    private suspend fun storedFolderName(isDonation: Boolean): String =
+        getApplication<Application>().attachmentFolderName(
+            isDonation,
+            repository.get(folderKey(isDonation), "").first()
+        )
+
+    fun <T> get(key: Preferences.Key<T>, defaultValue: T): Flow<T> = repository.get(key, defaultValue)
+
+    fun <T> set(key: Preferences.Key<T>, value: T) {
+        viewModelScope.launch { repository.set(key, value) }
     }
 
     fun setString(key: Preferences.Key<String>, value: String) {
         when (key) {
-            SettingsKeys.PUBLIC_DONATION_NAME -> {
-                donationNameUpdateJob?.cancel()
-                donationNameUpdateJob = viewModelScope.launch {
-                    delay(400L)
-                    repository.setString(key, value)
-                }
-            }
-            SettingsKeys.PUBLIC_INCOME_NAME -> {
-                incomeNameUpdateJob?.cancel()
-                incomeNameUpdateJob = viewModelScope.launch {
-                    delay(400L)
-                    repository.setString(key, value)
+            SettingsKeys.PUBLIC_DONATION_NAME, SettingsKeys.PUBLIC_INCOME_NAME -> {
+                nameSaveJobs[key]?.cancel()
+                nameSaveJobs[key] = viewModelScope.launch {
+                    delay(NAME_DEBOUNCE_MS)
+                    repository.set(key, value)
                 }
             }
             SettingsKeys.LANGUAGE -> {
                 viewModelScope.launch {
-                    repository.setString(key, value)
+                    repository.set(key, value)
                     val locales = if (value.isBlank()) {
                         LocaleListCompat.getEmptyLocaleList()
                     } else {
@@ -90,11 +86,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     AppCompatDelegate.setApplicationLocales(locales)
                 }
             }
-            else -> {
-                viewModelScope.launch {
-                    repository.setString(key, value)
-                }
-            }
+            else -> set(key, value)
         }
     }
 
@@ -103,7 +95,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Switches what everything is shown in, then fetches any exchange rates that requires. */
     fun setDisplayCurrency(code: String) {
         viewModelScope.launch {
-            repository.setString(SettingsKeys.DISPLAY_CURRENCY, code)
+            repository.set(SettingsKeys.DISPLAY_CURRENCY, code)
             currencyRepository.ensureRates()
         }
     }
@@ -124,28 +116,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             ReminderToggle.Review -> SettingsKeys.REMINDER_REVIEW
         }
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { it[key] = on }
+            repository.set(key, on)
             if (toggle == ReminderToggle.Master) ReminderScheduler.sync(getApplication())
         }
     }
 
     fun setReminderTime(minuteOfDay: Int) {
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit {
-                it[SettingsKeys.REMINDER_MINUTE_OF_DAY] = minuteOfDay
-            }
+            repository.set(SettingsKeys.REMINDER_MINUTE_OF_DAY, minuteOfDay)
             ReminderScheduler.sync(getApplication(), rescheduleTime = true)
         }
     }
 
     fun runRemindersNow() {
         ReminderScheduler.runNow(getApplication())
-    }
-
-    fun setFloat(key: Preferences.Key<Float>, value: Float) {
-        viewModelScope.launch {
-            repository.setFloat(key, value)
-        }
     }
 
     fun updateDonationName(value: String) {
@@ -158,45 +142,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         setString(SettingsKeys.PUBLIC_INCOME_NAME, value)
     }
 
-    fun onPause(
-        currentDonationName: String,
-        currentIncomeName: String,
-        attachmentDirectoryUri: String
-    ) {
+    /** Renames the attachment folders on disk to match the names typed. */
+    fun onPause(attachmentDirectoryUri: String) {
+        val donationName = donationDirectoryName
+        val incomeName = incomeDirectoryName
         viewModelScope.launch {
-            donationNameUpdateJob?.join()
-            incomeNameUpdateJob?.join()
-
-            val oldDonation = initialDonationName ?: currentDonationName
-            val oldIncome = initialIncomeName ?: currentIncomeName
-
-            if (oldDonation != currentDonationName) {
-                renameDirectory(oldDonation, currentDonationName, attachmentDirectoryUri)
-                initialDonationName = currentDonationName
-            }
-
-            if (oldIncome != currentIncomeName) {
-                renameDirectory(oldIncome, currentIncomeName, attachmentDirectoryUri)
-                initialIncomeName = currentIncomeName
-            }
+            nameSaveJobs.values.toList().joinAll()
+            savedDonationFolder =
+                renameFolder(savedDonationFolder, donationName, isDonation = true, attachmentDirectoryUri)
+            savedIncomeFolder =
+                renameFolder(savedIncomeFolder, incomeName, isDonation = false, attachmentDirectoryUri)
         }
     }
 
-    private suspend fun renameDirectory(
-        oldName: String,
-        newName: String,
+    private suspend fun renameFolder(
+        saved: String?,
+        typed: String,
+        isDonation: Boolean,
         attachmentDirectoryUri: String
-    ) {
-        repository.renameDirectory(oldName, newName, attachmentDirectoryUri)
-    }
-}
-
-class SettingsViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(application) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
+    ): String? {
+        if (saved == null) return null
+        val target = getApplication<Application>().attachmentFolderName(isDonation, typed)
+        if (target != saved) repository.renameDirectory(saved, target, attachmentDirectoryUri)
+        return target
     }
 }
