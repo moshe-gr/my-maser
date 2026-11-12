@@ -44,11 +44,6 @@ import com.example.mymaser.gui.components.ScreenColumn
 import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.sanitizeAmountInput
-import com.example.mymaser.reminders.ReminderSettings
-import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
-import com.example.mymaser.settings.DEFAULT_REMINDER_MINUTE_OF_DAY
-import com.example.mymaser.settings.GmailSettings
-import com.example.mymaser.settings.MaserBasis
 import com.example.mymaser.settings.PRESET_MASER_PERCENTAGES
 import com.example.mymaser.settings.SettingsKeys
 import com.example.mymaser.settings.SettingsViewModel
@@ -64,18 +59,9 @@ private const val CUSTOM_PERCENTAGE = -1f
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
-    val language by viewModel.get(SettingsKeys.LANGUAGE, "")
-        .collectAsState(initial = "")
-    val themeMode by viewModel.get(SettingsKeys.THEME_MODE, ThemeMode.System.key)
-        .collectAsState(initial = ThemeMode.System.key)
+    val loaded by viewModel.state.collectAsState()
+    val state = loaded ?: return
     val rateStatus by viewModel.rateStatus.collectAsState()
-    val reminderSettings by viewModel.reminderSettings.collectAsState(initial = ReminderSettings())
-    val reminderMinute by viewModel.reminderMinuteOfDay.collectAsState(initial = DEFAULT_REMINDER_MINUTE_OF_DAY)
-    val maserPercentage by viewModel.get(SettingsKeys.MASER_PERCENTAGE, DEFAULT_MASER_PERCENTAGE)
-        .collectAsState(initial = DEFAULT_MASER_PERCENTAGE)
-    val aiEnabled by viewModel.aiEnabled.collectAsState(initial = false)
-    val maserBasis by viewModel.maserBasis.collectAsState(initial = MaserBasis.Net)
-    val gmail by viewModel.gmail.collectAsState(initial = GmailSettings())
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
@@ -103,7 +89,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
         ) {
             SettingsSection(stringResource(R.string.settings_maser_percentage), Icons.Outlined.Percent) {
                 MaserPercentageSetting(
-                    percentage = maserPercentage,
+                    percentage = state.maserPercentage,
                     onChange = { viewModel.set(SettingsKeys.MASER_PERCENTAGE, it) }
                 )
             }
@@ -119,15 +105,15 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
             SettingsSection(stringResource(R.string.settings_ai), Icons.Outlined.AutoAwesome) {
                 AiSetting(
-                    enabled = aiEnabled,
-                    basis = maserBasis,
+                    enabled = state.aiEnabled,
+                    basis = state.maserBasis,
                     onEnabledChange = viewModel::setAiEnabled,
                     onBasisChange = { viewModel.set(SettingsKeys.MASER_BASIS, it.key) }
                 )
                 SettingsDivider()
                 GmailSetting(
-                    settings = gmail,
-                    aiEnabled = aiEnabled,
+                    settings = state.gmail,
+                    aiEnabled = state.aiEnabled,
                     onConnected = viewModel::gmailConnected,
                     onDisconnect = viewModel::disconnectGmail,
                     onKeywordsChange = viewModel::setGmailKeywords,
@@ -137,8 +123,8 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
             SettingsSection(stringResource(R.string.settings_reminders), Icons.Outlined.Notifications) {
                 RemindersSetting(
-                    settings = reminderSettings,
-                    minuteOfDay = reminderMinute,
+                    settings = state.reminders,
+                    minuteOfDay = state.reminderMinuteOfDay,
                     onToggle = viewModel::setReminder,
                     onTimeChange = viewModel::setReminderTime,
                     onRunNow = viewModel::runRemindersNow
@@ -152,14 +138,14 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                         ThemeMode.Light to stringResource(R.string.settings_theme_light),
                         ThemeMode.Dark to stringResource(R.string.settings_theme_dark)
                     ),
-                    selected = ThemeMode.fromKey(themeMode),
+                    selected = state.themeMode,
                     onSelect = { viewModel.setString(SettingsKeys.THEME_MODE, it.key) }
                 )
             }
 
             SettingsSection(stringResource(R.string.settings_language), Icons.Outlined.Language) {
                 val selectedLanguage =
-                    if (language == LEGACY_LANGUAGE_HEBREW) LANGUAGE_HEBREW else language
+                    if (state.language == LEGACY_LANGUAGE_HEBREW) LANGUAGE_HEBREW else state.language
                 SegmentedChoice(
                     options = listOf(
                         "" to stringResource(R.string.settings_language_system),

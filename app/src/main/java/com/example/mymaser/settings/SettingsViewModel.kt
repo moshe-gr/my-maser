@@ -13,16 +13,47 @@ import com.example.mymaser.reminders.ReminderScheduler
 import com.example.mymaser.reminders.ReminderSettings
 import com.example.mymaser.settings.data.SettingsRepository
 import com.example.mymaser.settings.gui.ReminderToggle
-import kotlinx.coroutines.flow.Flow
+import com.example.mymaser.dataStore
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+/** Every value the settings screen shows, read from one preferences snapshot. */
+data class SettingsState(
+    val language: String,
+    val themeMode: ThemeMode,
+    val maserPercentage: Float,
+    val aiEnabled: Boolean,
+    val maserBasis: MaserBasis,
+    val gmail: GmailSettings,
+    val reminders: ReminderSettings,
+    val reminderMinuteOfDay: Int
+)
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = SettingsRepository(application)
     private val currencyRepository = CurrencyRepository.getInstance(application)
 
-    fun <T> get(key: Preferences.Key<T>, defaultValue: T): Flow<T> = repository.get(key, defaultValue)
+    /** Null until the stored values load, so the screen never shows defaults first. */
+    val state: StateFlow<SettingsState?> = application.dataStore.data
+        .map { prefs ->
+            SettingsState(
+                language = prefs[SettingsKeys.LANGUAGE].orEmpty(),
+                themeMode = ThemeMode.fromKey(prefs[SettingsKeys.THEME_MODE]),
+                maserPercentage = prefs.maserPercentage(),
+                aiEnabled = prefs.aiEnabled(),
+                maserBasis = prefs.maserBasis(),
+                gmail = prefs.gmailSettings(),
+                reminders = prefs.reminderSettings(),
+                reminderMinuteOfDay = prefs.reminderMinuteOfDay()
+            )
+        }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun <T> set(key: Preferences.Key<T>, value: T) {
         viewModelScope.launch { repository.set(key, value) }
@@ -58,10 +89,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { currencyRepository.ensureRates() }
     }
 
-    val aiEnabled: Flow<Boolean> = application.aiEnabledFlow()
-    val maserBasis: Flow<MaserBasis> = application.maserBasisFlow()
-    val gmail: Flow<GmailSettings> = application.gmailSettingsFlow()
-
     fun setAiEnabled(on: Boolean) {
         viewModelScope.launch {
             repository.set(SettingsKeys.AI_ENABLED, on)
@@ -88,9 +115,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setGmailKeywords(keywords: String) = set(SettingsKeys.GMAIL_KEYWORDS, keywords.trim())
 
     fun checkGmailNow() = GmailScheduler.runNow(getApplication())
-
-    val reminderSettings: Flow<ReminderSettings> = application.reminderSettingsFlow()
-    val reminderMinuteOfDay: Flow<Int> = application.reminderMinuteOfDayFlow()
 
     fun setReminder(toggle: ReminderToggle, on: Boolean) {
         val key = when (toggle) {

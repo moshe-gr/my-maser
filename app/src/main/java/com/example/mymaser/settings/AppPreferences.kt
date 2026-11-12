@@ -66,16 +66,22 @@ fun Context.displayCurrencyFlow(): Flow<String> = appearanceFlow()
     .map { it.displayCurrency }
     .distinctUntilChanged()
 
+fun Preferences.maserPercentage(): Float = this[SettingsKeys.MASER_PERCENTAGE] ?: DEFAULT_MASER_PERCENTAGE
+
+fun Preferences.maserBasis(): MaserBasis = MaserBasis.fromKey(this[SettingsKeys.MASER_BASIS])
+
+fun Preferences.aiEnabled(): Boolean = this[SettingsKeys.AI_ENABLED] ?: false
+
 fun Context.maserPercentageFlow(): Flow<Float> = dataStore.data
-    .map { it[SettingsKeys.MASER_PERCENTAGE] ?: DEFAULT_MASER_PERCENTAGE }
+    .map { it.maserPercentage() }
     .distinctUntilChanged()
 
 fun Context.maserBasisFlow(): Flow<MaserBasis> = dataStore.data
-    .map { MaserBasis.fromKey(it[SettingsKeys.MASER_BASIS]) }
+    .map { it.maserBasis() }
     .distinctUntilChanged()
 
 fun Context.aiEnabledFlow(): Flow<Boolean> = dataStore.data
-    .map { it[SettingsKeys.AI_ENABLED] ?: false }
+    .map { it.aiEnabled() }
     .distinctUntilChanged()
 
 data class GmailSettings(
@@ -84,14 +90,14 @@ data class GmailSettings(
     val keywords: String = DEFAULT_GMAIL_KEYWORDS
 )
 
+fun Preferences.gmailSettings(): GmailSettings = GmailSettings(
+    connected = this[SettingsKeys.GMAIL_CONNECTED] ?: false,
+    needsReconnect = this[SettingsKeys.GMAIL_NEEDS_RECONNECT] ?: false,
+    keywords = this[SettingsKeys.GMAIL_KEYWORDS] ?: DEFAULT_GMAIL_KEYWORDS
+)
+
 fun Context.gmailSettingsFlow(): Flow<GmailSettings> = dataStore.data
-    .map {
-        GmailSettings(
-            connected = it[SettingsKeys.GMAIL_CONNECTED] ?: false,
-            needsReconnect = it[SettingsKeys.GMAIL_NEEDS_RECONNECT] ?: false,
-            keywords = it[SettingsKeys.GMAIL_KEYWORDS] ?: DEFAULT_GMAIL_KEYWORDS
-        )
-    }
+    .map { it.gmailSettings() }
     .distinctUntilChanged()
 
 data class BalanceSetup(val adjustment: BalanceAdjustment?)
@@ -120,19 +126,22 @@ fun minuteOfDayToTime(minuteOfDay: Int): LocalTime = LocalTime.of(minuteOfDay / 
 
 fun LocalTime.toMinuteOfDay(): Int = hour * 60 + minute
 
+fun Preferences.reminderSettings(): ReminderSettings = ReminderSettings(
+    enabled = this[SettingsKeys.REMINDERS_ENABLED] ?: false,
+    expectedEntries = this[SettingsKeys.REMINDER_EXPECTED] ?: true,
+    balance = this[SettingsKeys.REMINDER_BALANCE] ?: true,
+    yearInReview = this[SettingsKeys.REMINDER_REVIEW] ?: true
+)
+
+fun Preferences.reminderMinuteOfDay(): Int =
+    this[SettingsKeys.REMINDER_MINUTE_OF_DAY] ?: DEFAULT_REMINDER_MINUTE_OF_DAY
+
 fun Context.reminderSettingsFlow(): Flow<ReminderSettings> = dataStore.data
-    .map {
-        ReminderSettings(
-            enabled = it[SettingsKeys.REMINDERS_ENABLED] ?: false,
-            expectedEntries = it[SettingsKeys.REMINDER_EXPECTED] ?: true,
-            balance = it[SettingsKeys.REMINDER_BALANCE] ?: true,
-            yearInReview = it[SettingsKeys.REMINDER_REVIEW] ?: true
-        )
-    }
+    .map { it.reminderSettings() }
     .distinctUntilChanged()
 
 fun Context.reminderMinuteOfDayFlow(): Flow<Int> = dataStore.data
-    .map { it[SettingsKeys.REMINDER_MINUTE_OF_DAY] ?: DEFAULT_REMINDER_MINUTE_OF_DAY }
+    .map { it.reminderMinuteOfDay() }
     .distinctUntilChanged()
 
 /** Hides a due prediction (by its key) until its month has passed. */
