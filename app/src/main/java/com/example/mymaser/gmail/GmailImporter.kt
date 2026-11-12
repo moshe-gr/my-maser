@@ -73,7 +73,7 @@ class GmailImporter(
                     AiError.Network -> throw IOException("Gemini unreachable")
                     AiError.Failed ->
                         store.insert(PendingImport(id, message.subject, "[]", nowMillis, PendingImport.DONE))
-                    AiError.QuotaExceeded, AiError.Disabled, AiError.NotConfigured -> return found
+                    AiError.QuotaExceeded, AiError.Busy, AiError.Disabled, AiError.NotConfigured -> return found
                 }
             }
         }

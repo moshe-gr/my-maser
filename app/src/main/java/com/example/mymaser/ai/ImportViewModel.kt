@@ -38,7 +38,8 @@ sealed interface ImportState {
 }
 
 val AiError.canRetry: Boolean
-    get() = this == AiError.Network || this == AiError.Failed || this == AiError.QuotaExceeded
+    get() = this == AiError.Network || this == AiError.Failed || this == AiError.QuotaExceeded ||
+        this == AiError.Busy
 
 /** Reads shared, scanned or picked documents into entries for the review sheet. */
 class ImportViewModel(application: Application) : AndroidViewModel(application) {

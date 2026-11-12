@@ -1,6 +1,7 @@
 package com.example.mymaser.ai
 
 import android.content.Context
+import android.util.Log
 import com.google.firebase.ai.type.Content
 import com.google.firebase.ai.type.FunctionCallPart
 import com.google.firebase.ai.type.FunctionDeclaration
@@ -30,44 +31,64 @@ class GeminiChat(context: Context) : AiChat {
     private val appContext = context.applicationContext
     private val history = mutableListOf<Content>()
 
-    private val model by lazy {
-        geminiOrNull(appContext)?.generativeModel(
-            modelName = GEMINI_MODEL,
-            tools = listOf(Tool.functionDeclarations(ChatTools.all.map { it.toDeclaration() })),
-            systemInstruction = content { text(ChatTools.SYSTEM_PROMPT) }
-        )
+    private val models by lazy {
+        val ai = geminiOrNull(appContext) ?: return@lazy emptyList()
+        CHAT_MODELS.map { name ->
+            ai.generativeModel(
+                modelName = name,
+                tools = listOf(Tool.functionDeclarations(ChatTools.all.map { it.toDeclaration() })),
+                systemInstruction = content { text(ChatTools.SYSTEM_PROMPT) }
+            )
+        }
     }
 
     override suspend fun send(question: String, data: ChatData): AiResult<String> {
-        val model = model ?: return AiResult.Error(AiError.NotConfigured)
-        return geminiCall {
-            val turn = mutableListOf(content { text("Today is ${data.now.toLocalDate()}. $question") })
-            repeat(MAX_TOOL_ROUNDS) {
-                val reply = model.generateContent(history + turn).candidates.firstOrNull()?.content
-                    ?: return@geminiCall AiResult.Error(AiError.Failed)
+        if (models.isEmpty()) return AiResult.Error(AiError.NotConfigured)
+        return geminiWithFallback(models) { model ->
+            val turn = mutableListOf(content { text(ChatTools.framedQuestion(question, data.now.toLocalDate())) })
+            repeat(MAX_TOOL_ROUNDS) { round ->
+                val started = System.currentTimeMillis()
+                val response = model.generateContent(history + turn)
+                val candidate = response.candidates.firstOrNull()
+                Log.d(
+                    AI_LOG_TAG,
+                    "chat round $round: ${System.currentTimeMillis() - started} ms, " +
+                        "finish=${candidate?.finishReason?.name}, " +
+                        "parts=${candidate?.content?.parts?.map { it::class.simpleName }}"
+                )
+                val reply = candidate?.content ?: return@geminiWithFallback AiResult.Error(AiError.Failed)
                 turn += reply
                 val calls = reply.parts.filterIsInstance<FunctionCallPart>()
                 if (calls.isEmpty()) {
-                    val answer = reply.parts.filterIsInstance<TextPart>()
-                        .filterNot { it.isThought }.joinToString("") { it.text }.trim()
-                    if (answer.isEmpty()) return@geminiCall AiResult.Error(AiError.Failed)
+                    val answer = ChatTools.cleanAnswer(
+                        reply.parts.filterIsInstance<TextPart>().filterNot { it.isThought }.joinToString("") { it.text }
+                    )
+                    if (answer.isEmpty()) {
+                        Log.w(AI_LOG_TAG, "chat reply had no text")
+                        return@geminiWithFallback AiResult.Error(AiError.Failed)
+                    }
                     history += turn
-                    return@geminiCall AiResult.Success(answer)
+                    return@geminiWithFallback AiResult.Success(answer)
                 }
-                turn += content("function") {
+                turn += content("user") {
                     calls.forEach { call ->
                         val args = call.args.mapValues { (_, value) -> value.asText() }
                         val result = ChatTools.run(call.name, args, data)
+                        Log.d(AI_LOG_TAG, "tool ${call.name}(${args.keys}) -> error=${result["error"]}")
                         part(FunctionResponsePart(call.name, result.toJsonObject(), call.id))
                     }
                 }
             }
+            Log.w(AI_LOG_TAG, "chat gave up after $MAX_TOOL_ROUNDS tool rounds")
             AiResult.Error(AiError.Failed)
         }
     }
 
     private companion object {
         const val MAX_TOOL_ROUNDS = 5
+
+        /** Answers are simple sums from the tools, so the lighter model with the larger free quota leads. */
+        val CHAT_MODELS = listOf(GEMINI_FLASH_LITE, GEMINI_FLASH)
 
         fun ChatTool.toDeclaration() = FunctionDeclaration(
             name = name,

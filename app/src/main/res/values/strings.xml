@@ -203,6 +203,7 @@
     <string name="chat_hint">Ask a question</string>
     <string name="chat_send">Send</string>
     <string name="chat_thinking">Thinking…</string>
+    <string name="ai_error_busy">Gemini is busy right now. Try again in a minute.</string>
     <string name="chat_error_failed">Couldn\'t answer that. Try asking another way.</string>
     <string name="chat_suggestion_year">How much did I give this year?</string>
     <string name="chat_suggestion_balance">How much maser do I have left?</string>

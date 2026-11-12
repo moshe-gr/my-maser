@@ -292,7 +292,7 @@ fun MainScreen(
         bottomBar = {
             NavigationBar {
                 ScreenTypes.entries.forEach { screen ->
-                    val selected = current == screen
+                    val selected = !onChat && current == screen
                     NavigationBarItem(
                         selected = selected,
                         onClick = { navController.openTab(screen) },
@@ -342,6 +342,7 @@ fun MainScreen(
                     messages = messages,
                     thinking = thinking,
                     onAsk = { chatViewModel.ask(it, viewModel.chatData()) },
+                    onRetry = { chatViewModel.retry(viewModel.chatData()) },
                     onOpenSettings = {
                         context.startActivity(Intent(context, SettingsActivity::class.java))
                     }

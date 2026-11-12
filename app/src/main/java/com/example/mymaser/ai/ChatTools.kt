@@ -54,7 +54,8 @@ object ChatTools {
         ),
         ChatTool(
             BALANCE,
-            "Maser still left to give now, and the projected balance on December 31 from recurring entries."
+            "Maser still left to give now, or how much was given ahead of what's owed, and the same " +
+                "projected to December 31 from recurring entries."
         ),
         ChatTool(
             MONTHLY,
@@ -66,11 +67,25 @@ object ChatTools {
 
     const val SYSTEM_PROMPT = """
 You answer questions about the user's own ma'aser (tithe) records in a personal tracker app.
-Always get numbers from the tools; never guess or invent figures. Amounts are in the currency the
-tools return. Today's date is given with each question. Reply briefly, in the language the user
-wrote in. If the records can't answer something, say so. Don't give halachic rulings; suggest
-asking a rabbi for those.
+Always get numbers from the tools; never guess or invent figures. Today's date and the language to
+answer in are given with each question. Reply briefly in plain text: no Markdown, no asterisks,
+no headings. Write amounts with the currency symbol instead of the code (ILS ₪, USD $, EUR €,
+GBP £) and thousands separators, e.g. ₪2,760. If the records can't answer something, say so.
+Don't give halachic rulings; suggest asking a rabbi for those.
 """
+
+    /** The question as sent to the model, with today's date and the language to answer in. */
+    fun framedQuestion(question: String, today: LocalDate): String {
+        val language = if (question.any { it in '֐'..'׿' }) "Hebrew" else "English"
+        return "Today is $today. Answer in $language.\n\n$question"
+    }
+
+    /** Markdown the model sometimes adds anyway, removed so it doesn't show as symbols. */
+    fun cleanAnswer(text: String): String = text.lines().joinToString("\n") { line ->
+        line.replace("**", "").replace("__", "")
+            .replace(Regex("^\\s*#{1,6}\\s+"), "")
+            .replace(Regex("^(\\s*)[*-]\\s+"), "$1• ")
+    }.trim()
 
     /** Runs [name] over [data]; unknown tools and bad arguments come back as an error field. */
     fun run(name: String, args: Map<String, String?>, data: ChatData): Map<String, Any?> = try {
@@ -110,12 +125,18 @@ asking a rabbi for those.
         )
     }
 
-    private fun balance(data: ChatData): Map<String, Any?> = mapOf(
-        "currency" to data.currency,
-        "maser_left_to_give" to round(data.balance),
-        "projected_on_december_31" to data.forecast?.balance?.let(::round),
-        "monthly_to_finish_at_zero" to data.forecast?.monthlyToClear?.let(::round)
-    )
+    /** Signed balances are split into plain amounts, so the model never reports "-₪500 left". */
+    private fun balance(data: ChatData): Map<String, Any?> {
+        val projected = data.forecast?.balance
+        return mapOf(
+            "currency" to data.currency,
+            "maser_left_to_give" to round(data.balance.coerceAtLeast(0.0)),
+            "given_ahead" to round((-data.balance).coerceAtLeast(0.0)),
+            "projected_left_to_give_on_december_31" to projected?.let { round(it.coerceAtLeast(0.0)) },
+            "projected_given_ahead_on_december_31" to projected?.let { round((-it).coerceAtLeast(0.0)) },
+            "monthly_to_finish_at_zero" to data.forecast?.monthlyToClear?.let { round(it.coerceAtLeast(0.0)) }
+        )
+    }
 
     private fun monthly(args: Map<String, String?>, data: ChatData): Map<String, Any?> {
         val year = args["year"]?.let {

@@ -144,6 +144,7 @@ private fun ColumnScope.Failure(
         AiError.NotConfigured -> R.string.import_error_not_configured
         AiError.QuotaExceeded -> R.string.import_error_quota
         AiError.Network -> R.string.import_error_network
+        AiError.Busy -> R.string.ai_error_busy
         AiError.Failed -> R.string.import_error_failed
     }
     Text(stringResource(message), style = MaterialTheme.typography.bodyLarge)

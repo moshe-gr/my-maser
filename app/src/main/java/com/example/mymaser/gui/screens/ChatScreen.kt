@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.ai.AiError
 import com.example.mymaser.ai.ChatMessage
+import com.example.mymaser.ai.canRetry
 
 /** Ask questions about your own records; answers come from totals computed on the phone. */
 @Composable
@@ -48,6 +49,7 @@ fun ChatScreen(
     messages: List<ChatMessage>,
     thinking: Boolean,
     onAsk: (String) -> Unit,
+    onRetry: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     var text by rememberSaveable { mutableStateOf("") }
@@ -74,11 +76,16 @@ fun ChatScreen(
             if (messages.isEmpty()) {
                 item { Intro(onAsk = ::ask) }
             }
-            itemsIndexed(messages) { _, message ->
+            itemsIndexed(messages) { index, message ->
                 when (message) {
                     is ChatMessage.Question -> Bubble(message.text, mine = true)
                     is ChatMessage.Answer -> Bubble(message.text, mine = false)
-                    is ChatMessage.Problem -> Problem(message.error, onOpenSettings)
+                    is ChatMessage.Problem -> Problem(
+                        error = message.error,
+                        canRetry = index == messages.lastIndex && !thinking,
+                        onRetry = onRetry,
+                        onOpenSettings = onOpenSettings
+                    )
                 }
             }
             if (thinking) {
@@ -142,18 +149,21 @@ private fun Bubble(text: String, mine: Boolean) {
 }
 
 @Composable
-private fun Problem(error: AiError, onOpenSettings: () -> Unit) {
+private fun Problem(error: AiError, canRetry: Boolean, onRetry: () -> Unit, onOpenSettings: () -> Unit) {
     val message = when (error) {
         AiError.Disabled -> R.string.import_error_disabled
         AiError.NotConfigured -> R.string.import_error_not_configured
         AiError.QuotaExceeded -> R.string.import_error_quota
         AiError.Network -> R.string.import_error_network
+        AiError.Busy -> R.string.ai_error_busy
         AiError.Failed -> R.string.chat_error_failed
     }
     Column {
         Text(stringResource(message), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
         if (error == AiError.Disabled) {
             TextButton(onClick = onOpenSettings) { Text(stringResource(R.string.open_settings)) }
+        } else if (canRetry && error.canRetry) {
+            TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
         }
     }
 }

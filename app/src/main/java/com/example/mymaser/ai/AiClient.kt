@@ -1,6 +1,7 @@
 package com.example.mymaser.ai
 
 import android.content.Context
+import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.ai.FirebaseAI
@@ -8,7 +9,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.FirebaseAIException
 import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.ai.GenerativeModel
 import com.google.firebase.ai.type.QuotaExceededException
+import com.google.firebase.ai.type.ServerException
+import kotlinx.coroutines.delay
 import com.google.firebase.ai.type.Schema
 import com.google.firebase.ai.type.content
 import com.google.firebase.ai.type.generationConfig
@@ -34,6 +38,9 @@ enum class AiError {
     Disabled,
     QuotaExceeded,
     Network,
+
+    /** Gemini is overloaded right now; trying again shortly usually works. */
+    Busy,
     Failed
 }
 
@@ -42,8 +49,19 @@ interface AiClient {
     suspend fun extract(inputs: List<AiInput>): AiResult<String>
 }
 
-/** Free-tier Flash model; the alias follows Google's current release. */
-internal const val GEMINI_MODEL = "gemini-flash-latest"
+/**
+ * Free-tier models; the aliases follow Google's current releases. Each has its own daily quota and
+ * load, and Flash's free quota is small (about 20 requests a day), so callers list them in order of
+ * preference and fall back to the other when one is busy or used up.
+ */
+internal const val GEMINI_FLASH = "gemini-flash-latest"
+internal const val GEMINI_FLASH_LITE = "gemini-flash-lite-latest"
+
+/** Reading documents benefits most from the stronger model. */
+internal val DOCUMENT_MODELS = listOf(GEMINI_FLASH, GEMINI_FLASH_LITE)
+
+private const val BUSY_RETRY_DELAY_MS = 1_500L
+private val BUSY_HINTS = listOf("high demand", "overloaded", "unavailable", "503", "try again later")
 
 private val appCheckInstalled = AtomicBoolean(false)
 
@@ -60,31 +78,62 @@ internal suspend fun <T> geminiCall(block: suspend () -> AiResult<T>): AiResult<
         block()
     } catch (e: CancellationException) {
         throw e
-    } catch (_: QuotaExceededException) {
+    } catch (e: QuotaExceededException) {
+        Log.w(AI_LOG_TAG, "Gemini quota exceeded", e)
         AiResult.Error(AiError.QuotaExceeded)
+    } catch (e: ServerException) {
+        Log.w(AI_LOG_TAG, "Gemini server error", e)
+        val busy = BUSY_HINTS.any { e.message.orEmpty().contains(it, ignoreCase = true) }
+        AiResult.Error(if (busy) AiError.Busy else AiError.Failed)
     } catch (e: FirebaseAIException) {
+        Log.w(AI_LOG_TAG, "Gemini call failed", e)
         AiResult.Error(if (e.cause is IOException) AiError.Network else AiError.Failed)
-    } catch (_: IOException) {
+    } catch (e: IOException) {
+        Log.w(AI_LOG_TAG, "Gemini unreachable", e)
         AiResult.Error(AiError.Network)
     }
+
+internal const val AI_LOG_TAG = "MyMaserAi"
+
+private val FALL_BACK_ON = setOf(AiError.Busy, AiError.QuotaExceeded)
+
+/** Runs [block] on each of [models] in turn while Gemini reports it's busy or out of quota. */
+internal suspend fun <T> geminiWithFallback(
+    models: List<GenerativeModel>,
+    block: suspend (GenerativeModel) -> AiResult<T>
+): AiResult<T> {
+    var result: AiResult<T> = AiResult.Error(AiError.Busy)
+    models.forEachIndexed { index, model ->
+        if (index > 0) {
+            Log.i(AI_LOG_TAG, "Gemini model $index of ${models.size} unavailable, trying the next one")
+            delay(BUSY_RETRY_DELAY_MS)
+        }
+        result = geminiCall { block(model) }
+        if ((result as? AiResult.Error)?.reason !in FALL_BACK_ON) return result
+    }
+    return result
+}
 
 class GeminiAiClient private constructor(context: Context) : AiClient {
 
     private val appContext: Context = context.applicationContext
 
-    private val model by lazy {
-        geminiOrNull(appContext)?.generativeModel(
-            modelName = GEMINI_MODEL,
-            generationConfig = generationConfig {
-                responseMimeType = "application/json"
-                responseSchema = extractionSchema
-            },
-            systemInstruction = content { text(EXTRACTION_PROMPT) }
-        )
+    private val models by lazy {
+        val ai = geminiOrNull(appContext) ?: return@lazy emptyList()
+        DOCUMENT_MODELS.map { name ->
+            ai.generativeModel(
+                modelName = name,
+                generationConfig = generationConfig {
+                    responseMimeType = "application/json"
+                    responseSchema = extractionSchema
+                },
+                systemInstruction = content { text(EXTRACTION_PROMPT) }
+            )
+        }
     }
 
     override suspend fun extract(inputs: List<AiInput>): AiResult<String> {
-        val model = model ?: return AiResult.Error(AiError.NotConfigured)
+        if (models.isEmpty()) return AiResult.Error(AiError.NotConfigured)
         val request = content {
             inputs.forEach {
                 when (it) {
@@ -93,7 +142,7 @@ class GeminiAiClient private constructor(context: Context) : AiClient {
                 }
             }
         }
-        return geminiCall {
+        return geminiWithFallback(models) { model ->
             val reply = model.generateContent(request).text
             if (reply.isNullOrBlank()) AiResult.Error(AiError.Failed) else AiResult.Success(reply)
         }

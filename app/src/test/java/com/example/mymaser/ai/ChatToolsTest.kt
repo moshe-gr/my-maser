@@ -53,9 +53,31 @@ class ChatToolsTest {
     }
 
     @Test
+    fun `questions carry the date and the language to answer in`() {
+        val today = now.toLocalDate()
+        assertEquals("Today is 2026-11-12. Answer in English.\n\nHow much?", ChatTools.framedQuestion("How much?", today))
+        assertEquals("Today is 2026-11-12. Answer in Hebrew.\n\nכמה תרמתי?", ChatTools.framedQuestion("כמה תרמתי?", today))
+    }
+
+    @Test
+    fun `markdown is removed from answers`() {
+        assertEquals(
+            "You gave ₪2,760 this year.\n• Yad Eliezer: ₪500",
+            ChatTools.cleanAnswer("## Total\nYou gave **₪2,760** this year.\n* Yad Eliezer: ₪500").lines().drop(1).joinToString("\n")
+        )
+    }
+
+    @Test
+    fun `a negative balance is reported as given ahead`() {
+        val ahead = ChatTools.run(ChatTools.BALANCE, emptyMap(), data.copy(balance = -1369.5))
+        assertEquals(0.0, ahead["maser_left_to_give"])
+        assertEquals(1369.5, ahead["given_ahead"])
+    }
+
+    @Test
     fun `balance and bad arguments`() {
         assertEquals(1200.0, ChatTools.run(ChatTools.BALANCE, emptyMap(), data)["maser_left_to_give"])
-        assertNull(ChatTools.run(ChatTools.BALANCE, emptyMap(), data)["projected_on_december_31"])
+        assertNull(ChatTools.run(ChatTools.BALANCE, emptyMap(), data)["projected_left_to_give_on_december_31"])
         assertNotNull(ChatTools.run(ChatTools.TOTALS, mapOf("from" to "last week"), data)["error"])
         assertNotNull(ChatTools.run("drop_tables", emptyMap(), data)["error"])
     }

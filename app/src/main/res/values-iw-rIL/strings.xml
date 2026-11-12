@@ -204,6 +204,7 @@
     <string name="chat_hint">כתוב שאלה</string>
     <string name="chat_send">שלח</string>
     <string name="chat_thinking">חושב…</string>
+    <string name="ai_error_busy">Gemini עמוס כרגע. נסה שוב בעוד דקה.</string>
     <string name="chat_error_failed">לא הצלחתי לענות על זה. נסה לשאול אחרת.</string>
     <string name="chat_suggestion_year">כמה תרמתי השנה?</string>
     <string name="chat_suggestion_balance">כמה מעשר נשאר לי לתת?</string>

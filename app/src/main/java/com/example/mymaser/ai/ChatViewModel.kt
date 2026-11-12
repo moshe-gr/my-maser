@@ -29,10 +29,23 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val _thinking = MutableStateFlow(false)
     val thinking: StateFlow<Boolean> = _thinking.asStateFlow()
 
+    /** Asks the last question again after it failed. */
+    fun retry(data: ChatData?) {
+        val messages = _messages.value
+        val question = messages.lastOrNull { it is ChatMessage.Question } as? ChatMessage.Question ?: return
+        if (messages.lastOrNull() !is ChatMessage.Problem || _thinking.value) return
+        _messages.value = messages.dropLast(1)
+        send(question.text, data)
+    }
+
     fun ask(question: String, data: ChatData?) {
         val text = question.trim()
         if (text.isEmpty() || _thinking.value) return
         _messages.update { it + ChatMessage.Question(text) }
+        send(text, data)
+    }
+
+    private fun send(text: String, data: ChatData?) {
         _thinking.value = true
         viewModelScope.launch {
             val result = when {
