@@ -79,6 +79,14 @@
     <string name="summary_share_donation">%1$s מכלל התרומות</string>
     <string name="summary_added_to_maser">נוסף למעשר</string>
     <string name="summary_maser_reduced">הופחת מהמעשר</string>
+    <string name="summary_not_counted">לא נספר במעשר</string>
+    <string name="donation_type_maser">מעשר</string>
+    <string name="donation_type_tax_only">למס בלבד</string>
+    <string name="tax_only_tag">למס בלבד</string>
+    <string name="tax_only_hint">לא יפחית מיתרת המעשר</string>
+    <string name="filter_tax_only">למס בלבד</string>
+    <string name="tax_year_total">נתרם ב-%1$d: %2$s</string>
+    <string name="tax_year_total_with_tax_only">נתרם ב-%1$d: %2$s · %3$s למס בלבד</string>
     <string name="summary_recurring">בדרך כלל סביב ה־%1$d בחודש · צפוי בפעם הבאה ב־%2$s</string>
     <string name="summary_highest">הגבוה ביותר</string>
     <string name="summary_lowest">הנמוך ביותר</string>

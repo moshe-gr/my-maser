@@ -62,6 +62,49 @@ class HistoryCalculationsTest {
     }
 
     @Test
+    fun `tax-only donations have no maser effect`() {
+        assertEquals(0F, maserDelta(50F, isDonation = true, isTaxOnly = true), 0.001F)
+        assertEquals(0F, donation(at(2026, 11, 2), 50F).copy(isTaxOnly = true).maserDelta, 0.001F)
+    }
+
+    @Test
+    fun `home stats leave out tax-only donations`() {
+        val history = listOf(
+            donation(at(2026, 11, 2), 30F),
+            donation(at(2026, 11, 3), 70F).copy(isTaxOnly = true)
+        )
+        val stats = computeHomeStats(history, now)
+        assertEquals(30.0, stats.donatedThisMonth, 0.001)
+        assertEquals(30.0, stats.donatedThisYear, 0.001)
+        assertEquals(30.0, stats.donatedTotal, 0.001)
+    }
+
+    @Test
+    fun `tax-only filter shows only tax-only donations`() {
+        val maser = donation(at(2026, 11, 2), 30F)
+        val taxOnly = donation(at(2026, 11, 3), 70F).copy(isTaxOnly = true)
+        val income = History(timeStamp = at(2026, 11, 4), amount = 500F)
+        val result = filterHistory(
+            listOf(maser, taxOnly, income),
+            HistoryQuery(type = TypeFilter.TaxOnly),
+            now,
+            DayOfWeek.SUNDAY
+        )
+        assertEquals(listOf(taxOnly), result)
+    }
+
+    @Test
+    fun `tax year donations cover this calendar year and split out tax-only`() {
+        val history = listOf(
+            donation(at(2026, 1, 1, 0), 30F),
+            donation(at(2026, 11, 3), 70F).copy(isTaxOnly = true),
+            donation(at(2025, 12, 31, 23), 999F),
+            History(timeStamp = at(2026, 5, 1), amount = 5000F)
+        )
+        assertEquals(TaxYearDonations(2026, 100.0, 70.0), taxYearDonations(history, now))
+    }
+
+    @Test
     fun `empty history has no last action`() {
         assertNull(computeHomeStats(emptyList(), now).lastActionTime)
     }

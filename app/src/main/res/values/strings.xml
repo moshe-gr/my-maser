@@ -83,6 +83,14 @@
     <string name="summary_share_donation">%1$s of all donations</string>
     <string name="summary_added_to_maser">Added to maser</string>
     <string name="summary_maser_reduced">Maser reduced by</string>
+    <string name="summary_not_counted">Not counted toward maser</string>
+    <string name="donation_type_maser">Maser</string>
+    <string name="donation_type_tax_only">Tax only</string>
+    <string name="tax_only_tag">Tax only</string>
+    <string name="tax_only_hint">Won\'t reduce your maser balance</string>
+    <string name="filter_tax_only">Tax only</string>
+    <string name="tax_year_total">Donated in %1$d: %2$s</string>
+    <string name="tax_year_total_with_tax_only">Donated in %1$d: %2$s · %3$s tax only</string>
     <string name="summary_recurring">Usually around the %1$d of the month · next expected %2$s</string>
     <string name="summary_highest">Highest</string>
     <string name="summary_lowest">Lowest</string>

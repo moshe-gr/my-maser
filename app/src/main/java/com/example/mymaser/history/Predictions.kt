@@ -15,7 +15,8 @@ data class Prediction(
     val expectedDate: LocalDate,
     val amount: Float,
     val currency: String,
-    val status: DueStatus
+    val status: DueStatus,
+    val isTaxOnly: Boolean = false
 ) {
     /** Identifies this source's occurrence in one month, for dismissals and sent reminders. */
     val key: String
@@ -55,7 +56,8 @@ fun predictDueEntries(
             val (isDonation, _) = group
             val recurrence = detectRecurrence(entries, now) ?: return@mapNotNull null
             val dates = entries.map { it.localDate(now.zone) }
-            val latestName = entries.maxBy { it.timeStamp }.name.trim()
+            val latest = entries.maxBy { it.timeStamp }
+            val latestName = latest.name.trim()
 
             (-1L..1L)
                 .map { offset -> currentMonth.plusMonths(offset).atDayClamped(recurrence.typicalDay) }
@@ -71,7 +73,8 @@ fun predictDueEntries(
                         expectedDate = expected,
                         amount = suggestion.amount,
                         currency = suggestion.currency,
-                        status = status
+                        status = status,
+                        isTaxOnly = latest.isTaxOnlyDonation
                     )
                 }
                 .filterNot { it.key in dismissed }

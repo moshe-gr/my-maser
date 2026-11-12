@@ -32,12 +32,21 @@ fun previousYearRange(now: ZonedDateTime): TimeRange {
 fun maserDelta(
     amount: Float,
     isDonation: Boolean,
-    percentage: Float = DEFAULT_MASER_PERCENTAGE
-): Float = if (isDonation) -amount else amount * (percentage / 100f)
+    percentage: Float = DEFAULT_MASER_PERCENTAGE,
+    isTaxOnly: Boolean = false
+): Float = when {
+    isDonation && isTaxOnly -> 0f
+    isDonation -> -amount
+    else -> amount * (percentage / 100f)
+}
 
-val History.maserDelta: Float get() = maserDelta(amount, isDonation, maserPercentage)
+val History.maserDelta: Float get() = maserDelta(amount, isDonation, maserPercentage, isTaxOnly)
 
-enum class TypeFilter { All, Income, Donations }
+val History.isMaserDonation: Boolean get() = isDonation && !isTaxOnly
+
+val History.isTaxOnlyDonation: Boolean get() = isDonation && isTaxOnly
+
+enum class TypeFilter { All, Income, Donations, TaxOnly }
 
 enum class TimeFilter { AllTime, Today, ThisWeek, ThisMonth, ThisYear, LastYear, SpecificMonth, SpecificYear }
 
@@ -68,6 +77,7 @@ fun filterHistory(
             TypeFilter.All -> true
             TypeFilter.Income -> !entry.isDonation
             TypeFilter.Donations -> entry.isDonation
+            TypeFilter.TaxOnly -> entry.isTaxOnlyDonation
         }
         val matchesTime = when (query.time) {
             TimeFilter.AllTime -> true
@@ -92,7 +102,7 @@ data class HomeStats(
 )
 
 fun computeHomeStats(history: List<History>, now: ZonedDateTime): HomeStats {
-    val donations = history.filter { it.isDonation }
+    val donations = history.filter { it.isMaserDonation }
     val month = monthRange(now)
     val year = yearRange(now)
     return HomeStats(
@@ -100,6 +110,19 @@ fun computeHomeStats(history: List<History>, now: ZonedDateTime): HomeStats {
         donatedThisYear = donations.filter { it.timeStamp in year }.sumOf { it.amount.toDouble() },
         donatedTotal = donations.sumOf { it.amount.toDouble() },
         lastActionTime = history.maxOfOrNull { it.timeStamp }
+    )
+}
+
+data class TaxYearDonations(val year: Int, val total: Double, val taxOnly: Double)
+
+/** Every donation of the current calendar year (the Israeli tax year), with the tax-only part. */
+fun taxYearDonations(history: List<History>, now: ZonedDateTime): TaxYearDonations {
+    val year = yearRange(now)
+    val donations = history.filter { it.isDonation && it.timeStamp in year }
+    return TaxYearDonations(
+        year = now.year,
+        total = donations.sumOf { it.amount.toDouble() },
+        taxOnly = donations.filter { it.isTaxOnly }.sumOf { it.amount.toDouble() }
     )
 }
 

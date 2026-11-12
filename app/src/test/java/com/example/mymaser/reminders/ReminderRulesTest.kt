@@ -73,6 +73,13 @@ class ReminderRulesTest {
     }
 
     @Test
+    fun `a recent tax-only donation doesn't hold back the monthly balance reminder`() {
+        val taxOnly = History(timeStamp = at(2026, 10, 25), amount = 10F, isDonation = true, isTaxOnly = true)
+        val result = computeReminders(input(now(2026, 11, 3), listOf(taxOnly), balance = 500.0))
+        assertEquals(listOf("balance|2026-11"), result.map { it.key })
+    }
+
+    @Test
     fun `year-end balance reminder in the second half of December`() {
         val result = computeReminders(input(now(2026, 12, 16), balance = 300.0))
         val balance = result.single() as Reminder.Balance

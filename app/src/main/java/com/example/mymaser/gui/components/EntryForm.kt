@@ -65,7 +65,7 @@ fun EntryForm(
     names: List<String>,
     lastEntry: History?,
     onSuggestionPicked: (String) -> AmountSuggestion?,
-    onSave: (name: String, amount: Float, currency: String) -> Unit,
+    onSave: (name: String, amount: Float, currency: String, isTaxOnly: Boolean) -> Unit,
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
     prefill: Prefill? = null,
     onPrefillConsumed: () -> Unit = {},
@@ -78,6 +78,7 @@ fun EntryForm(
     var amountText by rememberSaveable { mutableStateOf("") }
     var chosenCurrency by rememberSaveable { mutableStateOf<String?>(null) }
     var autoFilledAmount by rememberSaveable { mutableStateOf<String?>(null) }
+    var isTaxOnly by rememberSaveable { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
@@ -105,17 +106,19 @@ fun EntryForm(
         amountText = prefill.amount?.takeIf { it > 0F }?.let(::formatAmountInput).orEmpty()
         chosenCurrency = prefill.currency
         autoFilledAmount = amountText
+        isTaxOnly = prefill.isTaxOnly
         menuOpen = false
         onPrefillConsumed()
     }
 
     fun save() {
         focusManager.clearFocus()
-        onSave(name.trim(), amount, currency)
+        onSave(name.trim(), amount, currency, isDonation && isTaxOnly)
         name = ""
         amountText = ""
         chosenCurrency = null
         autoFilledAmount = null
+        isTaxOnly = false
     }
 
     fun submit() {
@@ -192,20 +195,24 @@ fun EntryForm(
             label = {
                 Text(stringResource(if (isDonation) R.string.type_donation else R.string.type_income))
             },
-            supportingText = if (!isDonation && amount > 0F) {
-                {
-                    Text(
-                        stringResource(
-                            R.string.adds_to_maser,
-                            formatCurrency(
-                                maserDelta(amount, false, maserPercentage).toDouble(),
-                                currencyCode = currency
+            supportingText = when {
+                !isDonation && amount > 0F -> {
+                    {
+                        Text(
+                            stringResource(
+                                R.string.adds_to_maser,
+                                formatCurrency(
+                                    maserDelta(amount, false, maserPercentage).toDouble(),
+                                    currencyCode = currency
+                                )
                             )
                         )
-                    )
+                    }
                 }
-            } else {
-                null
+                isDonation && isTaxOnly -> {
+                    { Text(stringResource(R.string.tax_only_hint)) }
+                }
+                else -> null
             },
             trailingIcon = {
                 CurrencyPicker(selected = currency, onSelect = { chosenCurrency = it })
@@ -222,6 +229,10 @@ fun EntryForm(
                 submit()
             })
         )
+
+        if (isDonation) {
+            DonationTypeSelector(isTaxOnly = isTaxOnly, onChange = { isTaxOnly = it })
+        }
 
         Button(
             onClick = ::submit,
@@ -285,7 +296,7 @@ private fun IncomeFormPreview() {
             names = emptyList(),
             lastEntry = History(name = "Salary", amount = 12000F),
             onSuggestionPicked = { null },
-            onSave = { _, _, _ -> }
+            onSave = { _, _, _, _ -> }
         )
     }
 }
@@ -299,7 +310,7 @@ private fun DonationFormPreview() {
             names = emptyList(),
             lastEntry = null,
             onSuggestionPicked = { null },
-            onSave = { _, _, _ -> }
+            onSave = { _, _, _, _ -> }
         )
     }
 }

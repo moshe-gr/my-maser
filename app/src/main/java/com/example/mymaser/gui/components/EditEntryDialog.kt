@@ -25,13 +25,14 @@ import com.example.mymaser.history.sanitizeAmountInput
 @Composable
 fun EditEntryDialog(
     entry: History,
-    onConfirm: (String, Float) -> Unit,
+    onConfirm: (name: String, amount: Float, isTaxOnly: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by rememberSaveable(entry.id) { mutableStateOf(entry.name) }
     var amountText by rememberSaveable(entry.id) {
         mutableStateOf(formatAmountInput(entry.amount))
     }
+    var isTaxOnly by rememberSaveable(entry.id) { mutableStateOf(entry.isTaxOnly) }
     val amount = amountText.toFloatOrNull() ?: 0F
     val isValid = amount > 0F && name.isNotBlank()
 
@@ -56,10 +57,13 @@ fun EditEntryDialog(
                     shape = MaterialTheme.shapes.small,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
+                if (entry.isDonation) {
+                    DonationTypeSelector(isTaxOnly = isTaxOnly, onChange = { isTaxOnly = it })
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name.trim(), amount) }, enabled = isValid) {
+            TextButton(onClick = { onConfirm(name.trim(), amount, isTaxOnly) }, enabled = isValid) {
                 Text(stringResource(R.string.save))
             }
         },

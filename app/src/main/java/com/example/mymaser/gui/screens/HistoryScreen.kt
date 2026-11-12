@@ -61,6 +61,7 @@ import com.example.mymaser.gui.components.HistoryItem
 import com.example.mymaser.gui.components.HistorySummarySheet
 import com.example.mymaser.gui.components.monthYearLabel
 import com.example.mymaser.gui.LocalDisplayCurrency
+import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.gui.formatSignedCurrency
 import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
@@ -75,6 +76,7 @@ import com.example.mymaser.history.TypeFilter
 import com.example.mymaser.history.filterHistory
 import com.example.mymaser.history.groupByPeriod
 import com.example.mymaser.history.localDate
+import com.example.mymaser.history.taxYearDonations
 import java.time.YearMonth
 import java.time.ZonedDateTime
 import java.time.temporal.WeekFields
@@ -84,6 +86,7 @@ private fun TypeFilter.labelRes() = when (this) {
     TypeFilter.All -> R.string.filter_all
     TypeFilter.Income -> R.string.incomes
     TypeFilter.Donations -> R.string.donations
+    TypeFilter.TaxOnly -> R.string.filter_tax_only
 }
 
 private fun TimeFilter.labelRes() = when (this) {
@@ -108,7 +111,7 @@ private fun SummaryPeriod.toTimeFilter() = when (this) {
 @Composable
 fun HistoryScreen(
     history: List<History>?,
-    onEdit: (History, String, Float) -> Unit,
+    onEdit: (History, String, Float, Boolean) -> Unit,
     onDelete: (History) -> Unit,
     onAddEntry: () -> Unit,
     originalOf: (History) -> History = { it },
@@ -201,6 +204,8 @@ fun HistoryScreen(
                 }
             }
 
+            TaxYearLine(history, now)
+
             if (query.isActive) {
                 ResultsSummary(entries = filtered, onClear = ::clearFilters)
             }
@@ -250,8 +255,8 @@ fun HistoryScreen(
     editing?.let { entry ->
         EditEntryDialog(
             entry = originalOf(entry),
-            onConfirm = { name, amount ->
-                onEdit(entry, name, amount)
+            onConfirm = { name, amount, isTaxOnly ->
+                onEdit(entry, name, amount, isTaxOnly)
                 editingId = null
             },
             onDismiss = { editingId = null }
@@ -417,6 +422,32 @@ private fun ResultsSummary(entries: List<History>, onClear: () -> Unit) {
     }
 }
 
+/** This tax year's donations, including tax-only ones, for filing receipts. */
+@Composable
+private fun TaxYearLine(history: List<History>, now: ZonedDateTime) {
+    val currency = LocalDisplayCurrency.current
+    val donations = remember(history, now, currency) {
+        taxYearDonations(history.countable(currency), now)
+    }
+    if (donations.total <= 0) return
+    val total = formatCurrency(donations.total)
+    Text(
+        text = if (donations.taxOnly > 0) {
+            stringResource(
+                R.string.tax_year_total_with_tax_only,
+                donations.year,
+                total,
+                formatCurrency(donations.taxOnly)
+            )
+        } else {
+            stringResource(R.string.tax_year_total, donations.year, total)
+        },
+        style = MaterialTheme.typography.labelLarge.tabular,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+    )
+}
+
 @Composable
 private fun AmountTotals(incomeTotal: Double, donationTotal: Double, modifier: Modifier = Modifier) {
     Row(
@@ -501,7 +532,8 @@ private fun periodLabel(period: HistoryPeriod): String = when (period) {
 
 private val sampleHistory = listOf(
     History(1, System.currentTimeMillis(), "Salary", 12000F, false),
-    History(2, System.currentTimeMillis(), "Local charity", 180F, true)
+    History(2, System.currentTimeMillis(), "Local charity", 180F, true),
+    History(3, System.currentTimeMillis(), "Hospital fund", 250F, true, isTaxOnly = true)
 )
 
 @ScreenPreviews
@@ -510,7 +542,7 @@ private fun HistoryPreview() {
     MaserPreview {
         HistoryScreen(
             history = sampleHistory,
-            onEdit = { _, _, _ -> },
+            onEdit = { _, _, _, _ -> },
             onDelete = {},
             onAddEntry = {}
         )

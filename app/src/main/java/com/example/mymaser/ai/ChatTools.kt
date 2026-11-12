@@ -120,6 +120,7 @@ Don't give halachic rulings; suggest asking a rabbi for those.
             "maser_from_income" to round(incomes.sumOf { it.maserDelta.toDouble() }),
             "donation_total" to donations.total(),
             "donation_count" to donations.size,
+            "tax_only_donation_total" to donations.filter { it.isTaxOnly }.total(),
             "top_income_sources" to incomes.topNames(),
             "top_donation_recipients" to donations.topNames()
         )

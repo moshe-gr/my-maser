@@ -131,8 +131,14 @@ fun MainScreen(
         }
     }
 
-    fun saveEntry(name: String, amount: Float, currency: String, isDonation: Boolean) {
-        viewModel.addEntry(name, amount, currency, isDonation) { saved ->
+    fun saveEntry(
+        name: String,
+        amount: Float,
+        currency: String,
+        isDonation: Boolean,
+        isTaxOnly: Boolean = false
+    ) {
+        viewModel.addEntry(name, amount, currency, isDonation, isTaxOnly) { saved ->
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             offerUndo(savedMessage) { viewModel.deleteEntry(saved) }
         }
@@ -195,7 +201,7 @@ fun MainScreen(
         }
         DueCards(
             predictions = predictions,
-            onLog = { saveEntry(it.name, it.amount, it.currency, it.isDonation) },
+            onLog = { saveEntry(it.name, it.amount, it.currency, it.isDonation, it.isTaxOnly) },
             onOpen = { viewModel.requestPrefill(it.toPrefill()) },
             onSkip = viewModel::dismissPrediction
         )
@@ -228,7 +234,9 @@ fun MainScreen(
             names = if (isDonation) donationNames else incomeNames,
             lastEntry = history?.firstOrNull { it.isDonation == isDonation },
             onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation) },
-            onSave = { name, amount, currency -> saveEntry(name, amount, currency, isDonation) },
+            onSave = { name, amount, currency, isTaxOnly ->
+                saveEntry(name, amount, currency, isDonation, isTaxOnly)
+            },
             maserPercentage = maserPercentage,
             prefill = prefill,
             onPrefillConsumed = viewModel::consumePrefill,

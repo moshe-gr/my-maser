@@ -3,6 +3,7 @@ package com.example.mymaser.reminders
 import com.example.mymaser.history.DueStatus
 import com.example.mymaser.history.History
 import com.example.mymaser.history.Prediction
+import com.example.mymaser.history.isMaserDonation
 import com.example.mymaser.history.localDate
 import java.time.LocalDate
 import java.time.YearMonth
@@ -78,7 +79,7 @@ fun computeReminders(input: ReminderInput): List<Reminder> {
         if (isDecember && today.dayOfMonth in YEAR_END_WINDOW) {
             reminders += Reminder.Balance(input.balance, input.displayCurrency, true, "${today.year}")
         } else if (today.dayOfMonth in MONTHLY_WINDOW) {
-            val lastDonation = input.history.filter { it.isDonation }.maxOfOrNull { it.date(input) }
+            val lastDonation = input.history.filter { it.isMaserDonation }.maxOfOrNull { it.date(input) }
             val quiet = lastDonation == null || lastDonation.isBefore(today.minusDays(QUIET_DONATION_DAYS))
             if (quiet) {
                 val month = YearMonth.from(today).toString()

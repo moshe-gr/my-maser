@@ -23,6 +23,10 @@ import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -113,6 +117,44 @@ fun EntryTypeBadge(isDonation: Boolean, size: Dp = 40.dp, iconSize: Dp = 20.dp) 
             contentDescription = stringResource(if (isDonation) R.string.donation else R.string.income),
             tint = if (isDonation) colors.donation else colors.income,
             modifier = Modifier.size(iconSize)
+        )
+    }
+}
+
+/** Chooses whether a donation comes out of maser or is kept only for tax receipts. */
+@Composable
+fun DonationTypeSelector(
+    isTaxOnly: Boolean,
+    onChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val options = listOf(false to R.string.donation_type_maser, true to R.string.donation_type_tax_only)
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        options.forEachIndexed { index, (taxOnly, label) ->
+            SegmentedButton(
+                selected = isTaxOnly == taxOnly,
+                onClick = { onChange(taxOnly) },
+                shape = SegmentedButtonDefaults.itemShape(index, options.size)
+            ) {
+                Text(stringResource(label))
+            }
+        }
+    }
+}
+
+/** Marks a donation that doesn't reduce the maser balance. */
+@Composable
+fun TaxOnlyTag(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        shape = MaterialTheme.shapes.extraSmall
+    ) {
+        Text(
+            text = stringResource(R.string.tax_only_tag),
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
 }

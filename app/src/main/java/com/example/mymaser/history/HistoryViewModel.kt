@@ -216,6 +216,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         amount: Float,
         currency: String,
         isDonation: Boolean,
+        isTaxOnly: Boolean,
         onSaved: (History) -> Unit
     ) = runChange {
         val entry = History(
@@ -224,7 +225,8 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             amount = amount,
             isDonation = isDonation,
             maserPercentage = percentageFlow.first(),
-            currency = currency
+            currency = currency,
+            isTaxOnly = isDonation && isTaxOnly
         )
         val id = repository.insert(entry)
         onSaved(entry.copy(id = id))
@@ -240,16 +242,21 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
                 amount = it.amount,
                 isDonation = it.isDonation,
                 maserPercentage = percentage,
-                currency = it.currency
+                currency = it.currency,
+                isTaxOnly = it.isDonation && it.isTaxOnly
             )
             entry.copy(id = repository.insert(entry))
         }
         onSaved(saved)
     }
 
-    fun editEntry(entry: History, name: String, amount: Float) {
+    fun editEntry(entry: History, name: String, amount: Float, isTaxOnly: Boolean) {
         val stored = original(entry)
-        runChange { repository.update(stored.copy(name = name, amount = amount)) }
+        runChange {
+            repository.update(
+                stored.copy(name = name, amount = amount, isTaxOnly = stored.isDonation && isTaxOnly)
+            )
+        }
     }
 
     /** Deletes the stored entry and returns it, so it can be restored exactly. */

@@ -61,6 +61,7 @@ import com.example.mymaser.history.NameAnalytics
 import com.example.mymaser.history.SummaryPeriod
 import com.example.mymaser.history.computeNameAnalytics
 import com.example.mymaser.history.entriesToCsv
+import com.example.mymaser.history.isTaxOnlyDonation
 import com.example.mymaser.settings.formatPercentage
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -280,6 +281,9 @@ private fun SheetHeader(history: History, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyMedium.tabular,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (history.isTaxOnlyDonation) {
+                TaxOnlyTag(Modifier.padding(top = 4.dp))
+            }
         }
     }
 }
@@ -316,13 +320,23 @@ private fun StatGrid(history: History, analytics: NameAnalytics, period: Summary
                 value = if (analytics.count > 0) formatCurrency(analytics.average) else EMPTY_VALUE,
                 modifier = Modifier.weight(1f)
             )
-            StatTile(
-                label = stringResource(
-                    if (history.isDonation) R.string.summary_maser_reduced else R.string.summary_added_to_maser
-                ),
-                value = formatCurrency(abs(analytics.maserEffect)),
-                modifier = Modifier.weight(1f)
-            )
+            if (history.isTaxOnlyDonation) {
+                StatTile(
+                    label = stringResource(R.string.summary_not_counted),
+                    value = formatCurrency(
+                        analytics.entries.filter { it.isTaxOnly }.sumOf { it.amount.toDouble() }
+                    ),
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                StatTile(
+                    label = stringResource(
+                        if (history.isDonation) R.string.summary_maser_reduced else R.string.summary_added_to_maser
+                    ),
+                    value = formatCurrency(abs(analytics.maserEffect)),
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }

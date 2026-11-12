@@ -30,6 +30,23 @@ class PredictionsTest {
         assertEquals(12000F, due.amount)
         assertEquals("ILS", due.currency)
         assertEquals(false, due.isDonation)
+        assertEquals(false, due.isTaxOnly)
+    }
+
+    @Test
+    fun `a tax-only recurring donation is predicted as tax only`() {
+        val fund = (7..10).map {
+            History(
+                timeStamp = at(2026, it, 10),
+                name = "Fund",
+                amount = 100F,
+                isDonation = true,
+                isTaxOnly = true
+            )
+        }
+        val due = predictDueEntries(fund, emptySet(), now(11, 10)).single()
+        assertEquals(true, due.isTaxOnly)
+        assertEquals(true, due.toPrefill().isTaxOnly)
     }
 
     @Test
