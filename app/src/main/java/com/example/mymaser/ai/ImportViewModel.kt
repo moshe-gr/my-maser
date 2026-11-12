@@ -140,7 +140,7 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
                 inputs = documents.inputs,
                 basis = app.maserBasisFlow().first(),
                 fallbackCurrency = app.displayCurrencyFlow().first(),
-                knownNames = history.observeHistory().first().map { it.name }.distinct()
+                knownNames = history.observeHistory().first().map { it.name.trim() }.distinct()
             )
             val single = (result as? AiResult.Success)?.value?.singleOrNull()
             if (singleToForm && single != null) {

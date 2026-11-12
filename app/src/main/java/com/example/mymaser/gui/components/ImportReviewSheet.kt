@@ -167,8 +167,9 @@ private fun ColumnScope.Review(
 ) {
     val rows = remember(state) { mutableStateListOf(*state.entries.map { ReviewRow(it) }.toTypedArray()) }
     val nowMillis = remember(state) { System.currentTimeMillis() }
-    val chosen = rows.filter { it.selected }.mapNotNull { it.toNewEntry(nowMillis) }
-    val allChosenValid = rows.none { it.selected && it.toNewEntry(nowMillis) == null }
+    val entries = rows.map { it.toNewEntry(nowMillis) }
+    val chosen = rows.indices.filter { rows[it].selected }.map { entries[it] }
+    val allChosenValid = chosen.none { it == null }
 
     Text(stringResource(R.string.import_review_title), style = MaterialTheme.typography.titleLarge)
     SkippedNote(state.skipped)
@@ -181,7 +182,7 @@ private fun ColumnScope.Review(
         rows.forEachIndexed { index, row ->
             ReviewRowCard(
                 row = row,
-                warning = row.toNewEntry(nowMillis)?.let(onCheck),
+                warning = remember(entries[index]) { entries[index]?.let(onCheck) },
                 onChange = { rows[index] = it }
             )
         }
@@ -189,7 +190,7 @@ private fun ColumnScope.Review(
     Row(modifier = Modifier.align(Alignment.End)) {
         TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         Button(
-            onClick = { onConfirm(chosen) },
+            onClick = { onConfirm(chosen.filterNotNull()) },
             enabled = chosen.isNotEmpty() && allChosenValid
         ) {
             Text(stringResource(R.string.import_add_selected))

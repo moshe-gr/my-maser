@@ -24,11 +24,16 @@ import com.example.mymaser.settings.maserBasisFlow
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Once a day, reads new payslips and receipts from Gmail into entries waiting for review. */
 class GmailImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result {
+    /** The daily and check-now runs can overlap; one at a time keeps each email read once. */
+    override suspend fun doWork(): Result = runLock.withLock { importNewEmails() }
+
+    private suspend fun importNewEmails(): Result {
         val context = applicationContext
         val settings = context.gmailSettingsFlow().first()
         val aiEnabled = context.aiEnabledFlow().first()
@@ -72,6 +77,7 @@ class GmailImportWorker(context: Context, params: WorkerParameters) : CoroutineW
 
     private companion object {
         const val MAX_AUTH_RETRIES = 2
+        val runLock = Mutex()
     }
 }
 

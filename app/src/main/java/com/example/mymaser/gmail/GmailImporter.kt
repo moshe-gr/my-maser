@@ -4,6 +4,7 @@ import com.example.mymaser.ai.AiError
 import com.example.mymaser.ai.AiInput
 import com.example.mymaser.ai.AiResult
 import com.example.mymaser.ai.DocumentImporter
+import com.example.mymaser.ai.MAX_FILE_BYTES
 import com.example.mymaser.ai.MIME_PDF
 import com.example.mymaser.ai.entriesToJson
 import com.example.mymaser.settings.MaserBasis
@@ -51,7 +52,12 @@ class GmailImporter(
             val inputs = buildList {
                 val text = listOf(message.subject, message.text).filter { it.isNotBlank() }.joinToString("\n\n")
                 if (text.isNotEmpty()) add(AiInput.Text(text))
-                message.pdfs.forEach { ref -> source.pdf(id, ref)?.let { add(AiInput.File(it, MIME_PDF)) } }
+                var budget = MAX_FILE_BYTES
+                message.pdfs.forEach { ref ->
+                    val bytes = source.pdf(id, ref)?.takeIf { it.size <= budget } ?: return@forEach
+                    budget -= bytes.size
+                    add(AiInput.File(bytes, MIME_PDF))
+                }
             }
             if (inputs.isEmpty()) {
                 store.insert(PendingImport(id, message.subject, "[]", nowMillis, PendingImport.DONE))

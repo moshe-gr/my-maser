@@ -10,7 +10,7 @@ import java.io.InputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Gemini accepts up to 20 MB inline; this leaves room for the prompt and base64. */
+/** Gemini accepts up to 20 MB inline per request, so this caps all files sent together. */
 const val MAX_FILE_BYTES = 15 * 1024 * 1024
 
 /** What could be read from a share or a picker, and how many items were left out. */
@@ -40,24 +40,26 @@ suspend fun readShare(context: Context, intent: Intent): ReadDocuments {
     return files.copy(inputs = listOfNotNull(textInput) + files.inputs)
 }
 
-/** Reads picked or scanned files; unsupported or oversized ones are counted as skipped. */
+/** Reads picked or scanned files; unsupported ones, and any past [MAX_FILE_BYTES] in total, are skipped. */
 suspend fun readFiles(
     context: Context,
     uris: List<Uri>,
     fallbackMimeType: String? = null
 ): ReadDocuments = withContext(Dispatchers.IO) {
     val resolver = context.contentResolver
+    var budget = MAX_FILE_BYTES
     val inputs = uris.mapNotNull { uri ->
         val mimeType = resolver.getType(uri) ?: fallbackMimeType
         if (mimeType == null || !isSupportedMimeType(mimeType)) return@mapNotNull null
         val bytes = try {
-            resolver.openInputStream(uri)?.use { readAtMost(it, MAX_FILE_BYTES) }
+            resolver.openInputStream(uri)?.use { readAtMost(it, budget) }
         } catch (_: IOException) {
             null
         } catch (_: SecurityException) {
             null
-        }
-        bytes?.let { AiInput.File(it, mimeType) }
+        } ?: return@mapNotNull null
+        budget -= bytes.size
+        AiInput.File(bytes, mimeType)
     }
     ReadDocuments(inputs, skipped = uris.size - inputs.size)
 }

@@ -4,12 +4,12 @@ import android.net.Uri
 import android.util.Base64
 import com.example.mymaser.ai.MAX_FILE_BYTES
 import com.example.mymaser.ai.MIME_PDF
+import com.example.mymaser.ai.objects
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 
 /** The access token was rejected; the user has to connect Gmail again. */
@@ -92,9 +92,6 @@ fun htmlToText(html: String): String = html
     .filter { it.isNotEmpty() }
     .joinToString("\n")
 
-private fun JSONArray?.objects(): List<JSONObject> =
-    if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
-
 /** Gmail's REST API, read-only, over plain HTTPS like the exchange-rate download. */
 class GmailApi(private val token: String) : GmailSource {
 
@@ -131,7 +128,8 @@ class GmailApi(private val token: String) : GmailSource {
 
     private companion object {
         const val BASE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/"
-        const val MAX_RESULTS = 20
+        /** Ids are cheap; a wide window lets a backlog drain over a few daily runs. */
+        const val MAX_RESULTS = 100
         const val TIMEOUT_MS = 20_000
 
         fun decodeBase64Url(data: String): ByteArray = Base64.decode(data, Base64.URL_SAFE)

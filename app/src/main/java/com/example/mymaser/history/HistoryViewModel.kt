@@ -96,9 +96,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         val shown = display.value ?: return null
         val balance = totalMaser.value?.toDouble() ?: return null
         val currency = displayCurrency.value
-        val now = ZonedDateTime.now()
-        val entries = shown.countable(currency)
-        return ChatData(entries, currency, balance, forecastYearEnd(entries, balance, now), now)
+        return ChatData(shown.countable(currency), currency, balance, forecast.value, ZonedDateTime.now())
     }
 
     /** A likely mistake in a new entry made at [timeStamp], checked against what's stored. */

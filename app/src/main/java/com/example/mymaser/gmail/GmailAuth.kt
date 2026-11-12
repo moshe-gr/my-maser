@@ -4,6 +4,8 @@ import android.content.Context
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.ClearTokenRequest
 import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Scope
 import java.io.IOException
 import kotlin.coroutines.resume
@@ -25,8 +27,20 @@ suspend fun silentGmailToken(context: Context): String? = suspendCancellableCoro
         .addOnSuccessListener { result ->
             continuation.resume(if (result.hasResolution()) null else result.accessToken)
         }
-        .addOnFailureListener { continuation.resumeWithException(IOException(it)) }
+        .addOnFailureListener { error ->
+            val transient = error !is ApiException || error.statusCode in TRANSIENT_STATUS_CODES
+            if (transient) continuation.resumeWithException(IOException(error)) else continuation.resume(null)
+        }
 }
+
+/** Failures worth retrying later; anything else (e.g. access revoked) needs the user to connect again. */
+private val TRANSIENT_STATUS_CODES = setOf(
+    CommonStatusCodes.NETWORK_ERROR,
+    CommonStatusCodes.TIMEOUT,
+    CommonStatusCodes.INTERNAL_ERROR,
+    CommonStatusCodes.API_NOT_CONNECTED,
+    CommonStatusCodes.INTERRUPTED
+)
 
 /** Drops a rejected token from Google's cache so the next request gets a fresh one. */
 suspend fun clearGmailToken(context: Context, token: String) {

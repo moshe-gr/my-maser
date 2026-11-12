@@ -105,7 +105,8 @@ private fun String.withoutCodeFence(): String {
     return text.removePrefix("```").removePrefix("json").removeSuffix("```").trim()
 }
 
-private fun JSONArray.objects(): List<JSONObject> = (0 until length()).mapNotNull { optJSONObject(it) }
+internal fun JSONArray?.objects(): List<JSONObject> =
+    if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
 
 private fun JSONObject.toEntry(basis: MaserBasis, fallbackCurrency: String, today: LocalDate): ExtractedEntry? {
     val f = ExtractionFields
