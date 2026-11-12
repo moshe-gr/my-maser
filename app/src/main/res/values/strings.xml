@@ -10,7 +10,6 @@
     <string name="donation">Donation</string>
     <string name="source_of_income">Source of income</string>
     <string name="donate_to">Donate to</string>
-    <string name="confirm">Confirm</string>
     <string name="last_income_info">Last income: %s</string>
     <string name="last_donation_info">Last donation: %s</string>
     <string name="information_saved_successfully">Saved</string>
@@ -194,6 +193,9 @@
     <string name="gmail_keywords_hint">Separate with commas</string>
     <string name="gmail_check_now">Check now</string>
     <string name="gmail_disconnect">Disconnect</string>
+    <string name="gmail_status_reconnect">Reconnect needed</string>
+    <string name="gmail_status_not_connected">Not connected</string>
+    <string name="gmail_status_off">Off</string>
     <plurals name="email_found_title">
         <item quantity="one">%d email with income or donations</item>
         <item quantity="other">%d emails with income or donations</item>

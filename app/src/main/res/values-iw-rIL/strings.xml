@@ -10,7 +10,6 @@
     <string name="donation">תרומה</string>
     <string name="source_of_income">מקור הכנסה</string>
     <string name="donate_to">תרום ל</string>
-    <string name="confirm">אשר</string>
     <string name="last_income_info">הכנסה אחרונה: %s</string>
     <string name="last_donation_info">תרומה אחרונה: %s</string>
     <string name="information_saved_successfully">נשמר</string>
@@ -193,6 +192,9 @@
     <string name="gmail_keywords_hint">מופרדות בפסיקים</string>
     <string name="gmail_check_now">בדוק עכשיו</string>
     <string name="gmail_disconnect">נתק</string>
+    <string name="gmail_status_reconnect">נדרש חיבור מחדש</string>
+    <string name="gmail_status_not_connected">לא מחובר</string>
+    <string name="gmail_status_off">כבוי</string>
     <plurals name="email_found_title">
         <item quantity="one">מייל אחד עם הכנסה או תרומה</item>
         <item quantity="two">%d מיילים עם הכנסות או תרומות</item>

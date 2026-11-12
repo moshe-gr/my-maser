@@ -1,5 +1,6 @@
 package com.example.mymaser.gui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +30,10 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.gui.theme.maserColors
 import java.text.DateFormat
 import java.time.YearMonth
@@ -64,6 +69,19 @@ fun ScreenColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content
         )
+    }
+}
+
+/**
+ * Shows [content] while [value] is non-null, expanding in and collapsing out. The last value is
+ * kept so the content can still draw while it animates away.
+ */
+@Composable
+fun <T : Any> AnimatedPresence(value: T?, content: @Composable (T) -> Unit) {
+    var held by remember { mutableStateOf(value) }
+    if (value != null) held = value
+    AnimatedVisibility(visible = value != null, enter = MaserMotion.expand, exit = MaserMotion.collapse) {
+        held?.let { content(it) }
     }
 }
 
@@ -161,9 +179,13 @@ fun TaxOnlyTag(modifier: Modifier = Modifier) {
 
 /** A horizontally scrolling row of chips; [contentPadding] scrolls with the chips. */
 @Composable
-fun ChipRow(contentPadding: Dp = 0.dp, content: @Composable RowScope.() -> Unit) {
+fun ChipRow(
+    modifier: Modifier = Modifier,
+    contentPadding: Dp = 0.dp,
+    content: @Composable RowScope.() -> Unit
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = contentPadding),

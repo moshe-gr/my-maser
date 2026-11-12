@@ -19,6 +19,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.example.mymaser.gui.components.AnimatedPresence
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -181,9 +185,9 @@ fun MainScreen(
     }
 
     val dueCards: @Composable () -> Unit = {
-        if (pendingEmails.isNotEmpty()) {
+        AnimatedPresence(pendingEmails.size.takeIf { it > 0 }) { count ->
             EmailImportCard(
-                emails = pendingEmails.size,
+                emails = count,
                 onReview = importViewModel::reviewEmails,
                 onDismiss = importViewModel::dismissEmails
             )
@@ -192,7 +196,8 @@ fun MainScreen(
         if (aiEnabled) {
             OutlinedButton(
                 onClick = { navController.navigate(CHAT_ROUTE) { launchSingleTop = true } },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.small
             ) {
                 Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
@@ -205,7 +210,7 @@ fun MainScreen(
             onOpen = { viewModel.requestPrefill(it.toPrefill()) },
             onSkip = viewModel::dismissPrediction
         )
-        reminderPrompt?.let { source ->
+        AnimatedPresence(reminderPrompt) { source ->
             ReminderPromptCard(
                 sourceName = source,
                 onEnable = viewModel::enableReminders,
@@ -261,10 +266,16 @@ fun MainScreen(
         onDismiss = importViewModel::dismiss
     )
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    LaunchedEffect(destination?.route) { scrollBehavior.state.contentOffset = 0f }
+
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             CenterAlignedTopAppBar(
+                scrollBehavior = scrollBehavior,
                 title = {
                     Text(
                         stringResource(

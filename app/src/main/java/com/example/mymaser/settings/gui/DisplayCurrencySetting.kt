@@ -1,5 +1,7 @@
 package com.example.mymaser.settings.gui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -26,6 +28,7 @@ import com.example.mymaser.currency.RateStatus
 import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.gui.components.ChipRow
 import com.example.mymaser.gui.components.label
+import com.example.mymaser.gui.theme.MaserMotion
 
 /**
  * Display-currency chips. Switching asks for confirmation first, since it changes every amount
@@ -40,7 +43,7 @@ fun DisplayCurrencySetting(
 ) {
     var pending by rememberSaveable { mutableStateOf<String?>(null) }
 
-    ChipRow {
+    ChipRow(modifier = Modifier.bleedToCardEdges(), contentPadding = CardPadding) {
         SupportedCurrency.entries.forEach { currency ->
             FilterChip(
                 selected = selected == currency.code,
@@ -50,38 +53,44 @@ fun DisplayCurrencySetting(
         }
     }
 
-    when (status) {
-        RateStatus.Loading -> Row(
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-            Text(
-                text = stringResource(R.string.rates_loading),
+    AnimatedContent(
+        targetState = status,
+        transitionSpec = { MaserMotion.swapIn togetherWith MaserMotion.swapOut },
+        label = "rate_status"
+    ) { current ->
+        when (current) {
+            RateStatus.Loading -> Row(
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                Text(
+                    text = stringResource(R.string.rates_loading),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            RateStatus.Failed -> Row(
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.rates_failed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            }
+
+            RateStatus.Idle -> Text(
+                text = stringResource(R.string.rates_source),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-
-        RateStatus.Failed -> Row(
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.rates_failed),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.weight(1f)
-            )
-            TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-        }
-
-        RateStatus.Idle -> Text(
-            text = stringResource(R.string.rates_source),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 
     pending?.let { code ->

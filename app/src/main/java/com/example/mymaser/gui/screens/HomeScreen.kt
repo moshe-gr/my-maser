@@ -1,6 +1,7 @@
 package com.example.mymaser.gui.screens
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -106,8 +107,13 @@ private fun HomeContent(
     dueCards: @Composable () -> Unit = {}
 ) {
     ScreenColumn {
-        TotalCard(total = total, countFrom = countFrom, onShown = onTotalShown)
-        notice()
+        Column(
+            modifier = Modifier.animateContentSize(MaserMotion.contentSize),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            TotalCard(total = total, countFrom = countFrom, onShown = onTotalShown)
+            notice()
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickAction(
                 label = stringResource(R.string.add_income),
@@ -122,7 +128,10 @@ private fun HomeContent(
                 modifier = Modifier.weight(1f)
             )
         }
-        dueCards()
+        Column(
+            modifier = Modifier.animateContentSize(MaserMotion.contentSize),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) { dueCards() }
         if (stats.lastActionTime == null) {
             EmptyState(
                 icon = Icons.Filled.VolunteerActivism,

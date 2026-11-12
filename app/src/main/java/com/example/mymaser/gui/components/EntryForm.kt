@@ -1,5 +1,6 @@
 package com.example.mymaser.gui.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
+import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
 import com.example.mymaser.history.AmountSuggestion
@@ -217,7 +219,9 @@ fun EntryForm(
             trailingIcon = {
                 CurrencyPicker(selected = currency, onSelect = { chosenCurrency = it })
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(MaserMotion.contentSize),
             singleLine = true,
             shape = MaterialTheme.shapes.small,
             keyboardOptions = KeyboardOptions(
@@ -242,7 +246,7 @@ fun EntryForm(
                 .heightIn(min = 52.dp),
             shape = MaterialTheme.shapes.small
         ) {
-            Text(stringResource(if (isDonation) R.string.confirm else R.string.save))
+            Text(stringResource(R.string.save))
         }
 
         LastEntryRow(isDonation, lastEntry)

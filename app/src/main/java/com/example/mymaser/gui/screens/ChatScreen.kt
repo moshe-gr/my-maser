@@ -43,6 +43,9 @@ import com.example.mymaser.ai.AiError
 import com.example.mymaser.ai.ChatMessage
 import com.example.mymaser.ai.canRetry
 
+private const val INTRO_KEY = "intro"
+private const val THINKING_KEY = "thinking"
+
 /** Ask questions about your own records; answers come from totals computed on the phone. */
 @Composable
 fun ChatScreen(
@@ -74,23 +77,29 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (messages.isEmpty()) {
-                item { Intro(onAsk = ::ask) }
+                item(key = INTRO_KEY) { Box(Modifier.animateItem()) { Intro(onAsk = ::ask) } }
             }
-            itemsIndexed(messages) { index, message ->
-                when (message) {
-                    is ChatMessage.Question -> Bubble(message.text, mine = true)
-                    is ChatMessage.Answer -> Bubble(message.text, mine = false)
-                    is ChatMessage.Problem -> Problem(
-                        error = message.error,
-                        canRetry = index == messages.lastIndex && !thinking,
-                        onRetry = onRetry,
-                        onOpenSettings = onOpenSettings
-                    )
+            itemsIndexed(messages, key = { index, _ -> index }) { index, message ->
+                Box(Modifier.fillMaxWidth().animateItem()) {
+                    when (message) {
+                        is ChatMessage.Question -> Bubble(message.text, mine = true)
+                        is ChatMessage.Answer -> Bubble(message.text, mine = false)
+                        is ChatMessage.Problem -> Problem(
+                            error = message.error,
+                            canRetry = index == messages.lastIndex && !thinking,
+                            onRetry = onRetry,
+                            onOpenSettings = onOpenSettings
+                        )
+                    }
                 }
             }
             if (thinking) {
-                item {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item(key = THINKING_KEY) {
+                    Row(
+                        modifier = Modifier.animateItem(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                         Text(stringResource(R.string.chat_thinking), style = MaterialTheme.typography.bodyMedium)
                     }

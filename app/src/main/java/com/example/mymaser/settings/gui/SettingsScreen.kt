@@ -1,8 +1,6 @@
 package com.example.mymaser.settings.gui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -10,8 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Percent
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +22,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,21 +34,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
-import com.example.mymaser.gui.components.ChipRow
+import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.components.ScreenColumn
+import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.sanitizeAmountInput
-import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.reminders.ReminderSettings
-import com.example.mymaser.settings.DEFAULT_REMINDER_MINUTE_OF_DAY
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
+import com.example.mymaser.settings.DEFAULT_REMINDER_MINUTE_OF_DAY
 import com.example.mymaser.settings.GmailSettings
 import com.example.mymaser.settings.MaserBasis
 import com.example.mymaser.settings.PRESET_MASER_PERCENTAGES
@@ -56,6 +58,7 @@ import com.example.mymaser.settings.isValidMaserPercentage
 
 private const val LANGUAGE_HEBREW = "he-IL"
 private const val LEGACY_LANGUAGE_HEBREW = "iw"
+private const val CUSTOM_PERCENTAGE = -1f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,8 +76,10 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val aiEnabled by viewModel.aiEnabled.collectAsState(initial = false)
     val maserBasis by viewModel.maserBasis.collectAsState(initial = MaserBasis.Net)
     val gmail by viewModel.gmail.collectAsState(initial = GmailSettings())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings)) },
@@ -85,7 +90,8 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                             contentDescription = stringResource(R.string.back)
                         )
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior
             )
         }
     ) { paddingValues ->
@@ -95,14 +101,14 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 .consumeWindowInsets(paddingValues)
                 .imePadding()
         ) {
-            SettingsSection(stringResource(R.string.settings_maser_percentage)) {
+            SettingsSection(stringResource(R.string.settings_maser_percentage), Icons.Outlined.Percent) {
                 MaserPercentageSetting(
                     percentage = maserPercentage,
                     onChange = { viewModel.set(SettingsKeys.MASER_PERCENTAGE, it) }
                 )
             }
 
-            SettingsSection(stringResource(R.string.settings_currency)) {
+            SettingsSection(stringResource(R.string.settings_currency), Icons.Outlined.Payments) {
                 DisplayCurrencySetting(
                     selected = LocalDisplayCurrency.current,
                     status = rateStatus,
@@ -111,13 +117,14 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 )
             }
 
-            SettingsSection(stringResource(R.string.settings_ai)) {
+            SettingsSection(stringResource(R.string.settings_ai), Icons.Outlined.AutoAwesome) {
                 AiSetting(
                     enabled = aiEnabled,
                     basis = maserBasis,
                     onEnabledChange = viewModel::setAiEnabled,
                     onBasisChange = { viewModel.set(SettingsKeys.MASER_BASIS, it.key) }
                 )
+                SettingsDivider()
                 GmailSetting(
                     settings = gmail,
                     aiEnabled = aiEnabled,
@@ -128,7 +135,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 )
             }
 
-            SettingsSection(stringResource(R.string.settings_reminders)) {
+            SettingsSection(stringResource(R.string.settings_reminders), Icons.Outlined.Notifications) {
                 RemindersSetting(
                     settings = reminderSettings,
                     minuteOfDay = reminderMinute,
@@ -138,56 +145,32 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 )
             }
 
-            SettingsSection(stringResource(R.string.settings_theme)) {
-                ChipRow {
-                    listOf(
-                        ThemeMode.System to R.string.settings_theme_system,
-                        ThemeMode.Light to R.string.settings_theme_light,
-                        ThemeMode.Dark to R.string.settings_theme_dark
-                    ).forEach { (mode, labelRes) ->
-                        FilterChip(
-                            selected = ThemeMode.fromKey(themeMode) == mode,
-                            onClick = { viewModel.setString(SettingsKeys.THEME_MODE, mode.key) },
-                            label = { Text(stringResource(labelRes)) }
-                        )
-                    }
-                }
+            SettingsSection(stringResource(R.string.settings_theme), Icons.Outlined.Palette) {
+                SegmentedChoice(
+                    options = listOf(
+                        ThemeMode.System to stringResource(R.string.settings_theme_system),
+                        ThemeMode.Light to stringResource(R.string.settings_theme_light),
+                        ThemeMode.Dark to stringResource(R.string.settings_theme_dark)
+                    ),
+                    selected = ThemeMode.fromKey(themeMode),
+                    onSelect = { viewModel.setString(SettingsKeys.THEME_MODE, it.key) }
+                )
             }
 
-            SettingsSection(stringResource(R.string.settings_language)) {
+            SettingsSection(stringResource(R.string.settings_language), Icons.Outlined.Language) {
                 val selectedLanguage =
                     if (language == LEGACY_LANGUAGE_HEBREW) LANGUAGE_HEBREW else language
-                ChipRow {
-                    listOf(
-                        "" to R.string.settings_language_system,
-                        "en" to R.string.settings_language_en,
-                        LANGUAGE_HEBREW to R.string.settings_language_he
-                    ).forEach { (code, labelRes) ->
-                        FilterChip(
-                            selected = selectedLanguage == code,
-                            onClick = { viewModel.setString(SettingsKeys.LANGUAGE, code) },
-                            label = { Text(stringResource(labelRes)) }
-                        )
-                    }
-                }
+                SegmentedChoice(
+                    options = listOf(
+                        "" to stringResource(R.string.settings_language_system),
+                        "en" to stringResource(R.string.settings_language_en),
+                        LANGUAGE_HEBREW to stringResource(R.string.settings_language_he)
+                    ),
+                    selected = selectedLanguage,
+                    onSelect = { viewModel.setString(SettingsKeys.LANGUAGE, it) }
+                )
             }
         }
-    }
-}
-
-@Composable
-private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier.padding(bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.semantics { heading() }
-        )
-        content()
     }
 }
 
@@ -204,25 +187,21 @@ private fun MaserPercentageSetting(percentage: Float, onChange: (Float) -> Unit)
         (customValue == null || !isValidMaserPercentage(customValue))
     val focusRequester = remember { FocusRequester() }
 
-    ChipRow {
-        PRESET_MASER_PERCENTAGES.forEach { preset ->
-            FilterChip(
-                selected = !showCustom && percentage == preset,
-                onClick = {
-                    customChosen = false
-                    onChange(preset)
-                },
-                label = { Text(formatPercentage(preset)) }
-            )
+    SegmentedChoice(
+        options = PRESET_MASER_PERCENTAGES.map { it to formatPercentage(it) } +
+            (CUSTOM_PERCENTAGE to stringResource(R.string.settings_custom)),
+        selected = if (showCustom) CUSTOM_PERCENTAGE else percentage,
+        onSelect = { choice ->
+            if (choice == CUSTOM_PERCENTAGE) {
+                customChosen = true
+            } else {
+                customChosen = false
+                onChange(choice)
+            }
         }
-        FilterChip(
-            selected = showCustom,
-            onClick = { customChosen = true },
-            label = { Text(stringResource(R.string.settings_custom)) }
-        )
-    }
+    )
 
-    if (showCustom) {
+    AnimatedVisibility(visible = showCustom, enter = MaserMotion.expand, exit = MaserMotion.collapse) {
         LaunchedEffect(Unit) {
             if (customChosen == true) focusRequester.requestFocus()
         }
@@ -254,9 +233,5 @@ private fun MaserPercentageSetting(percentage: Float, onChange: (Float) -> Unit)
         )
     }
 
-    Text(
-        text = stringResource(R.string.settings_percentage_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    SettingHint(stringResource(R.string.settings_percentage_hint))
 }
