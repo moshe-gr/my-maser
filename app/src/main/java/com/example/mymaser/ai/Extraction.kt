@@ -19,6 +19,32 @@ data class ExtractedEntry(
     val date: LocalDate?
 )
 
+/** Stores found entries until the user reviews them, e.g. from an email read in the background. */
+fun entriesToJson(entries: List<ExtractedEntry>): String = JSONArray(
+    entries.map {
+        JSONObject()
+            .put("isDonation", it.isDonation)
+            .put("name", it.name)
+            .put("amount", it.amount.toDouble())
+            .put("currency", it.currency)
+            .put("date", it.date?.toString() ?: JSONObject.NULL)
+    }
+).toString()
+
+fun entriesFromJson(json: String): List<ExtractedEntry> = try {
+    JSONArray(json).objects().map {
+        ExtractedEntry(
+            isDonation = it.getBoolean("isDonation"),
+            name = it.getString("name"),
+            amount = it.getDouble("amount").toFloat(),
+            currency = it.getString("currency"),
+            date = it.text("date")?.let(::parseDate)
+        )
+    }
+} catch (_: JSONException) {
+    emptyList()
+}
+
 /** Noon on the document's date, so it lands on that day in any nearby zone; now when undated. */
 fun documentTimeStamp(date: LocalDate?, zone: ZoneId, nowMillis: Long): Long =
     date?.atTime(LocalTime.NOON)?.atZone(zone)?.toInstant()?.toEpochMilli() ?: nowMillis

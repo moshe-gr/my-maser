@@ -43,6 +43,7 @@ import com.example.mymaser.gui.ScreenTypes
 import com.example.mymaser.gui.components.DueCards
 import com.example.mymaser.gui.components.EntryForm
 import com.example.mymaser.gui.components.ForecastLine
+import com.example.mymaser.gui.components.EmailImportCard
 import com.example.mymaser.gui.components.ImportButton
 import com.example.mymaser.gui.components.ImportReviewSheet
 import com.example.mymaser.gui.components.QuickAddField
@@ -112,6 +113,7 @@ fun MainScreen(
     val forecast by viewModel.forecast.collectAsStateWithLifecycle()
     val importState by importViewModel.state.collectAsStateWithLifecycle()
     val aiEnabled by importViewModel.aiEnabled.collectAsStateWithLifecycle()
+    val pendingEmails by importViewModel.pendingEmails.collectAsStateWithLifecycle()
 
     val undoLabel = stringResource(R.string.undo)
     val savedMessage = stringResource(R.string.information_saved_successfully)
@@ -139,7 +141,7 @@ fun MainScreen(
     val resources = LocalResources.current
 
     fun saveImported(entries: List<NewEntry>) {
-        importViewModel.dismiss()
+        importViewModel.finishReview()
         viewModel.addEntries(entries) { saved ->
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             offerUndo(resources.getQuantityString(R.plurals.import_saved, saved.size, saved.size)) {
@@ -173,6 +175,13 @@ fun MainScreen(
     }
 
     val dueCards: @Composable () -> Unit = {
+        if (pendingEmails.isNotEmpty()) {
+            EmailImportCard(
+                emails = pendingEmails.size,
+                onReview = importViewModel::reviewEmails,
+                onDismiss = importViewModel::dismissEmails
+            )
+        }
         QuickAddField(onSubmit = importViewModel::quickAdd)
         if (aiEnabled) {
             OutlinedButton(

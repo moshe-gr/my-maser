@@ -45,6 +45,7 @@ import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.reminders.ReminderSettings
 import com.example.mymaser.settings.DEFAULT_REMINDER_MINUTE_OF_DAY
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
+import com.example.mymaser.settings.GmailSettings
 import com.example.mymaser.settings.MaserBasis
 import com.example.mymaser.settings.PRESET_MASER_PERCENTAGES
 import com.example.mymaser.settings.SettingsKeys
@@ -71,6 +72,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
         .collectAsState(initial = DEFAULT_MASER_PERCENTAGE)
     val aiEnabled by viewModel.aiEnabled.collectAsState(initial = false)
     val maserBasis by viewModel.maserBasis.collectAsState(initial = MaserBasis.Net)
+    val gmail by viewModel.gmail.collectAsState(initial = GmailSettings())
 
     Scaffold(
         topBar = {
@@ -113,8 +115,16 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 AiSetting(
                     enabled = aiEnabled,
                     basis = maserBasis,
-                    onEnabledChange = { viewModel.set(SettingsKeys.AI_ENABLED, it) },
+                    onEnabledChange = viewModel::setAiEnabled,
                     onBasisChange = { viewModel.set(SettingsKeys.MASER_BASIS, it.key) }
+                )
+                GmailSetting(
+                    settings = gmail,
+                    aiEnabled = aiEnabled,
+                    onConnected = viewModel::gmailConnected,
+                    onDisconnect = viewModel::disconnectGmail,
+                    onKeywordsChange = viewModel::setGmailKeywords,
+                    onCheckNow = viewModel::checkGmailNow
                 )
             }
 

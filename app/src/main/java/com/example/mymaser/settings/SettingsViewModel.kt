@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mymaser.currency.CurrencyRepository
 import com.example.mymaser.currency.RateStatus
+import com.example.mymaser.gmail.GmailScheduler
 import com.example.mymaser.reminders.ReminderScheduler
 import com.example.mymaser.reminders.ReminderSettings
 import com.example.mymaser.settings.data.SettingsRepository
@@ -59,6 +60,34 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     val aiEnabled: Flow<Boolean> = application.aiEnabledFlow()
     val maserBasis: Flow<MaserBasis> = application.maserBasisFlow()
+    val gmail: Flow<GmailSettings> = application.gmailSettingsFlow()
+
+    fun setAiEnabled(on: Boolean) {
+        viewModelScope.launch {
+            repository.set(SettingsKeys.AI_ENABLED, on)
+            GmailScheduler.sync(getApplication())
+        }
+    }
+
+    fun gmailConnected() {
+        viewModelScope.launch {
+            repository.set(SettingsKeys.GMAIL_CONNECTED, true)
+            repository.set(SettingsKeys.GMAIL_NEEDS_RECONNECT, false)
+            GmailScheduler.sync(getApplication())
+            GmailScheduler.runNow(getApplication())
+        }
+    }
+
+    fun disconnectGmail() {
+        viewModelScope.launch {
+            repository.set(SettingsKeys.GMAIL_CONNECTED, false)
+            GmailScheduler.sync(getApplication())
+        }
+    }
+
+    fun setGmailKeywords(keywords: String) = set(SettingsKeys.GMAIL_KEYWORDS, keywords.trim())
+
+    fun checkGmailNow() = GmailScheduler.runNow(getApplication())
 
     val reminderSettings: Flow<ReminderSettings> = application.reminderSettingsFlow()
     val reminderMinuteOfDay: Flow<Int> = application.reminderMinuteOfDayFlow()

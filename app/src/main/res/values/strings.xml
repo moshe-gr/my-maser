@@ -175,6 +175,28 @@
     <string name="quick_add_hint">Quick add, e.g. “180 to Yad Eliezer”</string>
     <string name="quick_add_send">Add</string>
     <string name="quick_add_voice">Say it</string>
+    <string name="gmail_title">Gmail</string>
+    <string name="gmail_description">Checks your inbox once a day for payslips and donation receipts. Read-only: the app never sends, changes or deletes mail. What it finds waits for you to review.</string>
+    <string name="gmail_needs_ai">Turn on “Read documents with AI” to connect Gmail.</string>
+    <string name="gmail_connect">Connect Gmail</string>
+    <string name="gmail_connected">Connected</string>
+    <string name="gmail_reconnect_needed">Gmail access stopped working. Connect again to keep importing.</string>
+    <string name="gmail_connect_failed">Couldn\'t connect to Gmail.</string>
+    <string name="gmail_keywords">Search words</string>
+    <string name="gmail_keywords_hint">Separate with commas</string>
+    <string name="gmail_check_now">Check now</string>
+    <string name="gmail_disconnect">Disconnect</string>
+    <plurals name="email_found_title">
+        <item quantity="one">%d email with income or donations</item>
+        <item quantity="other">%d emails with income or donations</item>
+    </plurals>
+    <string name="email_found_review">Review</string>
+    <string name="email_found_dismiss">Dismiss</string>
+    <plurals name="notify_email_title">
+        <item quantity="one">%d email to review</item>
+        <item quantity="other">%d emails to review</item>
+    </plurals>
+    <string name="notify_email_text">Payslips or donation receipts were found in your Gmail.</string>
     <string name="chat_title">Ask about your maser</string>
     <string name="chat_open">Ask about your maser</string>
     <string name="chat_intro">Ask anything about your income, donations and maser. Answers are worked out from totals on your phone, and the conversation isn\'t saved.</string>

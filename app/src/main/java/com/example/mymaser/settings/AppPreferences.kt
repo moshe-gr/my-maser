@@ -7,6 +7,7 @@ import com.example.mymaser.currency.BalanceAdjustment
 import com.example.mymaser.currency.DEFAULT_CURRENCY
 import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.dataStore
+import com.example.mymaser.gmail.DEFAULT_GMAIL_KEYWORDS
 import com.example.mymaser.history.formatAmountInput
 import com.example.mymaser.history.pruneDismissed
 import com.example.mymaser.reminders.ReminderSettings
@@ -75,6 +76,22 @@ fun Context.maserBasisFlow(): Flow<MaserBasis> = dataStore.data
 
 fun Context.aiEnabledFlow(): Flow<Boolean> = dataStore.data
     .map { it[SettingsKeys.AI_ENABLED] ?: false }
+    .distinctUntilChanged()
+
+data class GmailSettings(
+    val connected: Boolean = false,
+    val needsReconnect: Boolean = false,
+    val keywords: String = DEFAULT_GMAIL_KEYWORDS
+)
+
+fun Context.gmailSettingsFlow(): Flow<GmailSettings> = dataStore.data
+    .map {
+        GmailSettings(
+            connected = it[SettingsKeys.GMAIL_CONNECTED] ?: false,
+            needsReconnect = it[SettingsKeys.GMAIL_NEEDS_RECONNECT] ?: false,
+            keywords = it[SettingsKeys.GMAIL_KEYWORDS] ?: DEFAULT_GMAIL_KEYWORDS
+        )
+    }
     .distinctUntilChanged()
 
 data class BalanceSetup(val adjustment: BalanceAdjustment?)

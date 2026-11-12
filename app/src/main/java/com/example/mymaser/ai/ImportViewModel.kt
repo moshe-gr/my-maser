@@ -11,6 +11,7 @@ import com.example.mymaser.settings.aiEnabledFlow
 import com.example.mymaser.settings.displayCurrencyFlow
 import com.example.mymaser.settings.maserBasisFlow
 import kotlinx.coroutines.Job
+import com.example.mymaser.gmail.PendingImport
 import com.example.mymaser.history.Prefill
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,12 @@ import kotlinx.coroutines.launch
 sealed interface ImportState {
     data object Idle : ImportState
     data object Reading : ImportState
-    data class Review(val entries: List<ExtractedEntry>, val skipped: Int) : ImportState
+    /** [emailIds] are the emails these entries came from, marked done once the user saves. */
+    data class Review(
+        val entries: List<ExtractedEntry>,
+        val skipped: Int,
+        val emailIds: List<String> = emptyList()
+    ) : ImportState
     data class Empty(val skipped: Int) : ImportState
     data class Failed(val error: AiError) : ImportState
 }
@@ -39,6 +45,11 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
 
     private val app = application
     private val history = HistoryRepository(HistoryDb.getInstance(application).getHistoryDao())
+    private val pendingImports = HistoryDb.getInstance(application).getPendingImportDao()
+
+    /** Emails the daily Gmail check found entries in, not yet reviewed. */
+    val pendingEmails: StateFlow<List<PendingImport>> = pendingImports.observePending()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
     private val importer = DocumentImporter(GeminiAiClient.getInstance(application)) {
         application.aiEnabledFlow().first()
     }
@@ -84,6 +95,29 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
     fun retry() {
         val documents = retryDocuments ?: return
         start { documents }
+    }
+
+    fun reviewEmails() {
+        val emails = pendingEmails.value
+        if (emails.isEmpty()) return
+        job?.cancel()
+        _state.value = ImportState.Review(
+            entries = emails.flatMap { entriesFromJson(it.entriesJson) },
+            skipped = 0,
+            emailIds = emails.map { it.messageId }
+        )
+    }
+
+    fun dismissEmails() {
+        val ids = pendingEmails.value.map { it.messageId }
+        viewModelScope.launch { pendingImports.markDone(ids) }
+    }
+
+    /** Closes the sheet after the user saved; emails it came from won't be offered again. */
+    fun finishReview() {
+        val ids = (_state.value as? ImportState.Review)?.emailIds.orEmpty()
+        if (ids.isNotEmpty()) viewModelScope.launch { pendingImports.markDone(ids) }
+        dismiss()
     }
 
     fun dismiss() {

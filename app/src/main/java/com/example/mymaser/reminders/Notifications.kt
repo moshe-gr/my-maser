@@ -59,6 +59,25 @@ fun canPostNotifications(context: Context): Boolean {
 fun needsNotificationPermission(context: Context): Boolean =
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !canPostNotifications(context)
 
+private const val EMAIL_IMPORT_NOTIFICATION_ID = 0x6d61696c
+
+/** Tells the user [emails] emails hold income or donations waiting for review. */
+fun postEmailImports(context: Context, emails: Int) {
+    if (!canPostNotifications(context)) return
+    val notification = NotificationCompat.Builder(context, CHANNEL_REMINDERS)
+        .setSmallIcon(R.drawable.ic_stat_maser)
+        .setContentTitle(context.resources.getQuantityString(R.plurals.notify_email_title, emails, emails))
+        .setContentText(context.getString(R.string.notify_email_text))
+        .setContentIntent(context.openIntent(DeepLink.Open(AppDestination.Home), EMAIL_IMPORT_NOTIFICATION_ID))
+        .setAutoCancel(true)
+        .build()
+    try {
+        NotificationManagerCompat.from(context).notify(EMAIL_IMPORT_NOTIFICATION_ID, notification)
+    } catch (_: SecurityException) {
+        // Permission was revoked between the check and the post.
+    }
+}
+
 /** Posts [reminder] if the user allows notifications; returns whether it was shown. */
 fun postReminder(context: Context, reminder: Reminder): Boolean {
     val manager = NotificationManagerCompat.from(context)

@@ -174,6 +174,30 @@
     <string name="quick_add_hint">הוספה מהירה, למשל “180 ליד אליעזר”</string>
     <string name="quick_add_send">הוסף</string>
     <string name="quick_add_voice">אמור בקול</string>
+    <string name="gmail_title">Gmail</string>
+    <string name="gmail_description">בודק פעם ביום אם הגיעו לתיבה תלושי שכר או קבלות על תרומות. קריאה בלבד: האפליקציה לא שולחת, משנה או מוחקת מיילים. מה שנמצא מחכה לאישור שלך.</string>
+    <string name="gmail_needs_ai">כדי לחבר את Gmail יש להפעיל קודם “קריאת מסמכים עם AI”.</string>
+    <string name="gmail_connect">חיבור Gmail</string>
+    <string name="gmail_connected">מחובר</string>
+    <string name="gmail_reconnect_needed">הגישה ל־Gmail הפסיקה לעבוד. יש להתחבר מחדש כדי להמשיך לייבא.</string>
+    <string name="gmail_connect_failed">לא ניתן היה להתחבר ל־Gmail.</string>
+    <string name="gmail_keywords">מילות חיפוש</string>
+    <string name="gmail_keywords_hint">מופרדות בפסיקים</string>
+    <string name="gmail_check_now">בדוק עכשיו</string>
+    <string name="gmail_disconnect">נתק</string>
+    <plurals name="email_found_title">
+        <item quantity="one">מייל אחד עם הכנסה או תרומה</item>
+        <item quantity="two">%d מיילים עם הכנסות או תרומות</item>
+        <item quantity="other">%d מיילים עם הכנסות או תרומות</item>
+    </plurals>
+    <string name="email_found_review">לעיון</string>
+    <string name="email_found_dismiss">התעלם</string>
+    <plurals name="notify_email_title">
+        <item quantity="one">מייל אחד לעיון</item>
+        <item quantity="two">%d מיילים לעיון</item>
+        <item quantity="other">%d מיילים לעיון</item>
+    </plurals>
+    <string name="notify_email_text">נמצאו תלושי שכר או קבלות על תרומות ב־Gmail שלך.</string>
     <string name="chat_title">שאל על המעשר שלך</string>
     <string name="chat_open">שאל על המעשר שלך</string>
     <string name="chat_intro">אפשר לשאול כל דבר על ההכנסות, התרומות והמעשר שלך. התשובות מחושבות מסכומים שנערכים בטלפון, והשיחה לא נשמרת.</string>

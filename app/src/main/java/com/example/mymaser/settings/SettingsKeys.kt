@@ -17,6 +17,14 @@ object SettingsKeys {
     /** Off until the user agrees to send documents to Gemini. */
     val AI_ENABLED = booleanPreferencesKey("ai_enabled")
 
+    val GMAIL_CONNECTED = booleanPreferencesKey("gmail_connected")
+
+    /** Set when the saved Gmail permission stopped working and the user must connect again. */
+    val GMAIL_NEEDS_RECONNECT = booleanPreferencesKey("gmail_needs_reconnect")
+
+    /** Comma-separated words the daily email search looks for. */
+    val GMAIL_KEYWORDS = stringPreferencesKey("gmail_keywords")
+
     /** ISO 4217 code everything is shown in. */
     val DISPLAY_CURRENCY = stringPreferencesKey("display_currency")
     val LAST_RATES_FETCH_DAY = longPreferencesKey("last_rates_fetch_day")

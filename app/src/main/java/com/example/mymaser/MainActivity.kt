@@ -14,6 +14,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.lifecycleScope
 import com.example.mymaser.ai.ImportViewModel
 import com.example.mymaser.ai.isDocumentShare
+import com.example.mymaser.gmail.GmailScheduler
 import com.example.mymaser.gui.screens.MainScreen
 import com.example.mymaser.gui.theme.MaserAppTheme
 import com.example.mymaser.history.HistoryViewModel
@@ -34,7 +35,10 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         createNotificationChannels(this)
-        lifecycleScope.launch { ReminderScheduler.sync(applicationContext) }
+        lifecycleScope.launch {
+            ReminderScheduler.sync(applicationContext)
+            GmailScheduler.sync(applicationContext)
+        }
         if (savedInstanceState == null) handleLink(intent)
         setContent {
             MaserAppTheme(onLoaded = { appearanceLoaded = true }) {
