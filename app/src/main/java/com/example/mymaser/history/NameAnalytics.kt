@@ -48,6 +48,9 @@ private const val RECURRENCE_MIN_MONTHS = 3
 private const val RECURRENCE_DAY_TOLERANCE = 3
 private const val RECURRENCE_MIN_SHARE = 0.75
 
+/** About two missed months; a source quiet for longer has stopped. */
+private const val RECURRENCE_STALE_DAYS = 62L
+
 /** An entry this close to the expected date counts as that occurrence being logged. */
 private const val LOGGED_TOLERANCE_DAYS = 5
 
@@ -149,13 +152,14 @@ private fun circularDayDistance(a: Int, b: Int): Int {
 }
 
 /**
- * A name recurs when, over the past year, it appeared in at least three different months and
- * most of its entries landed within a few days of the same day of the month.
+ * A name recurs when, over the past year, it appeared in at least three different months, most of
+ * its entries landed within a few days of the same day of the month, and it hasn't gone quiet.
  */
 fun detectRecurrence(entries: List<History>, now: ZonedDateTime): Recurrence? {
     val since = now.minusDays(RECURRENCE_LOOKBACK_DAYS).toInstant().toEpochMilli()
     val dates = entries.filter { it.timeStamp >= since }.map { it.localDate(now.zone) }
     if (dates.map(YearMonth::from).distinct().size < RECURRENCE_MIN_MONTHS) return null
+    if (ChronoUnit.DAYS.between(dates.max(), now.toLocalDate()) > RECURRENCE_STALE_DAYS) return null
 
     val days = dates.map { it.dayOfMonth }
     val typicalDay = (1..31).minBy { candidate -> days.sumOf { circularDayDistance(it, candidate) } }
@@ -193,7 +197,7 @@ fun entriesToCsv(
 ): String = buildString {
     appendLine(
         "date,name,type,amount,currency,original_amount,original_currency," +
-            "maser_percentage,maser_effect,has_attachment"
+            "maser_percentage,maser_effect"
     )
     entries.sortedBy { it.timeStamp }.forEach { entry ->
         val original = originalOf(entry)
@@ -207,8 +211,7 @@ fun entriesToCsv(
                 original.amount.csvNumber(),
                 original.currency,
                 entry.maserPercentage.csvNumber(),
-                entry.maserDelta.csvNumber(),
-                entry.hasAttachment.toString()
+                entry.maserDelta.csvNumber()
             ).joinToString(",")
         )
     }

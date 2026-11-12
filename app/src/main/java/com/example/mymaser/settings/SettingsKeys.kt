@@ -9,9 +9,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 
 object SettingsKeys {
-    val PUBLIC_DONATION_NAME = stringPreferencesKey("public_donation_name")
-    val PUBLIC_INCOME_NAME = stringPreferencesKey("public_income_name")
-    val ATTACHMENT_DIRECTORY_URI = stringPreferencesKey("attachment_directory_uri")
     val LANGUAGE = stringPreferencesKey("app_language")
     val THEME_MODE = stringPreferencesKey("theme_mode")
     val MASER_PERCENTAGE = floatPreferencesKey("maser_percentage")
@@ -31,7 +28,6 @@ object SettingsKeys {
     val REMINDERS_ENABLED = booleanPreferencesKey("reminders_enabled")
     val REMINDER_EXPECTED = booleanPreferencesKey("reminder_expected")
     val REMINDER_BALANCE = booleanPreferencesKey("reminder_balance")
-    val REMINDER_RECEIPTS = booleanPreferencesKey("reminder_receipts")
     val REMINDER_REVIEW = booleanPreferencesKey("reminder_review")
     val REMINDER_MINUTE_OF_DAY = intPreferencesKey("reminder_minute_of_day")
     val SENT_REMINDERS = stringSetPreferencesKey("sent_reminders")

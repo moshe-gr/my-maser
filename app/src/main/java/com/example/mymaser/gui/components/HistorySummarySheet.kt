@@ -53,6 +53,7 @@ import com.example.mymaser.R
 import com.example.mymaser.currency.countable
 import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
+import com.example.mymaser.gui.formatPercent
 import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.gui.theme.tabular
 import com.example.mymaser.history.History
@@ -61,21 +62,19 @@ import com.example.mymaser.history.SummaryPeriod
 import com.example.mymaser.history.computeNameAnalytics
 import com.example.mymaser.history.entriesToCsv
 import com.example.mymaser.settings.formatPercentage
-import java.text.NumberFormat
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
-import java.util.Locale
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private fun SummaryPeriod.labelRes() = when (this) {
-    SummaryPeriod.ThisMonth -> R.string.filter_this_month
-    SummaryPeriod.ThisYear -> R.string.filter_this_year
+    SummaryPeriod.ThisMonth -> R.string.this_month
+    SummaryPeriod.ThisYear -> R.string.this_year
     SummaryPeriod.LastYear -> R.string.filter_last_year
     SummaryPeriod.Last12Months -> R.string.summary_last_12_months
     SummaryPeriod.AllTime -> R.string.filter_all_time
@@ -87,16 +86,6 @@ private fun SummaryPeriod.changeLabelRes() = when (this) {
     SummaryPeriod.LastYear -> R.string.summary_change_year
     SummaryPeriod.Last12Months -> R.string.summary_change_12m
     SummaryPeriod.AllTime -> null
-}
-
-private fun formatPercent(fraction: Double, signed: Boolean = false): String {
-    val text = NumberFormat.getPercentInstance(Locale.getDefault()).format(abs(fraction))
-    return when {
-        !signed -> text
-        fraction > 0 -> "+$text"
-        fraction < 0 -> "−$text"
-        else -> text
-    }
 }
 
 private fun csvFileName(name: String, period: SummaryPeriod): String {

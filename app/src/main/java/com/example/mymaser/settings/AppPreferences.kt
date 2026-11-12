@@ -91,7 +91,6 @@ fun Context.reminderSettingsFlow(): Flow<ReminderSettings> = dataStore.data
             enabled = it[SettingsKeys.REMINDERS_ENABLED] ?: false,
             expectedEntries = it[SettingsKeys.REMINDER_EXPECTED] ?: true,
             balance = it[SettingsKeys.REMINDER_BALANCE] ?: true,
-            receipts = it[SettingsKeys.REMINDER_RECEIPTS] ?: true,
             yearInReview = it[SettingsKeys.REMINDER_REVIEW] ?: true
         )
     }

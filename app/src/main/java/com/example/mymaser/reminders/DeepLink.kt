@@ -11,9 +11,6 @@ enum class AppDestination { Home, Donation, History }
 sealed interface DeepLink {
     data class OpenForm(val prefill: Prefill) : DeepLink
     data class Open(val destination: AppDestination) : DeepLink
-
-    /** History filtered to this year's donations that have no receipt. */
-    data object MissingReceipts : DeepLink
 }
 
 private const val EXTRA_LINK = "com.example.mymaser.LINK"
@@ -25,7 +22,6 @@ private const val EXTRA_DESTINATION = "com.example.mymaser.DESTINATION"
 
 private const val LINK_FORM = "form"
 private const val LINK_OPEN = "open"
-private const val LINK_RECEIPTS = "receipts"
 
 fun DeepLink.toIntent(context: Context): Intent =
     Intent(context, MainActivity::class.java).apply {
@@ -43,7 +39,6 @@ fun DeepLink.toIntent(context: Context): Intent =
                 putExtra(EXTRA_LINK, LINK_OPEN)
                 putExtra(EXTRA_DESTINATION, link.destination.name)
             }
-            DeepLink.MissingReceipts -> putExtra(EXTRA_LINK, LINK_RECEIPTS)
         }
     }
 
@@ -62,6 +57,5 @@ fun Intent.toDeepLink(): DeepLink? = when (getStringExtra(EXTRA_LINK)) {
     LINK_OPEN -> getStringExtra(EXTRA_DESTINATION)
         ?.let { name -> AppDestination.entries.firstOrNull { it.name == name } }
         ?.let { DeepLink.Open(it) }
-    LINK_RECEIPTS -> DeepLink.MissingReceipts
     else -> null
 }

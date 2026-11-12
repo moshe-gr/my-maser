@@ -86,18 +86,6 @@ class ReminderRulesTest {
     }
 
     @Test
-    fun `missing receipts counts this year's donations without attachments in December`() {
-        val history = listOf(
-            History(timeStamp = at(2026, 3, 1), amount = 1F, isDonation = true),
-            History(timeStamp = at(2026, 4, 1), amount = 1F, isDonation = true, attachmentUri = "content://r"),
-            History(timeStamp = at(2025, 4, 1), amount = 1F, isDonation = true),
-            History(timeStamp = at(2026, 5, 1), amount = 1F)
-        )
-        val result = computeReminders(input(now(2026, 12, 2), history))
-        assertEquals(listOf(Reminder.MissingReceipts(1, 2026)), result)
-    }
-
-    @Test
     fun `year in review in early January`() {
         val history = listOf(
             History(timeStamp = at(2026, 6, 1), amount = 300F, isDonation = true),

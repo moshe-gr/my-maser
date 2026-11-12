@@ -37,26 +37,19 @@ fun maserDelta(
 
 val History.maserDelta: Float get() = maserDelta(amount, isDonation, maserPercentage)
 
-fun maserDeltaForEdit(original: History, newAmount: Float): Float =
-    maserDelta(newAmount, original.isDonation, original.maserPercentage) - original.maserDelta
-
 enum class TypeFilter { All, Income, Donations }
-
-enum class AttachmentFilter { Any, With, Without }
 
 enum class TimeFilter { AllTime, Today, ThisWeek, ThisMonth, ThisYear, LastYear, SpecificMonth, SpecificYear }
 
 data class HistoryQuery(
     val text: String = "",
     val type: TypeFilter = TypeFilter.All,
-    val attachment: AttachmentFilter = AttachmentFilter.Any,
     val time: TimeFilter = TimeFilter.AllTime,
     val month: YearMonth? = null,
     val year: Int? = null
 ) {
     val isActive: Boolean
-        get() = text.isNotBlank() || type != TypeFilter.All ||
-            attachment != AttachmentFilter.Any || time != TimeFilter.AllTime
+        get() = text.isNotBlank() || type != TypeFilter.All || time != TimeFilter.AllTime
 }
 
 fun filterHistory(
@@ -87,12 +80,7 @@ fun filterHistory(
             TimeFilter.SpecificYear -> query.year == null || date.year == query.year
         }
         matchesType && matchesTime &&
-            (text.isEmpty() || entry.name.contains(text, ignoreCase = true)) &&
-            when (query.attachment) {
-                AttachmentFilter.Any -> true
-                AttachmentFilter.With -> entry.hasAttachment
-                AttachmentFilter.Without -> !entry.hasAttachment
-            }
+            (text.isEmpty() || entry.name.contains(text, ignoreCase = true))
     }
 }
 

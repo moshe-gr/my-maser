@@ -138,28 +138,15 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     /** A screen a notification asked to open. */
     val destinationRequest: StateFlow<AppDestination?> = _destination.asStateFlow()
 
-    private val _missingReceipts = MutableStateFlow(false)
-
-    /** Whether History should show this year's donations without a receipt. */
-    val missingReceiptsRequest: StateFlow<Boolean> = _missingReceipts.asStateFlow()
-
     fun openLink(link: DeepLink) {
         when (link) {
             is DeepLink.OpenForm -> requestPrefill(link.prefill)
             is DeepLink.Open -> _destination.value = link.destination
-            DeepLink.MissingReceipts -> {
-                _missingReceipts.value = true
-                _destination.value = AppDestination.History
-            }
         }
     }
 
     fun consumeDestination() {
         _destination.value = null
-    }
-
-    fun consumeMissingReceipts() {
-        _missingReceipts.value = false
     }
 
     /**
@@ -244,11 +231,6 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 
     fun restoreEntry(entry: History) = runChange {
         repository.insert(entry)
-    }
-
-    fun setAttachment(entry: History, uri: String) {
-        val stored = original(entry)
-        runChange { repository.update(stored.copy(attachmentUri = uri)) }
     }
 
     fun suggestedAmount(name: String, isDonation: Boolean): AmountSuggestion? =

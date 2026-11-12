@@ -40,7 +40,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-enum class ReminderToggle { Master, Expected, Balance, Receipts, Review }
+enum class ReminderToggle { Master, Expected, Balance, Review }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,7 +100,6 @@ fun RemindersSetting(
         listOf(
             Triple(ReminderToggle.Expected, R.string.reminder_expected_title, settings.expectedEntries),
             Triple(ReminderToggle.Balance, R.string.reminder_balance_title, settings.balance),
-            Triple(ReminderToggle.Receipts, R.string.reminder_receipts_title, settings.receipts),
             Triple(ReminderToggle.Review, R.string.reminder_review_title, settings.yearInReview)
         ).forEach { (toggle, title, checked) ->
             SwitchRow(

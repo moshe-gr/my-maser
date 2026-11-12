@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
+import com.example.mymaser.gui.theme.MaserPreview
+import com.example.mymaser.gui.theme.ScreenPreviews
 import com.example.mymaser.history.AmountSuggestion
 import com.example.mymaser.history.EntryWarning
 import com.example.mymaser.history.History
@@ -269,5 +271,33 @@ private fun LastEntryRow(isDonation: Boolean, lastEntry: History?) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun IncomeFormPreview() {
+    MaserPreview {
+        EntryForm(
+            isDonation = false,
+            names = emptyList(),
+            lastEntry = History(name = "Salary", amount = 12000F),
+            onSuggestionPicked = { null },
+            onSave = { _, _, _ -> }
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun DonationFormPreview() {
+    MaserPreview {
+        EntryForm(
+            isDonation = true,
+            names = emptyList(),
+            lastEntry = null,
+            onSuggestionPicked = { null },
+            onSave = { _, _, _ -> }
+        )
     }
 }

@@ -17,7 +17,6 @@ data class History(
     val name: String = "",
     val amount: Float = 0F,
     val isDonation: Boolean = false,
-    val attachmentUri: String? = null,
     /** The percentage in force when the entry was saved, so later edits reverse exactly what it added. */
     @ColumnInfo(defaultValue = "10")
     val maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
@@ -28,5 +27,3 @@ data class History(
 
 fun History.localDate(zone: ZoneId): LocalDate =
     Instant.ofEpochMilli(timeStamp).atZone(zone).toLocalDate()
-
-val History.hasAttachment: Boolean get() = !attachmentUri.isNullOrEmpty()

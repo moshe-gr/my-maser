@@ -41,6 +41,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mymaser.R
 import com.example.mymaser.gui.ScreenTypes
 import com.example.mymaser.gui.components.DueCards
+import com.example.mymaser.gui.components.EntryForm
 import com.example.mymaser.gui.components.ForecastLine
 import com.example.mymaser.gui.components.RatesNotice
 import com.example.mymaser.gui.components.ReminderPromptCard
@@ -86,7 +87,6 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
     val predictions by viewModel.predictions.collectAsStateWithLifecycle()
     val prefill by viewModel.prefill.collectAsStateWithLifecycle()
     val requestedDestination by viewModel.destinationRequest.collectAsStateWithLifecycle()
-    val missingReceipts by viewModel.missingReceiptsRequest.collectAsStateWithLifecycle()
     val reminderPrompt by viewModel.reminderPrompt.collectAsStateWithLifecycle()
     val forecast by viewModel.forecast.collectAsStateWithLifecycle()
 
@@ -162,6 +162,23 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
         ratesNotice()
     }
 
+    @Composable
+    fun EntryTab(isDonation: Boolean) {
+        EntryForm(
+            isDonation = isDonation,
+            names = if (isDonation) donationNames else incomeNames,
+            lastEntry = history?.firstOrNull { it.isDonation == isDonation },
+            onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation) },
+            onSave = { name, amount, currency -> saveEntry(name, amount, currency, isDonation) },
+            maserPercentage = maserPercentage,
+            prefill = prefill,
+            onPrefillConsumed = viewModel::consumePrefill,
+            onCheck = { name, amount, currency ->
+                viewModel.checkNewEntry(name, amount, currency, isDonation)
+            }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -233,48 +250,16 @@ fun MainScreen(viewModel: HistoryViewModel = viewModel()) {
                     dueCards = dueCards
                 )
             }
-            composable(ScreenTypes.Income.route) {
-                IncomeScreen(
-                    names = incomeNames,
-                    lastEntry = history?.firstOrNull { !it.isDonation },
-                    onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation = false) },
-                    onSave = { name, amount, currency ->
-                        saveEntry(name, amount, currency, isDonation = false)
-                    },
-                    maserPercentage = maserPercentage,
-                    prefill = prefill,
-                    onPrefillConsumed = viewModel::consumePrefill,
-                    onCheck = { name, amount, currency ->
-                        viewModel.checkNewEntry(name, amount, currency, isDonation = false)
-                    }
-                )
-            }
-            composable(ScreenTypes.Donation.route) {
-                DonationScreen(
-                    names = donationNames,
-                    lastEntry = history?.firstOrNull { it.isDonation },
-                    onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation = true) },
-                    onSave = { name, amount, currency ->
-                        saveEntry(name, amount, currency, isDonation = true)
-                    },
-                    prefill = prefill,
-                    onPrefillConsumed = viewModel::consumePrefill,
-                    onCheck = { name, amount, currency ->
-                        viewModel.checkNewEntry(name, amount, currency, isDonation = true)
-                    }
-                )
-            }
+            composable(ScreenTypes.Income.route) { EntryTab(isDonation = false) }
+            composable(ScreenTypes.Donation.route) { EntryTab(isDonation = true) }
             composable(ScreenTypes.History.route) {
                 HistoryScreen(
                     history = history,
                     onEdit = viewModel::editEntry,
                     onDelete = ::deleteEntry,
-                    onAttachmentSaved = viewModel::setAttachment,
                     onAddEntry = { navController.openTab(ScreenTypes.Income) },
                     originalOf = viewModel::original,
-                    notice = ratesNotice,
-                    showMissingReceipts = missingReceipts,
-                    onMissingReceiptsShown = viewModel::consumeMissingReceipts
+                    notice = ratesNotice
                 )
             }
         }

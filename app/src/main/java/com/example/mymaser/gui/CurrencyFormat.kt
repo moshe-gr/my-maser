@@ -47,3 +47,14 @@ fun formatSignedCurrency(
 @Composable
 fun formatSignedCurrency(amount: Double, isNegative: Boolean): String =
     formatSignedCurrency(amount, isNegative, LocalDisplayCurrency.current)
+
+/** A [fraction] as a locale percentage; [signed] adds + or − except at exactly zero. */
+fun formatPercent(fraction: Double, signed: Boolean = false): String {
+    val text = NumberFormat.getPercentInstance(Locale.getDefault()).format(abs(fraction))
+    return when {
+        !signed -> text
+        fraction > 0 -> "+$text"
+        fraction < 0 -> "−$text"
+        else -> text
+    }
+}

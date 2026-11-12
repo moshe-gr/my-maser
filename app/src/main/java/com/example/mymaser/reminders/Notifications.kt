@@ -13,10 +13,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.mymaser.R
 import com.example.mymaser.gui.formatCurrency
+import com.example.mymaser.gui.formatPercent
 import com.example.mymaser.history.toPrefill
-import java.text.NumberFormat
-import java.util.Locale
-import kotlin.math.abs
 
 private const val CHANNEL_REMINDERS = "reminders"
 private const val CHANNEL_SUMMARIES = "summaries"
@@ -112,20 +110,16 @@ fun postReminder(context: Context, reminder: Reminder): Boolean {
                 .setContentIntent(context.openIntent(DeepLink.Open(AppDestination.Donation), id))
         }
 
-        is Reminder.MissingReceipts -> NotificationCompat.Builder(context, CHANNEL_REMINDERS)
-            .setContentTitle(
-                context.resources.getQuantityString(R.plurals.notify_receipts_title, reminder.count, reminder.count)
-            )
-            .setContentText(context.getString(R.string.notify_receipts_text))
-            .setContentIntent(context.openIntent(DeepLink.MissingReceipts, id))
-
         is Reminder.YearInReview -> {
             val total = formatCurrency(reminder.total, true, reminder.currency)
             val text = if (reminder.previousTotal > 0) {
                 val change = (reminder.total - reminder.previousTotal) / reminder.previousTotal
-                val percent = NumberFormat.getPercentInstance(Locale.getDefault()).format(abs(change))
-                val signed = if (change >= 0) "+$percent" else "−$percent"
-                context.getString(R.string.notify_review_text_change, total, signed, reminder.year - 1)
+                context.getString(
+                    R.string.notify_review_text_change,
+                    total,
+                    formatPercent(change, signed = true),
+                    reminder.year - 1
+                )
             } else {
                 context.getString(R.string.notify_review_text, total)
             }

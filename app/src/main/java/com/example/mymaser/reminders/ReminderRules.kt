@@ -3,7 +3,6 @@ package com.example.mymaser.reminders
 import com.example.mymaser.history.DueStatus
 import com.example.mymaser.history.History
 import com.example.mymaser.history.Prediction
-import com.example.mymaser.history.hasAttachment
 import com.example.mymaser.history.localDate
 import java.time.LocalDate
 import java.time.YearMonth
@@ -13,7 +12,6 @@ data class ReminderSettings(
     val enabled: Boolean = false,
     val expectedEntries: Boolean = true,
     val balance: Boolean = true,
-    val receipts: Boolean = true,
     val yearInReview: Boolean = true
 )
 
@@ -27,10 +25,6 @@ sealed interface Reminder {
 
     data class Balance(val amount: Double, val currency: String, val yearEnd: Boolean, val period: String) : Reminder {
         override val key = (if (yearEnd) "balance-year|" else "balance|") + period
-    }
-
-    data class MissingReceipts(val count: Int, val year: Int) : Reminder {
-        override val key = "receipts|$year"
     }
 
     data class YearInReview(
@@ -91,13 +85,6 @@ fun computeReminders(input: ReminderInput): List<Reminder> {
                 reminders += Reminder.Balance(input.balance, input.displayCurrency, false, month)
             }
         }
-    }
-
-    if (settings.receipts && today.monthValue == 12) {
-        val missing = input.history.count {
-            it.isDonation && !it.hasAttachment && it.date(input).year == today.year
-        }
-        if (missing > 0) reminders += Reminder.MissingReceipts(missing, today.year)
     }
 
     if (settings.yearInReview && today.monthValue == 1 && today.dayOfMonth in REVIEW_WINDOW) {

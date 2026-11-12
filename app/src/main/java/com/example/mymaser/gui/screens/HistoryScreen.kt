@@ -66,8 +66,6 @@ import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
 import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.gui.theme.tabular
-import androidx.compose.runtime.LaunchedEffect
-import com.example.mymaser.history.AttachmentFilter
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryPeriod
 import com.example.mymaser.history.HistoryQuery
@@ -90,10 +88,10 @@ private fun TypeFilter.labelRes() = when (this) {
 
 private fun TimeFilter.labelRes() = when (this) {
     TimeFilter.AllTime -> R.string.filter_all_time
-    TimeFilter.Today -> R.string.filter_today
-    TimeFilter.ThisWeek -> R.string.filter_this_week
-    TimeFilter.ThisMonth -> R.string.filter_this_month
-    TimeFilter.ThisYear -> R.string.filter_this_year
+    TimeFilter.Today -> R.string.today
+    TimeFilter.ThisWeek -> R.string.this_week
+    TimeFilter.ThisMonth -> R.string.this_month
+    TimeFilter.ThisYear -> R.string.this_year
     TimeFilter.LastYear -> R.string.filter_last_year
     TimeFilter.SpecificMonth -> R.string.filter_specific_month
     TimeFilter.SpecificYear -> R.string.filter_specific_year
@@ -112,18 +110,14 @@ fun HistoryScreen(
     history: List<History>?,
     onEdit: (History, String, Float) -> Unit,
     onDelete: (History) -> Unit,
-    onAttachmentSaved: (History, String) -> Unit,
     onAddEntry: () -> Unit,
     originalOf: (History) -> History = { it },
-    notice: @Composable () -> Unit = {},
-    showMissingReceipts: Boolean = false,
-    onMissingReceiptsShown: () -> Unit = {}
+    notice: @Composable () -> Unit = {}
 ) {
     if (history == null) return
 
     var searchText by rememberSaveable { mutableStateOf("") }
     var typeFilter by rememberSaveable { mutableStateOf(TypeFilter.All) }
-    var attachmentFilter by rememberSaveable { mutableStateOf(AttachmentFilter.Any) }
     var timeFilter by rememberSaveable { mutableStateOf(TimeFilter.AllTime) }
     var monthText by rememberSaveable { mutableStateOf<String?>(null) }
     var year by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -136,7 +130,6 @@ fun HistoryScreen(
     val query = HistoryQuery(
         text = searchText,
         type = typeFilter,
-        attachment = attachmentFilter,
         time = timeFilter,
         month = monthText?.let(YearMonth::parse),
         year = year
@@ -145,19 +138,9 @@ fun HistoryScreen(
     fun clearFilters() {
         searchText = ""
         typeFilter = TypeFilter.All
-        attachmentFilter = AttachmentFilter.Any
         timeFilter = TimeFilter.AllTime
         monthText = null
         year = null
-    }
-
-    LaunchedEffect(showMissingReceipts) {
-        if (!showMissingReceipts) return@LaunchedEffect
-        clearFilters()
-        typeFilter = TypeFilter.Donations
-        attachmentFilter = AttachmentFilter.Without
-        timeFilter = TimeFilter.ThisYear
-        onMissingReceiptsShown()
     }
 
     val now = remember(history) { ZonedDateTime.now() }
@@ -216,7 +199,6 @@ fun HistoryScreen(
                         label = { Text(stringResource(option.labelRes())) }
                     )
                 }
-                AttachmentFilterChip(selected = attachmentFilter, onSelect = { attachmentFilter = it })
             }
 
             if (query.isActive) {
@@ -238,7 +220,6 @@ fun HistoryScreen(
                 HistoryList(
                     groups = groups,
                     onClick = { selectedId = it.id },
-                    onAttachmentSaved = onAttachmentSaved,
                     originalOf = originalOf
                 )
             }
@@ -389,45 +370,6 @@ private fun TimeFilterChip(
     }
 }
 
-private fun AttachmentFilter.labelRes() = when (this) {
-    AttachmentFilter.Any -> R.string.filter_receipts
-    AttachmentFilter.With -> R.string.filter_with_attachments
-    AttachmentFilter.Without -> R.string.filter_without_attachments
-}
-
-@Composable
-private fun AttachmentFilterChip(selected: AttachmentFilter, onSelect: (AttachmentFilter) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        FilterChip(
-            selected = selected != AttachmentFilter.Any,
-            onClick = { expanded = true },
-            label = { Text(stringResource(selected.labelRes())) },
-            trailingIcon = {
-                Icon(
-                    Icons.Filled.ArrowDropDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(FilterChipDefaults.IconSize)
-                )
-            }
-        )
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            AttachmentFilter.entries.forEach { option ->
-                MenuOption(
-                    text = stringResource(
-                        if (option == AttachmentFilter.Any) R.string.filter_all else option.labelRes()
-                    ),
-                    selected = selected == option,
-                    onClick = {
-                        onSelect(option)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun MenuOption(text: String, selected: Boolean, onClick: () -> Unit) {
     DropdownMenuItem(
@@ -502,7 +444,6 @@ private fun AmountTotals(incomeTotal: Double, donationTotal: Double, modifier: M
 private fun HistoryList(
     groups: List<Pair<HistoryPeriod, List<History>>>,
     onClick: (History) -> Unit,
-    onAttachmentSaved: (History, String) -> Unit,
     originalOf: (History) -> History
 ) {
     LazyColumn(
@@ -517,7 +458,6 @@ private fun HistoryList(
                 HistoryItem(
                     history = entry,
                     onClick = { onClick(entry) },
-                    onAttachmentSaved = { onAttachmentSaved(entry, it) },
                     modifier = Modifier
                         .animateItem()
                         .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -561,7 +501,7 @@ private fun periodLabel(period: HistoryPeriod): String = when (period) {
 
 private val sampleHistory = listOf(
     History(1, System.currentTimeMillis(), "Salary", 12000F, false),
-    History(2, System.currentTimeMillis(), "Local charity", 180F, true, "content://receipt")
+    History(2, System.currentTimeMillis(), "Local charity", 180F, true)
 )
 
 @ScreenPreviews
@@ -572,7 +512,6 @@ private fun HistoryPreview() {
             history = sampleHistory,
             onEdit = { _, _, _ -> },
             onDelete = {},
-            onAttachmentSaved = { _, _ -> },
             onAddEntry = {}
         )
     }
