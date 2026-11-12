@@ -31,6 +31,16 @@ enum class ThemeMode(val key: String) {
     }
 }
 
+/** Which payslip figure ma'aser is counted from. */
+enum class MaserBasis(val key: String) {
+    Net("net"),
+    Gross("gross");
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: Net
+    }
+}
+
 data class Appearance(
     val themeMode: ThemeMode = ThemeMode.System,
     val displayCurrency: String = DEFAULT_CURRENCY
@@ -57,6 +67,14 @@ fun Context.displayCurrencyFlow(): Flow<String> = appearanceFlow()
 
 fun Context.maserPercentageFlow(): Flow<Float> = dataStore.data
     .map { it[SettingsKeys.MASER_PERCENTAGE] ?: DEFAULT_MASER_PERCENTAGE }
+    .distinctUntilChanged()
+
+fun Context.maserBasisFlow(): Flow<MaserBasis> = dataStore.data
+    .map { MaserBasis.fromKey(it[SettingsKeys.MASER_BASIS]) }
+    .distinctUntilChanged()
+
+fun Context.aiEnabledFlow(): Flow<Boolean> = dataStore.data
+    .map { it[SettingsKeys.AI_ENABLED] ?: false }
     .distinctUntilChanged()
 
 data class BalanceSetup(val adjustment: BalanceAdjustment?)

@@ -45,6 +45,7 @@ import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.reminders.ReminderSettings
 import com.example.mymaser.settings.DEFAULT_REMINDER_MINUTE_OF_DAY
 import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
+import com.example.mymaser.settings.MaserBasis
 import com.example.mymaser.settings.PRESET_MASER_PERCENTAGES
 import com.example.mymaser.settings.SettingsKeys
 import com.example.mymaser.settings.SettingsViewModel
@@ -68,6 +69,8 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val reminderMinute by viewModel.reminderMinuteOfDay.collectAsState(initial = DEFAULT_REMINDER_MINUTE_OF_DAY)
     val maserPercentage by viewModel.get(SettingsKeys.MASER_PERCENTAGE, DEFAULT_MASER_PERCENTAGE)
         .collectAsState(initial = DEFAULT_MASER_PERCENTAGE)
+    val aiEnabled by viewModel.aiEnabled.collectAsState(initial = false)
+    val maserBasis by viewModel.maserBasis.collectAsState(initial = MaserBasis.Net)
 
     Scaffold(
         topBar = {
@@ -103,6 +106,15 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                     status = rateStatus,
                     onConfirm = viewModel::setDisplayCurrency,
                     onRetry = viewModel::retryRates
+                )
+            }
+
+            SettingsSection(stringResource(R.string.settings_ai)) {
+                AiSetting(
+                    enabled = aiEnabled,
+                    basis = maserBasis,
+                    onEnabledChange = { viewModel.set(SettingsKeys.AI_ENABLED, it) },
+                    onBasisChange = { viewModel.set(SettingsKeys.MASER_BASIS, it.key) }
                 )
             }
 

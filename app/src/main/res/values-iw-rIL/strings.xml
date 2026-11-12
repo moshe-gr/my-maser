@@ -123,6 +123,13 @@
     <string name="due_skip">דלג החודש</string>
     <string name="due_more">אפשרויות נוספות</string>
     <string name="settings_reminders">תזכורות</string>
+    <string name="settings_ai">ייבוא חכם</string>
+    <string name="ai_enabled">קריאת מסמכים עם AI</string>
+    <string name="ai_privacy_note">תלושים, קבלות וטקסט שתבחר נשלחים ל-Google Gemini לקריאה. Google עשויה להשתמש בהם לשיפור שירותיה. שום דבר לא נשמר עד שתאשר.</string>
+    <string name="maser_basis_title">חישוב הכנסה מתלוש לפי</string>
+    <string name="maser_basis_net">נטו</string>
+    <string name="maser_basis_gross">ברוטו</string>
+    <string name="maser_basis_hint">יש דעות שונות אם מפרישים מעשר מהברוטו או מהנטו. אם אינך בטוח, התייעץ עם רב.</string>
     <string name="reminders_master">שלח תזכורות</string>
     <string name="reminders_master_description">מבוסס על ההיסטוריה שלך בלבד. שום מידע לא יוצא מהטלפון.</string>
     <string name="notifications_blocked">ההתראות כבויות עבור המעשר שלי</string>

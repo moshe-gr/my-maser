@@ -57,6 +57,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { currencyRepository.ensureRates() }
     }
 
+    val aiEnabled: Flow<Boolean> = application.aiEnabledFlow()
+    val maserBasis: Flow<MaserBasis> = application.maserBasisFlow()
+
     val reminderSettings: Flow<ReminderSettings> = application.reminderSettingsFlow()
     val reminderMinuteOfDay: Flow<Int> = application.reminderMinuteOfDayFlow()
 

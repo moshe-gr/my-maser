@@ -12,6 +12,10 @@ object SettingsKeys {
     val LANGUAGE = stringPreferencesKey("app_language")
     val THEME_MODE = stringPreferencesKey("theme_mode")
     val MASER_PERCENTAGE = floatPreferencesKey("maser_percentage")
+    val MASER_BASIS = stringPreferencesKey("maser_basis")
+
+    /** Off until the user agrees to send documents to Gemini. */
+    val AI_ENABLED = booleanPreferencesKey("ai_enabled")
 
     /** ISO 4217 code everything is shown in. */
     val DISPLAY_CURRENCY = stringPreferencesKey("display_currency")

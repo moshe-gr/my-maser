@@ -124,6 +124,13 @@
     <string name="due_skip">Skip this month</string>
     <string name="due_more">More options</string>
     <string name="settings_reminders">Reminders</string>
+    <string name="settings_ai">Smart import</string>
+    <string name="ai_enabled">Read documents with AI</string>
+    <string name="ai_privacy_note">Payslips, receipts and text you choose are sent to Google Gemini to read. Google may use them to improve its services. Nothing is saved until you confirm.</string>
+    <string name="maser_basis_title">Count payslip income from</string>
+    <string name="maser_basis_net">Net pay</string>
+    <string name="maser_basis_gross">Gross pay</string>
+    <string name="maser_basis_hint">Opinions differ on whether ma\'aser is taken from gross or net pay. Ask your rabbi if unsure.</string>
     <string name="reminders_master">Send reminders</string>
     <string name="reminders_master_description">Based on your own history. Nothing leaves your phone.</string>
     <string name="notifications_blocked">Notifications are turned off for My Maser</string>
