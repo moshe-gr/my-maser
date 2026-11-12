@@ -31,6 +31,8 @@ Find every income and every donation in the document and return them as JSON.
   amount = netAmount if known, else grossAmount. date = the pay month's last day.
 - Donation receipt (קבלה, תרומה, section 46 / סעיף 46): one donation. name = the organisation.
 - Bank or transfer confirmation: income if money came in, donation if it went to a charity.
+- A short note the user typed or said, e.g. "gave 180 to Yad Eliezer" or "קיבלתי בונוס 2000":
+  one entry per amount mentioned. Omit the date unless the note gives one.
 - currency: ISO code (ILS for ₪/ש"ח/NIS, USD, EUR, GBP). Omit if unknown.
 - date: YYYY-MM-DD. Omit if unknown.
 - Ignore tax, pension and other deductions as separate entries.

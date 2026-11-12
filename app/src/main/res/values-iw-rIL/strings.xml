@@ -171,6 +171,9 @@
         <item quantity="other">יוצאו %d רשומות</item>
     </plurals>
     <string name="close">סגירה</string>
+    <string name="quick_add_hint">הוספה מהירה, למשל “180 ליד אליעזר”</string>
+    <string name="quick_add_send">הוסף</string>
+    <string name="quick_add_voice">אמור בקול</string>
     <string name="import_from_document">קריאה ממסמך</string>
     <string name="import_scan">סריקת מסמך</string>
     <string name="import_choose_file">בחירת תמונה או PDF</string>

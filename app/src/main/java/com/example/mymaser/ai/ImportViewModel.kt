@@ -11,7 +11,11 @@ import com.example.mymaser.settings.aiEnabledFlow
 import com.example.mymaser.settings.displayCurrencyFlow
 import com.example.mymaser.settings.maserBasisFlow
 import kotlinx.coroutines.Job
+import com.example.mymaser.history.Prefill
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,6 +46,11 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
     private val _state = MutableStateFlow<ImportState>(ImportState.Idle)
     val state: StateFlow<ImportState> = _state.asStateFlow()
 
+    private val _prefills = MutableSharedFlow<Prefill>(extraBufferCapacity = 1)
+
+    /** A single quick-add result, to open in the entry form. */
+    val prefills: SharedFlow<Prefill> = _prefills.asSharedFlow()
+
     val aiEnabled: StateFlow<Boolean> = application.aiEnabledFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
 
@@ -55,6 +64,23 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
         if (uris.isNotEmpty()) start { readFiles(app, uris) }
     }
 
+    /** Reads a typed or spoken note offline when possible, else with the model. */
+    fun quickAdd(text: String) {
+        val note = text.trim()
+        if (note.isEmpty()) return
+        viewModelScope.launch {
+            val all = history.observeHistory().first()
+            val incomes = all.filterNot { it.isDonation }.map { it.name.trim() }.distinct()
+            val donations = all.filter { it.isDonation }.map { it.name.trim() }.distinct()
+            when (val local = parseQuickAdd(note, incomes, donations)) {
+                is QuickAdd.Parsed -> _prefills.emit(local.prefill)
+                QuickAdd.NeedsAi -> start(singleToForm = true) {
+                    ReadDocuments(listOf(AiInput.Text(note)), skipped = 0)
+                }
+            }
+        }
+    }
+
     fun retry() {
         val documents = retryDocuments ?: return
         start { documents }
@@ -66,7 +92,7 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
         _state.value = ImportState.Idle
     }
 
-    private fun start(load: suspend () -> ReadDocuments) {
+    private fun start(singleToForm: Boolean = false, load: suspend () -> ReadDocuments) {
         job?.cancel()
         retryDocuments = null
         _state.value = ImportState.Reading
@@ -82,6 +108,12 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
                 fallbackCurrency = app.displayCurrencyFlow().first(),
                 knownNames = history.observeHistory().first().map { it.name }.distinct()
             )
+            val single = (result as? AiResult.Success)?.value?.singleOrNull()
+            if (singleToForm && single != null) {
+                _state.value = ImportState.Idle
+                _prefills.emit(Prefill(single.name, single.amount, single.currency, single.isDonation))
+                return@launch
+            }
             _state.value = when (result) {
                 is AiResult.Error -> {
                     if (result.reason.canRetry) retryDocuments = documents

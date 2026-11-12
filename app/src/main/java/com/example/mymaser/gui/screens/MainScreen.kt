@@ -45,6 +45,7 @@ import com.example.mymaser.gui.components.EntryForm
 import com.example.mymaser.gui.components.ForecastLine
 import com.example.mymaser.gui.components.ImportButton
 import com.example.mymaser.gui.components.ImportReviewSheet
+import com.example.mymaser.gui.components.QuickAddField
 import com.example.mymaser.ai.ImportViewModel
 import com.example.mymaser.history.NewEntry
 import androidx.compose.ui.platform.LocalResources
@@ -155,7 +156,12 @@ fun MainScreen(
         viewModel.consumeDestination()
     }
 
+    LaunchedEffect(Unit) {
+        importViewModel.prefills.collect(viewModel::requestPrefill)
+    }
+
     val dueCards: @Composable () -> Unit = {
+        QuickAddField(onSubmit = importViewModel::quickAdd)
         DueCards(
             predictions = predictions,
             onLog = { saveEntry(it.name, it.amount, it.currency, it.isDonation) },

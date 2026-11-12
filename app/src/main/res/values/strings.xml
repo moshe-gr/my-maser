@@ -172,6 +172,9 @@
         <item quantity="other">Exported %d entries</item>
     </plurals>
     <string name="close">Close</string>
+    <string name="quick_add_hint">Quick add, e.g. “180 to Yad Eliezer”</string>
+    <string name="quick_add_send">Add</string>
+    <string name="quick_add_voice">Say it</string>
     <string name="import_from_document">Read from document</string>
     <string name="import_scan">Scan document</string>
     <string name="import_choose_file">Choose photo or PDF</string>
