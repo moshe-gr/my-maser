@@ -46,7 +46,15 @@ import com.example.mymaser.gui.components.ForecastLine
 import com.example.mymaser.gui.components.ImportButton
 import com.example.mymaser.gui.components.ImportReviewSheet
 import com.example.mymaser.gui.components.QuickAddField
+import com.example.mymaser.ai.ChatViewModel
 import com.example.mymaser.ai.ImportViewModel
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.unit.dp
 import com.example.mymaser.history.NewEntry
 import androidx.compose.ui.platform.LocalResources
 import com.example.mymaser.gui.components.RatesNotice
@@ -59,6 +67,8 @@ import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryViewModel
 import com.example.mymaser.settings.SettingsActivity
 import kotlinx.coroutines.launch
+
+private const val CHAT_ROUTE = "chat"
 
 private fun NavDestination?.isOn(screen: ScreenTypes) =
     this?.hierarchy?.any { it.route == screen.route } == true
@@ -75,7 +85,8 @@ private fun NavHostController.openTab(screen: ScreenTypes) {
 @Composable
 fun MainScreen(
     viewModel: HistoryViewModel = viewModel(),
-    importViewModel: ImportViewModel = viewModel()
+    importViewModel: ImportViewModel = viewModel(),
+    chatViewModel: ChatViewModel = viewModel()
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
@@ -85,6 +96,7 @@ fun MainScreen(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
     val current = ScreenTypes.entries.firstOrNull { destination.isOn(it) } ?: ScreenTypes.Home
+    val onChat = destination?.route == CHAT_ROUTE
 
     val history by viewModel.history.collectAsStateWithLifecycle()
     val totalMaser by viewModel.totalMaser.collectAsStateWithLifecycle()
@@ -162,6 +174,16 @@ fun MainScreen(
 
     val dueCards: @Composable () -> Unit = {
         QuickAddField(onSubmit = importViewModel::quickAdd)
+        if (aiEnabled) {
+            OutlinedButton(
+                onClick = { navController.navigate(CHAT_ROUTE) { launchSingleTop = true } },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.chat_open))
+            }
+        }
         DueCards(
             predictions = predictions,
             onLog = { saveEntry(it.name, it.amount, it.currency, it.isDonation) },
@@ -229,9 +251,20 @@ fun MainScreen(
                 title = {
                     Text(
                         stringResource(
-                            if (current == ScreenTypes.Home) R.string.app_name else current.label
+                            when {
+                                onChat -> R.string.chat_title
+                                current == ScreenTypes.Home -> R.string.app_name
+                                else -> current.label
+                            }
                         )
                     )
+                },
+                navigationIcon = {
+                    if (onChat) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        }
+                    }
                 },
                 actions = {
                     IconButton(
@@ -291,6 +324,18 @@ fun MainScreen(
                     maserPercentage = maserPercentage,
                     notice = homeNotice,
                     dueCards = dueCards
+                )
+            }
+            composable(CHAT_ROUTE) {
+                val messages by chatViewModel.messages.collectAsStateWithLifecycle()
+                val thinking by chatViewModel.thinking.collectAsStateWithLifecycle()
+                ChatScreen(
+                    messages = messages,
+                    thinking = thinking,
+                    onAsk = { chatViewModel.ask(it, viewModel.chatData()) },
+                    onOpenSettings = {
+                        context.startActivity(Intent(context, SettingsActivity::class.java))
+                    }
                 )
             }
             composable(ScreenTypes.Income.route) { EntryTab(isDonation = false) }

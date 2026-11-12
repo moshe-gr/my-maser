@@ -3,6 +3,8 @@ package com.example.mymaser.ai
 import android.content.Context
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
+import com.google.firebase.ai.FirebaseAI
+import java.util.concurrent.atomic.AtomicBoolean
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.FirebaseAIException
 import com.google.firebase.ai.type.GenerativeBackend
@@ -40,14 +42,39 @@ interface AiClient {
     suspend fun extract(inputs: List<AiInput>): AiResult<String>
 }
 
+/** Free-tier Flash model; the alias follows Google's current release. */
+internal const val GEMINI_MODEL = "gemini-flash-latest"
+
+private val appCheckInstalled = AtomicBoolean(false)
+
+/** The Gemini service, or null when google-services.json is missing and Firebase never started. */
+internal fun geminiOrNull(context: Context): FirebaseAI? {
+    if (FirebaseApp.getApps(context).isEmpty()) return null
+    if (appCheckInstalled.compareAndSet(false, true)) installAppCheck()
+    return Firebase.ai(backend = GenerativeBackend.googleAI())
+}
+
+/** Runs a Gemini call, turning its failures into an [AiError]. */
+internal suspend fun <T> geminiCall(block: suspend () -> AiResult<T>): AiResult<T> =
+    try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: QuotaExceededException) {
+        AiResult.Error(AiError.QuotaExceeded)
+    } catch (e: FirebaseAIException) {
+        AiResult.Error(if (e.cause is IOException) AiError.Network else AiError.Failed)
+    } catch (_: IOException) {
+        AiResult.Error(AiError.Network)
+    }
+
 class GeminiAiClient private constructor(context: Context) : AiClient {
 
     private val appContext: Context = context.applicationContext
 
     private val model by lazy {
-        installAppCheck()
-        Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
-            modelName = MODEL_NAME,
+        geminiOrNull(appContext)?.generativeModel(
+            modelName = GEMINI_MODEL,
             generationConfig = generationConfig {
                 responseMimeType = "application/json"
                 responseSchema = extractionSchema
@@ -57,7 +84,7 @@ class GeminiAiClient private constructor(context: Context) : AiClient {
     }
 
     override suspend fun extract(inputs: List<AiInput>): AiResult<String> {
-        if (FirebaseApp.getApps(appContext).isEmpty()) return AiResult.Error(AiError.NotConfigured)
+        val model = model ?: return AiResult.Error(AiError.NotConfigured)
         val request = content {
             inputs.forEach {
                 when (it) {
@@ -66,24 +93,13 @@ class GeminiAiClient private constructor(context: Context) : AiClient {
                 }
             }
         }
-        return try {
+        return geminiCall {
             val reply = model.generateContent(request).text
             if (reply.isNullOrBlank()) AiResult.Error(AiError.Failed) else AiResult.Success(reply)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: QuotaExceededException) {
-            AiResult.Error(AiError.QuotaExceeded)
-        } catch (e: FirebaseAIException) {
-            AiResult.Error(if (e.cause is IOException) AiError.Network else AiError.Failed)
-        } catch (_: IOException) {
-            AiResult.Error(AiError.Network)
         }
     }
 
     companion object {
-        /** Free-tier Flash model; the alias follows Google's current release. */
-        private const val MODEL_NAME = "gemini-flash-latest"
-
         private val extractionSchema: Schema = with(ExtractionFields) {
             Schema.obj(
                 mapOf(

@@ -3,6 +3,7 @@ package com.example.mymaser.history
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mymaser.ai.ChatData
 import com.example.mymaser.currency.CurrencyRepository
 import com.example.mymaser.currency.DEFAULT_CURRENCY
 import com.example.mymaser.currency.DisplayHistory
@@ -89,6 +90,16 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             if (shown == null || total == null) null
             else forecastYearEnd(shown.countable(currency), total.toDouble(), ZonedDateTime.now())
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    /** What the chat may look at right now, or null until everything has loaded. */
+    fun chatData(): ChatData? {
+        val shown = display.value ?: return null
+        val balance = totalMaser.value?.toDouble() ?: return null
+        val currency = displayCurrency.value
+        val now = ZonedDateTime.now()
+        val entries = shown.countable(currency)
+        return ChatData(entries, currency, balance, forecastYearEnd(entries, balance, now), now)
+    }
 
     /** A likely mistake in a new entry made at [timeStamp], checked against what's stored. */
     fun checkNewEntry(

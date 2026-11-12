@@ -175,6 +175,16 @@
     <string name="quick_add_hint">Quick add, e.g. “180 to Yad Eliezer”</string>
     <string name="quick_add_send">Add</string>
     <string name="quick_add_voice">Say it</string>
+    <string name="chat_title">Ask about your maser</string>
+    <string name="chat_open">Ask about your maser</string>
+    <string name="chat_intro">Ask anything about your income, donations and maser. Answers are worked out from totals on your phone, and the conversation isn\'t saved.</string>
+    <string name="chat_hint">Ask a question</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_thinking">Thinking…</string>
+    <string name="chat_error_failed">Couldn\'t answer that. Try asking another way.</string>
+    <string name="chat_suggestion_year">How much did I give this year?</string>
+    <string name="chat_suggestion_balance">How much maser do I have left?</string>
+    <string name="chat_suggestion_month">Which month did I give the most?</string>
     <string name="import_from_document">Read from document</string>
     <string name="import_scan">Scan document</string>
     <string name="import_choose_file">Choose photo or PDF</string>
