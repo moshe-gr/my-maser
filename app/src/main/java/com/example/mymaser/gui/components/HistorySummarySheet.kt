@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -107,7 +106,7 @@ fun HistorySummarySheet(
     originalOf: (History) -> History = { it },
     onTaxCreditForName: (Boolean) -> Unit = {}
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberSheetState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val displayCurrency = LocalDisplayCurrency.current

@@ -23,19 +23,25 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,8 +63,24 @@ import java.text.DateFormat
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.flow.first
 
 val ContentMaxWidth = 600.dp
+
+/**
+ * Opens fully, but a swipe down from the top first settles at half height, so scrolling back up
+ * past the top doesn't close the sheet by accident.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun rememberSheetState(): SheetState {
+    val state = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    LaunchedEffect(state) {
+        val opening = snapshotFlow { state.targetValue }.first { it != SheetValue.Hidden }
+        if (opening == SheetValue.PartiallyExpanded) state.expand()
+    }
+    return state
+}
 
 @Composable
 fun ScreenColumn(
