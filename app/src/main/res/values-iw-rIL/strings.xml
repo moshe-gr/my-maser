@@ -209,7 +209,7 @@
     <string name="tax_credit_eligible">תרומות מזכות</string>
     <string name="tax_credit_estimate">זיכוי משוער</string>
     <string name="tax_credit_below_minimum">כדי לקבל זיכוי, התרומות המזכות בשנה צריכות לעבור את %1$s.</string>
-    <string name="tax_credit_min_progress">%1$s מתוך מינימום שנתי של %2$s</string>
+    <string name="tax_credit_min_progress">%1$s עד עכשיו · צריך לעבור את %2$s כדי לקבל זיכוי</string>
     <string name="tax_credit_over_cap">%1$s מעל 30%% מההכנסות שרשמת, וייתכן שלא יזכו בזיכוי.</string>
     <string name="tax_credit_past_years">שנים שעוד אפשר לבקש עליהן החזר</string>
     <string name="tax_credit_year_row">%1$s מזכה · זיכוי של כ־%2$s</string>

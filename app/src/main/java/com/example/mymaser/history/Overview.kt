@@ -42,9 +42,16 @@ fun relativeChange(current: Double, previous: Double?): Double? =
 private const val TOP_NAMES = 5
 private const val CHART_MONTHS = 12
 
+private fun inPeriod(history: List<History>, period: SummaryPeriod, now: ZonedDateTime) =
+    periodRange(period, now)?.let { range -> history.filter { it.timeStamp in range } } ?: history
+
+/** Just the totals for [period]. [history] must already be in one currency. */
+fun periodTotals(history: List<History>, period: SummaryPeriod, now: ZonedDateTime): PeriodTotals =
+    totals(inPeriod(history, period, now))
+
 /** Totals, monthly bars and top names for [period]. [history] must already be in one currency. */
 fun computeOverview(history: List<History>, period: SummaryPeriod, now: ZonedDateTime): Overview {
-    val inPeriod = periodRange(period, now)?.let { range -> history.filter { it.timeStamp in range } } ?: history
+    val inPeriod = inPeriod(history, period, now)
     val previous = previousPeriodRange(period, now)?.let { range -> totals(history.filter { it.timeStamp in range }) }
     return Overview(
         current = totals(inPeriod),

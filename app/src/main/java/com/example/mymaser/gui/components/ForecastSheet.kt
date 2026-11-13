@@ -58,15 +58,18 @@ fun ForecastSheet(
 
             if (forecast != null) {
                 Text(forecastText(forecast), style = MaterialTheme.typography.bodyLarge)
-                MonthlyBarChart(
-                    months = forecast.months.map { MonthTotal(it.month, it.balance) },
-                    color = MaterialTheme.colorScheme.primary,
-                    title = stringResource(R.string.forecast_chart_title),
-                    initialSelection = forecast.months.lastIndex
-                )
-                if (forecast.sources.isNotEmpty()) {
+                if (forecast.months.any { it.balance > 0 }) {
+                    MonthlyBarChart(
+                        months = forecast.months.map { MonthTotal(it.month, it.balance) },
+                        color = MaterialTheme.colorScheme.primary,
+                        title = stringResource(R.string.forecast_chart_title),
+                        initialSelection = forecast.months.lastIndex
+                    )
+                }
+                val sources = forecast.sources.filter { it.delta != 0.0 }
+                if (sources.isNotEmpty()) {
                     SectionTitle(stringResource(R.string.forecast_sources_title))
-                    forecast.sources.forEach { SourceRow(it) }
+                    sources.forEach { SourceRow(it) }
                 }
             } else {
                 Text(
@@ -121,11 +124,6 @@ fun ForecastSheet(
 @Composable
 private fun SectionTitle(text: String) {
     Text(text, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
-}
-
-@Composable
-private fun Note(text: String) {
-    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable

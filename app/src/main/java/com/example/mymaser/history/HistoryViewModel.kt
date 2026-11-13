@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -105,7 +106,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     /** Entries in shekels, the currency section 46 amounts are set in; unconvertible ones are left out. */
     private val shekelHistory = combine(originals.filterNotNull(), rates) { list, table ->
         toDisplay(list, SupportedCurrency.ILS.code, table, ZoneId.systemDefault()).countable(SupportedCurrency.ILS.code)
-    }
+    }.shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), replay = 1)
 
     /** This year's tax credit if the recurring tax-credit donations still expected are given. */
     val taxProjection: StateFlow<TaxYearCredit?> = combine(shekelHistory, dismissedFlow) { list, dismissed ->

@@ -209,7 +209,7 @@
     <string name="tax_credit_eligible">Eligible donations</string>
     <string name="tax_credit_estimate">Estimated credit</string>
     <string name="tax_credit_below_minimum">Eligible donations must pass %1$s in the year for any credit.</string>
-    <string name="tax_credit_min_progress">%1$s of the %2$s yearly minimum</string>
+    <string name="tax_credit_min_progress">%1$s so far · must pass %2$s for any credit</string>
     <string name="tax_credit_over_cap">%1$s is above 30%% of the income you logged and may get no credit.</string>
     <string name="tax_credit_past_years">Years you can still claim</string>
     <string name="tax_credit_year_row">%1$s eligible · about %2$s back</string>

@@ -276,11 +276,6 @@ private fun ReviewRowCard(row: ReviewRow, warning: EntryWarning?, onChange: (Rev
 }
 
 @Composable
-private fun Note(text: String) {
-    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-}
-
-@Composable
 private fun WarningText(warning: EntryWarning) {
     val dateFormat = rememberDateFormat()
     val text = when (warning) {

@@ -144,5 +144,6 @@ class OutlookTest {
         val top = overview.topDonations.first()
         assertEquals("fund", top.name)
         assertEquals(1000.0 / 1500.0, top.share, 0.0001)
+        assertEquals(overview.current, periodTotals(history, SummaryPeriod.ThisYear, now))
     }
 }

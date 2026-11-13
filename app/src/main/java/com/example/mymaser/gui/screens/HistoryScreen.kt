@@ -78,12 +78,12 @@ import com.example.mymaser.history.HistoryPeriod
 import com.example.mymaser.history.HistoryQuery
 import com.example.mymaser.history.SummaryPeriod
 import com.example.mymaser.history.TaxYearCredit
-import com.example.mymaser.history.computeOverview
 import com.example.mymaser.history.TimeFilter
 import com.example.mymaser.history.TypeFilter
 import com.example.mymaser.history.filterHistory
 import com.example.mymaser.history.groupByPeriod
 import com.example.mymaser.history.localDate
+import com.example.mymaser.history.periodTotals
 import com.example.mymaser.history.taxYearDonations
 import java.time.YearMonth
 import java.time.ZonedDateTime
@@ -477,7 +477,7 @@ private fun OverviewCard(
 ) {
     val currency = LocalDisplayCurrency.current
     val countable = remember(history, currency) { history.countable(currency) }
-    val totals = remember(countable, now) { computeOverview(countable, SummaryPeriod.ThisYear, now).current }
+    val totals = remember(countable, now) { periodTotals(countable, SummaryPeriod.ThisYear, now) }
     val donations = remember(countable, now) { taxYearDonations(countable, now) }
 
     Card(

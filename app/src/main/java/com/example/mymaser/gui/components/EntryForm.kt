@@ -93,7 +93,7 @@ fun EntryForm(
 
     fun pick(suggestion: String) {
         name = suggestion
-        if (isDonation) taxCredit = taxCreditFor(suggestion)
+        if (isDonation) taxCredit = isTaxOnly || taxCreditFor(suggestion)
         menuOpen = false
         focusManager.moveFocus(FocusDirection.Down)
         val amountIsOurs = amountText.isEmpty() || amountText == autoFilledAmount

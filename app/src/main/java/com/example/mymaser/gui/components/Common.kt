@@ -264,11 +264,16 @@ fun TaxCreditTag(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SmallTag(text: String, modifier: Modifier = Modifier) {
+fun SmallTag(
+    text: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer
+) {
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        color = containerColor,
+        contentColor = contentColor,
         shape = MaterialTheme.shapes.extraSmall
     ) {
         Text(
@@ -277,6 +282,17 @@ private fun SmallTag(text: String, modifier: Modifier = Modifier) {
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
+}
+
+/** Small secondary text, for hints and caveats under a section. */
+@Composable
+fun Note(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        modifier = modifier,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 /** A horizontally scrolling row of chips; [contentPadding] scrolls with the chips. */
