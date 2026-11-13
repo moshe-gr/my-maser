@@ -16,7 +16,9 @@ data class ExtractedEntry(
     val name: String,
     val amount: Float,
     val currency: String,
-    val date: LocalDate?
+    val date: LocalDate?,
+    /** The model's pick among the user's existing names, when it's clearly the same source. */
+    val knownName: String? = null
 )
 
 /** Stores found entries until the user reviews them, e.g. from an email read in the background. */
@@ -28,6 +30,7 @@ fun entriesToJson(entries: List<ExtractedEntry>): String = JSONArray(
             .put("amount", it.amount.toDouble())
             .put("currency", it.currency)
             .put("date", it.date?.toString() ?: JSONObject.NULL)
+            .put("knownName", it.knownName ?: JSONObject.NULL)
     }
 ).toString()
 
@@ -38,7 +41,8 @@ fun entriesFromJson(json: String): List<ExtractedEntry> = try {
             name = it.getString("name"),
             amount = it.getDouble("amount").toFloat(),
             currency = it.getString("currency"),
-            date = it.text("date")?.let(::parseDate)
+            date = it.text("date")?.let(::parseDate),
+            knownName = it.text("knownName")
         )
     }
 } catch (_: JSONException) {
@@ -53,6 +57,17 @@ fun documentTimeStamp(date: LocalDate?, zone: ZoneId, nowMillis: Long): Long =
 const val EXTRACTION_PROMPT = """
 You read financial documents for a ma'aser (tithe) tracker. Documents are often in Hebrew.
 Find every income and every donation in the document and return them as JSON.
+- A donation is money given to a charity, amuta (ע"ר), synagogue, yeshiva, kollel or a person in
+  need. A purchase, invoice (חשבונית), order, bill or subscription from a shop or company is NOT a
+  donation and NOT income: return nothing for it.
+- amount is the money paid (סכום, סה"כ, total). Never use a receipt, invoice, order, reference,
+  ID, phone or account number as the amount. If the paid sum isn't clear, leave the entry out.
+- name: copy it exactly as the document writes it, in its own language and script. Never
+  translate, transliterate or invent a name; if it can't be read, leave the entry out.
+- knownName: the user's existing names may be listed before the document. Only when the entry
+  is clearly from the same employer, payer or organisation as one of them, set knownName to
+  that name exactly as listed. Otherwise omit it. Still set name as the document writes it.
+- Text taken out of a PDF may show Hebrew words or lines in reverse order; read it accordingly.
 - Payslip (תלוש שכר): one income. name = employer. grossAmount = ברוטו, netAmount = נטו לתשלום,
   amount = netAmount if known, else grossAmount. date = the pay month's last day.
 - Donation receipt (קבלה, תרומה, section 46 / סעיף 46): one donation. name = the organisation.
@@ -77,6 +92,7 @@ object ExtractionFields {
     const val NET = "netAmount"
     const val CURRENCY = "currency"
     const val DATE = "date"
+    const val KNOWN_NAME = "knownName"
 }
 
 /**
@@ -126,7 +142,8 @@ private fun JSONObject.toEntry(basis: MaserBasis, fallbackCurrency: String, toda
         name = name,
         amount = amount.toFloat(),
         currency = normalizeCurrency(text(f.CURRENCY)) ?: fallbackCurrency,
-        date = text(f.DATE)?.let(::parseDate)?.let { minOf(it, today) }
+        date = text(f.DATE)?.let(::parseDate)?.let { minOf(it, today) },
+        knownName = text(f.KNOWN_NAME)
     )
 }
 
@@ -161,5 +178,3 @@ fun matchKnownName(name: String, known: List<String>): String {
     val key = name.normalizedKey()
     return known.firstOrNull { it.normalizedKey() == key } ?: name.trim()
 }
-
-private fun String.normalizedKey() = trim().lowercase().replace(Regex("\\s+"), " ")

@@ -233,6 +233,18 @@
     <string name="import_error_failed">לא ניתן היה לקרוא את המסמך.</string>
     <string name="import_warning_duplicate">נראה ככפילות של רשומה מתאריך %1$s</string>
     <string name="import_warning_unusual">סכום חריג — בדרך כלל %1$s</string>
+    <string name="import_document_name">במסמך: %1$s</string>
+    <string name="import_already_logged">כבר נרשם ב־%1$s בשם %2$s</string>
+    <string name="import_repeat">זהה לרשומה שלמעלה</string>
+    <plurals name="import_locked">
+        <item quantity="one">קובץ PDF נעול אחד לא נפתח. הוסף את הסיסמה שלו בהגדרות.</item>
+        <item quantity="two">%d קובצי PDF נעולים לא נפתחו. הוסף את הסיסמה שלהם בהגדרות.</item>
+        <item quantity="other">%d קובצי PDF נעולים לא נפתחו. הוסף את הסיסמה שלהם בהגדרות.</item>
+    </plurals>
+    <string name="pdf_password_title">סיסמה לקובצי PDF נעולים</string>
+    <string name="pdf_password_hint">תלושי שכר נעולים לרוב במספר תעודת הזהות. קבצים נעולים נפתחים בטלפון הזה, ורק הטקסט שלהם נשלח ל־Gemini, בלי פרטי תעודת זהות, בנק וכתובת.</string>
+    <string name="pdf_password_saved">סיסמה שמורה</string>
+    <string name="pdf_password_remove">הסר</string>
     <plurals name="import_skipped">
         <item quantity="one">קובץ אחד דולג: לא תמונה או PDF, או מעל 15MB.</item>
         <item quantity="two">%d קבצים דולגו: לא תמונה או PDF, או מעל 15MB.</item>

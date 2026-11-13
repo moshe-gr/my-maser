@@ -25,6 +25,9 @@ object SettingsKeys {
     /** Comma-separated words the daily email search looks for. */
     val GMAIL_KEYWORDS = stringPreferencesKey("gmail_keywords")
 
+    /** JSON object of renames the user made when reviewing imports. */
+    val NAME_ALIASES = stringPreferencesKey("name_aliases")
+
     /** ISO 4217 code everything is shown in. */
     val DISPLAY_CURRENCY = stringPreferencesKey("display_currency")
     val LAST_RATES_FETCH_DAY = longPreferencesKey("last_rates_fetch_day")

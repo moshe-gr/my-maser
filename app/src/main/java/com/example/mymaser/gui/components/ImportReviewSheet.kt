@@ -34,6 +34,7 @@ import com.example.mymaser.R
 import com.example.mymaser.ai.AiError
 import com.example.mymaser.ai.ExtractedEntry
 import com.example.mymaser.ai.ImportState
+import com.example.mymaser.ai.ReviewEntry
 import com.example.mymaser.ai.canRetry
 import com.example.mymaser.ai.documentTimeStamp
 import com.example.mymaser.currency.SupportedCurrency
@@ -48,11 +49,13 @@ import java.time.format.FormatStyle
 import java.util.Date
 
 private data class ReviewRow(
-    val entry: ExtractedEntry,
-    val selected: Boolean = true,
-    val name: String = entry.name,
-    val amountText: String = formatAmountInput(entry.amount)
+    val item: ReviewEntry,
+    val selected: Boolean = item.loggedAs == null && !item.repeat,
+    val name: String = item.entry.name,
+    val amountText: String = formatAmountInput(item.entry.amount)
 ) {
+    val entry: ExtractedEntry get() = item.entry
+
     fun toNewEntry(nowMillis: Long): NewEntry? {
         val amount = amountText.toFloatOrNull()?.takeIf { it > 0F } ?: return null
         val trimmed = name.trim().takeIf { it.isNotEmpty() } ?: return null
@@ -61,7 +64,8 @@ private data class ReviewRow(
             amount = amount,
             currency = entry.currency,
             isDonation = entry.isDonation,
-            timeStamp = documentTimeStamp(entry.date, ZoneId.systemDefault(), nowMillis)
+            timeStamp = documentTimeStamp(entry.date, ZoneId.systemDefault(), nowMillis),
+            documentName = item.documentName
         )
     }
 }
@@ -183,7 +187,9 @@ private fun ColumnScope.Review(
         rows.forEachIndexed { index, row ->
             ReviewRowCard(
                 row = row,
-                warning = remember(entries[index]) { entries[index]?.let(onCheck) },
+                warning = remember(entries[index]) {
+                    entries[index]?.takeIf { row.item.loggedAs == null }?.let(onCheck)
+                },
                 onChange = { rows[index] = it }
             )
         }
@@ -232,10 +238,28 @@ private fun ReviewRowCard(row: ReviewRow, warning: EntryWarning?, onChange: (Rev
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (row.item.documentName.trim() != row.name.trim()) {
+                    Note(stringResource(R.string.import_document_name, row.item.documentName))
+                }
+                row.item.loggedAs?.let { logged ->
+                    Note(
+                        stringResource(
+                            R.string.import_already_logged,
+                            rememberDateFormat().format(Date(logged.timeStamp)),
+                            logged.name
+                        )
+                    )
+                }
+                if (row.item.repeat) Note(stringResource(R.string.import_repeat))
                 if (row.selected && warning != null) WarningText(warning)
             }
         }
     }
+}
+
+@Composable
+private fun Note(text: String) {
+    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable

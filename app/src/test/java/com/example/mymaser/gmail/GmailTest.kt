@@ -6,6 +6,7 @@ import com.example.mymaser.ai.AiInput
 import com.example.mymaser.ai.AiResult
 import com.example.mymaser.ai.DocumentImporter
 import com.example.mymaser.ai.ExtractedEntry
+import com.example.mymaser.ai.KnownNames
 import com.example.mymaser.ai.entriesFromJson
 import com.example.mymaser.ai.entriesToJson
 import com.example.mymaser.settings.MaserBasis
@@ -63,7 +64,7 @@ class GmailTest {
     fun `entries survive storage`() {
         val entries = listOf(
             ExtractedEntry(false, "Acme", 9000F, "ILS", LocalDate.of(2026, 10, 31)),
-            ExtractedEntry(true, "Yad Eliezer", 180F, "USD", null)
+            ExtractedEntry(true, "יד אליעזר", 180F, "USD", null, knownName = "Yad Eliezer")
         )
         assertEquals(entries, entriesFromJson(entriesToJson(entries)))
     }
@@ -93,7 +94,7 @@ class GmailTest {
 
     private fun run(source: GmailSource, store: FakeStore, client: AiClient) = runBlocking {
         GmailImporter(store, DocumentImporter(client) { true })
-            .run(source, "q", MaserBasis.Net, "ILS", emptyList(), nowMillis = 1)
+            .run(source, "q", MaserBasis.Net, "ILS", KnownNames(emptyList(), emptyList()), nowMillis = 1)
     }
 
     @Test

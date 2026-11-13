@@ -146,7 +146,7 @@ fun computeNameAnalytics(
     )
 }
 
-private fun circularDayDistance(a: Int, b: Int): Int {
+internal fun circularDayDistance(a: Int, b: Int): Int {
     val diff = abs(a - b)
     return minOf(diff, 31 - diff)
 }

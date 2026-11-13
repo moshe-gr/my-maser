@@ -18,5 +18,7 @@ data class NewEntry(
     val currency: String,
     val isDonation: Boolean,
     val timeStamp: Long,
-    val isTaxOnly: Boolean = false
+    val isTaxOnly: Boolean = false,
+    /** How the imported document named the source, so a rename can be remembered. */
+    val documentName: String? = null
 )

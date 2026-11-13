@@ -12,7 +12,11 @@ import com.example.mymaser.settings.displayCurrencyFlow
 import com.example.mymaser.settings.maserBasisFlow
 import kotlinx.coroutines.Job
 import com.example.mymaser.gmail.PendingImport
+import com.example.mymaser.history.NewEntry
 import com.example.mymaser.history.Prefill
+import com.example.mymaser.settings.nameAliasesFlow
+import com.example.mymaser.settings.rememberNameAliases
+import java.time.ZonedDateTime
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -29,7 +33,7 @@ sealed interface ImportState {
     data object Reading : ImportState
     /** [emailIds] are the emails these entries came from, marked done once the user saves. */
     data class Review(
-        val entries: List<ExtractedEntry>,
+        val entries: List<ReviewEntry>,
         val skipped: Int,
         val emailIds: List<String> = emptyList()
     ) : ImportState
@@ -102,11 +106,13 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
         val emails = pendingEmails.value
         if (emails.isEmpty()) return
         job?.cancel()
-        _state.value = ImportState.Review(
-            entries = emails.flatMap { entriesFromJson(it.entriesJson) },
-            skipped = 0,
-            emailIds = emails.map { it.messageId }
-        )
+        job = viewModelScope.launch {
+            _state.value = ImportState.Review(
+                entries = prepare(emails.flatMap { entriesFromJson(it.entriesJson) }),
+                skipped = 0,
+                emailIds = emails.map { it.messageId }
+            )
+        }
     }
 
     fun dismissEmails() {
@@ -114,10 +120,21 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { pendingImports.markDone(ids) }
     }
 
-    /** Closes the sheet after the user saved; emails it came from won't be offered again. */
-    fun finishReview() {
+    /**
+     * Closes the sheet after the user saved; emails it came from won't be offered again, and names
+     * the user gave in place of the document's are used for that source from now on.
+     */
+    fun finishReview(saved: List<NewEntry>) {
         val ids = (_state.value as? ImportState.Review)?.emailIds.orEmpty()
-        if (ids.isNotEmpty()) viewModelScope.launch { pendingImports.markDone(ids) }
+        val aliases = saved.mapNotNull { entry ->
+            val documentName = entry.documentName ?: return@mapNotNull null
+            if (documentName.normalizedKey() == entry.name.normalizedKey()) return@mapNotNull null
+            aliasKey(entry.isDonation, documentName) to entry.name
+        }.toMap()
+        viewModelScope.launch {
+            if (ids.isNotEmpty()) pendingImports.markDone(ids)
+            app.rememberNameAliases(aliases)
+        }
         dismiss()
     }
 
@@ -141,9 +158,10 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
                 inputs = documents.inputs,
                 basis = app.maserBasisFlow().first(),
                 fallbackCurrency = app.displayCurrencyFlow().first(),
-                knownNames = history.observeHistory().first().map { it.name.trim() }.distinct()
+                knownNames = knownNamesOf(history.observeHistory().first())
             )
-            val single = (result as? AiResult.Success)?.value?.singleOrNull()
+            val found = (result as? AiResult.Success)?.value?.let { prepare(it) }.orEmpty()
+            val single = found.singleOrNull()?.entry
             if (singleToForm && single != null) {
                 _state.value = ImportState.Idle
                 _prefills.emit(Prefill(single.name, single.amount, single.currency, single.isDonation))
@@ -155,11 +173,18 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
                     ImportState.Failed(result.reason)
                 }
                 is AiResult.Success ->
-                    if (result.value.isEmpty()) ImportState.Empty(documents.skipped)
-                    else ImportState.Review(result.value, documents.skipped)
+                    if (found.isEmpty()) ImportState.Empty(documents.skipped)
+                    else ImportState.Review(found, documents.skipped)
             }
         }
     }
+
+    private suspend fun prepare(entries: List<ExtractedEntry>): List<ReviewEntry> = prepareReview(
+        entries = entries,
+        history = history.observeHistory().first(),
+        aliases = app.nameAliasesFlow().first(),
+        now = ZonedDateTime.now()
+    )
 
     private companion object {
         const val STOP_TIMEOUT_MS = 5_000L

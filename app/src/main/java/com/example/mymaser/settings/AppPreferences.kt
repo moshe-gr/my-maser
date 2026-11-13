@@ -16,6 +16,8 @@ import java.time.LocalTime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import org.json.JSONException
+import org.json.JSONObject
 
 const val DEFAULT_MASER_PERCENTAGE = 10f
 const val MIN_MASER_PERCENTAGE = 1f
@@ -99,6 +101,32 @@ fun Preferences.gmailSettings(): GmailSettings = GmailSettings(
 fun Context.gmailSettingsFlow(): Flow<GmailSettings> = dataStore.data
     .map { it.gmailSettings() }
     .distinctUntilChanged()
+
+/** Names as documents write them mapped to the user's own, see [com.example.mymaser.ai.aliasKey]. */
+fun Context.nameAliasesFlow(): Flow<Map<String, String>> = dataStore.data
+    .map { decodeAliases(it[SettingsKeys.NAME_ALIASES]) }
+    .distinctUntilChanged()
+
+suspend fun Context.rememberNameAliases(aliases: Map<String, String>) {
+    if (aliases.isEmpty()) return
+    dataStore.edit {
+        val merged = decodeAliases(it[SettingsKeys.NAME_ALIASES]) - aliases.keys + aliases
+        val newest = merged.entries.toList().takeLast(MAX_ALIASES).associate { e -> e.toPair() }
+        it[SettingsKeys.NAME_ALIASES] = JSONObject(newest).toString()
+    }
+}
+
+private const val MAX_ALIASES = 300
+
+private fun decodeAliases(json: String?): Map<String, String> {
+    if (json.isNullOrEmpty()) return emptyMap()
+    return try {
+        val obj = JSONObject(json)
+        obj.keys().asSequence().associateWith { obj.getString(it) }
+    } catch (_: JSONException) {
+        emptyMap()
+    }
+}
 
 data class BalanceSetup(val adjustment: BalanceAdjustment?)
 

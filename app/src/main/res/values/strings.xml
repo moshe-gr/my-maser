@@ -232,6 +232,17 @@
     <string name="import_error_failed">This document couldn\'t be read.</string>
     <string name="import_warning_duplicate">Looks like a duplicate of an entry from %1$s</string>
     <string name="import_warning_unusual">Unusual amount — usually %1$s</string>
+    <string name="import_document_name">In the document: %1$s</string>
+    <string name="import_already_logged">Already logged on %1$s as %2$s</string>
+    <string name="import_repeat">Same as an entry above</string>
+    <plurals name="import_locked">
+        <item quantity="one">%d locked PDF couldn\'t be opened. Add its password in Settings.</item>
+        <item quantity="other">%d locked PDFs couldn\'t be opened. Add their password in Settings.</item>
+    </plurals>
+    <string name="pdf_password_title">Password for locked PDFs</string>
+    <string name="pdf_password_hint">Payslips are often locked with your ID number. Locked files are opened on this phone, and only their text is sent to Gemini, with ID, bank and address details removed.</string>
+    <string name="pdf_password_saved">A password is saved</string>
+    <string name="pdf_password_remove">Remove</string>
     <plurals name="import_skipped">
         <item quantity="one">%d file was skipped: not a photo or PDF, or over 15 MB.</item>
         <item quantity="other">%d files were skipped: not a photo or PDF, or over 15 MB.</item>

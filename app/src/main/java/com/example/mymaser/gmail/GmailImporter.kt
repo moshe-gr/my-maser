@@ -4,6 +4,7 @@ import com.example.mymaser.ai.AiError
 import com.example.mymaser.ai.AiInput
 import com.example.mymaser.ai.AiResult
 import com.example.mymaser.ai.DocumentImporter
+import com.example.mymaser.ai.KnownNames
 import com.example.mymaser.ai.MAX_FILE_BYTES
 import com.example.mymaser.ai.MIME_PDF
 import com.example.mymaser.ai.entriesToJson
@@ -40,7 +41,7 @@ class GmailImporter(
         query: String,
         basis: MaserBasis,
         fallbackCurrency: String,
-        knownNames: List<String>,
+        knownNames: KnownNames,
         nowMillis: Long
     ): Int {
         val ids = source.search(query)

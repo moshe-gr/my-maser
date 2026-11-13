@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.example.mymaser.ai.DocumentImporter
 import com.example.mymaser.ai.GeminiAiClient
+import com.example.mymaser.ai.knownNamesOf
 import com.example.mymaser.dataStore
 import com.example.mymaser.history.HistoryDb
 import com.example.mymaser.reminders.postEmailImports
@@ -56,7 +57,7 @@ class GmailImportWorker(context: Context, params: WorkerParameters) : CoroutineW
                 query = buildGmailQuery(settings.keywords),
                 basis = context.maserBasisFlow().first(),
                 fallbackCurrency = context.displayCurrencyFlow().first(),
-                knownNames = db.getHistoryDao().getAll().map { it.name.trim() }.distinct(),
+                knownNames = knownNamesOf(db.getHistoryDao().getAll()),
                 nowMillis = System.currentTimeMillis()
             )
             context.dataStore.edit { it[SettingsKeys.GMAIL_NEEDS_RECONNECT] = false }

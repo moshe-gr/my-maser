@@ -151,7 +151,7 @@ fun MainScreen(
     val resources = LocalResources.current
 
     fun saveImported(entries: List<NewEntry>) {
-        importViewModel.finishReview()
+        importViewModel.finishReview(entries)
         viewModel.addEntries(entries) { saved ->
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             offerUndo(resources.getQuantityString(R.plurals.import_saved, saved.size, saved.size)) {

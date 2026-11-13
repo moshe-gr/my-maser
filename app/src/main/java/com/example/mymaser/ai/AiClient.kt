@@ -161,9 +161,10 @@ class GeminiAiClient private constructor(context: Context) : AiClient {
                                 GROSS to Schema.double("Payslip gross pay"),
                                 NET to Schema.double("Payslip net pay"),
                                 CURRENCY to Schema.string("ISO 4217 code"),
-                                DATE to Schema.string("YYYY-MM-DD")
+                                DATE to Schema.string("YYYY-MM-DD"),
+                                KNOWN_NAME to Schema.string("One of the user's listed names, only if clearly the same source")
                             ),
-                            optionalProperties = listOf(GROSS, NET, CURRENCY, DATE)
+                            optionalProperties = listOf(GROSS, NET, CURRENCY, DATE, KNOWN_NAME)
                         )
                     )
                 )
