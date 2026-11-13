@@ -3,6 +3,7 @@ package com.example.mymaser.history
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZonedDateTime
+import kotlin.math.abs
 
 /** The expected maser balance once [month]'s recurring entries are in. */
 data class MonthProjection(val month: YearMonth, val balance: Double)
@@ -20,7 +21,10 @@ data class SourceProjection(
     /** Occurrences this year the user skipped. */
     val skipped: Int,
     val taxCredit: Boolean
-)
+) {
+    /** What the occurrences still expected this year add to the year-end balance. */
+    val total: Double get() = delta * remaining
+}
 
 data class YearEndForecast(
     /** Expected maser owed on December 31; zero or below means it will all be given. */
@@ -116,7 +120,7 @@ fun forecastYearEnd(
         balance = balance,
         monthlyToClear = maxOf(balance, 0.0) / monthsLeft,
         months = months,
-        sources = sources.sortedByDescending { kotlin.math.abs(it.delta * it.remaining) }
+        sources = sources.sortedByDescending { abs(it.total) }
     )
 }
 

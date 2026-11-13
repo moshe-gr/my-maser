@@ -44,6 +44,8 @@ class OutlookTest {
         assertEquals(1, pledgeSource.remaining)
         assertEquals(1, pledgeSource.skipped)
         assertEquals(-300.0, pledgeSource.delta, 0.001)
+        assertEquals(-300.0, pledgeSource.total, 0.001)
+        assertEquals(2000.0, sources.getValue("Salary").total, 0.001)
         assertTrue(pledgeSource.taxCredit)
     }
 

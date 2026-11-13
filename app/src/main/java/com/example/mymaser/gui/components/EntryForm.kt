@@ -83,6 +83,7 @@ fun EntryForm(
     var autoFilledAmount by rememberSaveable { mutableStateOf<String?>(null) }
     var isTaxOnly by rememberSaveable { mutableStateOf(false) }
     var taxCredit by rememberSaveable { mutableStateOf(false) }
+    var taxCreditChosen by rememberSaveable { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
@@ -91,9 +92,13 @@ fun EntryForm(
     val canSave = amount > 0F && name.isNotBlank()
     val suggestions = remember(names, name) { matchSuggestions(names, name, MAX_SUGGESTIONS) }
 
+    fun followName(newName: String) {
+        if (isDonation && !taxCreditChosen) taxCredit = isTaxOnly || taxCreditFor(newName)
+    }
+
     fun pick(suggestion: String) {
         name = suggestion
-        if (isDonation) taxCredit = isTaxOnly || taxCreditFor(suggestion)
+        followName(suggestion)
         menuOpen = false
         focusManager.moveFocus(FocusDirection.Down)
         val amountIsOurs = amountText.isEmpty() || amountText == autoFilledAmount
@@ -113,6 +118,7 @@ fun EntryForm(
         autoFilledAmount = amountText
         isTaxOnly = prefill.isTaxOnly
         taxCredit = prefill.taxCredit || (isDonation && taxCreditFor(prefill.name))
+        taxCreditChosen = false
         menuOpen = false
         onPrefillConsumed()
     }
@@ -126,6 +132,7 @@ fun EntryForm(
         autoFilledAmount = null
         isTaxOnly = false
         taxCredit = false
+        taxCreditChosen = false
     }
 
     fun submit() {
@@ -161,6 +168,7 @@ fun EntryForm(
                 value = name,
                 onValueChange = {
                     name = it
+                    followName(it)
                     menuOpen = true
                 },
                 label = {
@@ -244,10 +252,16 @@ fun EntryForm(
                 isTaxOnly = isTaxOnly,
                 onChange = {
                     isTaxOnly = it
-                    if (it) taxCredit = true
+                    if (it) taxCredit = true else followName(name)
                 }
             )
-            TaxCreditSwitch(checked = taxCredit, onChange = { taxCredit = it })
+            TaxCreditSwitch(
+                checked = taxCredit,
+                onChange = {
+                    taxCredit = it
+                    taxCreditChosen = true
+                }
+            )
         }
 
         Button(

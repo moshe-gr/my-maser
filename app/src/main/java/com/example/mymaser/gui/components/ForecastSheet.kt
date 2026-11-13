@@ -66,7 +66,7 @@ fun ForecastSheet(
                         initialSelection = forecast.months.lastIndex
                     )
                 }
-                val sources = forecast.sources.filter { it.delta != 0.0 }
+                val sources = forecast.sources.filter { it.total != 0.0 }
                 if (sources.isNotEmpty()) {
                     SectionTitle(stringResource(R.string.forecast_sources_title))
                     sources.forEach { SourceRow(it) }
@@ -138,7 +138,7 @@ private fun SourceRow(source: SourceProjection) {
     }.joinToString(" · ")
     LabelValueRow(
         label = source.name,
-        value = formatSignedCurrency(abs(source.delta), isNegative = source.delta < 0),
+        value = formatSignedCurrency(abs(source.total), isNegative = source.total < 0),
         valueStyle = MaterialTheme.typography.bodyLarge.tabular,
         valueColor = if (source.isDonation) MaterialTheme.maserColors.donation else MaterialTheme.maserColors.income
     )

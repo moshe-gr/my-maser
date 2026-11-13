@@ -223,6 +223,7 @@ fun HistoryScreen(
 
             if (query.isActive) {
                 ResultsSummary(entries = filtered, onClear = ::clearFilters)
+                TaxYearDonationsLine(history, now, Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
             } else {
                 OverviewCard(
                     history = history,
@@ -466,6 +467,25 @@ private fun ResultsSummary(entries: List<History>, onClear: () -> Unit) {
     }
 }
 
+/** This tax year's donations, including tax-only ones, for filing receipts. */
+@Composable
+private fun TaxYearDonationsLine(history: List<History>, now: ZonedDateTime, modifier: Modifier = Modifier) {
+    val currency = LocalDisplayCurrency.current
+    val donations = remember(history, now, currency) { taxYearDonations(history.countable(currency), now) }
+    if (donations.total <= 0) return
+    val total = formatCurrency(donations.total)
+    Text(
+        text = if (donations.taxOnly > 0) {
+            stringResource(R.string.tax_year_total_with_tax_only, donations.year, total, formatCurrency(donations.taxOnly))
+        } else {
+            stringResource(R.string.tax_year_total, donations.year, total)
+        },
+        style = MaterialTheme.typography.labelMedium.tabular,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+    )
+}
+
 /** This year at a glance, with this tax year's donations, opening the overview and tax-credit sheets. */
 @Composable
 private fun OverviewCard(
@@ -478,7 +498,6 @@ private fun OverviewCard(
     val currency = LocalDisplayCurrency.current
     val countable = remember(history, currency) { history.countable(currency) }
     val totals = remember(countable, now) { periodTotals(countable, SummaryPeriod.ThisYear, now) }
-    val donations = remember(countable, now) { taxYearDonations(countable, now) }
 
     Card(
         modifier = Modifier
@@ -502,24 +521,7 @@ private fun OverviewCard(
                     )
                 }
             }
-            if (donations.total > 0) {
-                val total = formatCurrency(donations.total)
-                Text(
-                    text = if (donations.taxOnly > 0) {
-                        stringResource(
-                            R.string.tax_year_total_with_tax_only,
-                            donations.year,
-                            total,
-                            formatCurrency(donations.taxOnly)
-                        )
-                    } else {
-                        stringResource(R.string.tax_year_total, donations.year, total)
-                    },
-                    style = MaterialTheme.typography.labelMedium.tabular,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
+            TaxYearDonationsLine(history, now, Modifier.padding(top = 4.dp))
             taxYear?.takeIf { it.credit > 0 }?.let {
                 Text(
                     stringResource(
