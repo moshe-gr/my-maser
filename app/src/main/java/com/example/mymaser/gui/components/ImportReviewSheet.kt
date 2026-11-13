@@ -97,8 +97,9 @@ fun ImportReviewSheet(
                 ImportState.Idle -> Unit
                 ImportState.Reading -> Reading()
                 is ImportState.Empty -> Message(
-                    text = stringResource(R.string.import_nothing_found),
+                    text = stringResource(R.string.import_nothing_found).takeIf { state.locked == 0 },
                     skipped = state.skipped,
+                    locked = state.locked,
                     onDismiss = onDismiss
                 )
                 is ImportState.Failed -> Failure(state.error, onRetry, onOpenSettings, onDismiss)
@@ -117,11 +118,23 @@ private fun Reading() {
 }
 
 @Composable
-private fun ColumnScope.Message(text: String, skipped: Int, onDismiss: () -> Unit) {
-    Text(text, style = MaterialTheme.typography.bodyLarge)
+private fun ColumnScope.Message(text: String?, skipped: Int, locked: Int, onDismiss: () -> Unit) {
+    if (text != null) Text(text, style = MaterialTheme.typography.bodyLarge)
+    LockedNote(locked, prominent = text == null)
     SkippedNote(skipped)
     TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
         Text(stringResource(R.string.close))
+    }
+}
+
+@Composable
+private fun LockedNote(locked: Int, prominent: Boolean = false) {
+    if (locked > 0) {
+        Text(
+            pluralStringResource(R.plurals.import_locked, locked, locked),
+            style = if (prominent) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall,
+            color = if (prominent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
+        )
     }
 }
 
@@ -177,6 +190,7 @@ private fun ColumnScope.Review(
     val allChosenValid = chosen.none { it == null }
 
     Text(stringResource(R.string.import_review_title), style = MaterialTheme.typography.titleLarge)
+    LockedNote(state.locked)
     SkippedNote(state.skipped)
     Column(
         modifier = Modifier

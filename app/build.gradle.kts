@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.mlkit.document.scanner)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.play.services.auth)
+    implementation(libs.pdfbox.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.org.json)

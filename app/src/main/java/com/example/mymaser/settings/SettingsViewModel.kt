@@ -28,6 +28,7 @@ data class SettingsState(
     val maserPercentage: Float,
     val aiEnabled: Boolean,
     val maserBasis: MaserBasis,
+    val hasPdfPassword: Boolean,
     val gmail: GmailSettings,
     val reminders: ReminderSettings,
     val reminderMinuteOfDay: Int
@@ -47,6 +48,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 maserPercentage = prefs.maserPercentage(),
                 aiEnabled = prefs.aiEnabled(),
                 maserBasis = prefs.maserBasis(),
+                hasPdfPassword = prefs[SettingsKeys.PDF_PASSWORD] != null,
                 gmail = prefs.gmailSettings(),
                 reminders = prefs.reminderSettings(),
                 reminderMinuteOfDay = prefs.reminderMinuteOfDay()
@@ -113,6 +115,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setGmailKeywords(keywords: String) = set(SettingsKeys.GMAIL_KEYWORDS, keywords.trim())
+
+    /** Saves the password, then rechecks Gmail so emails waiting on it are read. */
+    fun savePdfPassword(password: String) {
+        if (password.isEmpty()) return
+        viewModelScope.launch {
+            getApplication<Application>().savePdfPassword(password)
+            if (state.value?.gmail?.connected == true) GmailScheduler.runNow(getApplication())
+        }
+    }
+
+    fun removePdfPassword() {
+        viewModelScope.launch { getApplication<Application>().removePdfPassword() }
+    }
 
     fun checkGmailNow() = GmailScheduler.runNow(getApplication())
 

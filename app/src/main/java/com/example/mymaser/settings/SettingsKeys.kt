@@ -28,6 +28,9 @@ object SettingsKeys {
     /** JSON object of renames the user made when reviewing imports. */
     val NAME_ALIASES = stringPreferencesKey("name_aliases")
 
+    /** Encrypted, see [savePdfPassword]. */
+    val PDF_PASSWORD = stringPreferencesKey("pdf_password")
+
     /** ISO 4217 code everything is shown in. */
     val DISPLAY_CURRENCY = stringPreferencesKey("display_currency")
     val LAST_RATES_FETCH_DAY = longPreferencesKey("last_rates_fetch_day")

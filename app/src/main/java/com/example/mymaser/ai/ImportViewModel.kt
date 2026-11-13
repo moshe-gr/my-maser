@@ -35,9 +35,12 @@ sealed interface ImportState {
     data class Review(
         val entries: List<ReviewEntry>,
         val skipped: Int,
-        val emailIds: List<String> = emptyList()
+        val emailIds: List<String> = emptyList(),
+        val locked: Int = 0
     ) : ImportState
-    data class Empty(val skipped: Int) : ImportState
+
+    /** [locked] PDFs couldn't be opened with the saved password. */
+    data class Empty(val skipped: Int, val locked: Int = 0) : ImportState
     data class Failed(val error: AiError) : ImportState
 }
 
@@ -58,6 +61,7 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
     private val importer = DocumentImporter(GeminiAiClient.getInstance(application)) {
         application.aiEnabledFlow().first()
     }
+    private val lockedPdfs = LockedPdfOpener(application)
 
     private val _state = MutableStateFlow<ImportState>(ImportState.Idle)
     val state: StateFlow<ImportState> = _state.asStateFlow()
@@ -149,9 +153,11 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
         retryDocuments = null
         _state.value = ImportState.Reading
         job = viewModelScope.launch {
-            val documents = load()
+            val loaded = load()
+            val opened = lockedPdfs.open(loaded.inputs)
+            val documents = ReadDocuments(opened.inputs, loaded.skipped + opened.unreadable)
             if (documents.inputs.isEmpty()) {
-                _state.value = ImportState.Empty(documents.skipped)
+                _state.value = ImportState.Empty(documents.skipped, opened.locked)
                 return@launch
             }
             val result = importer.read(
@@ -173,8 +179,8 @@ class ImportViewModel(application: Application) : AndroidViewModel(application) 
                     ImportState.Failed(result.reason)
                 }
                 is AiResult.Success ->
-                    if (found.isEmpty()) ImportState.Empty(documents.skipped)
-                    else ImportState.Review(found, documents.skipped)
+                    if (found.isEmpty()) ImportState.Empty(documents.skipped, opened.locked)
+                    else ImportState.Review(found, documents.skipped, locked = opened.locked)
             }
         }
     }

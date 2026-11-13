@@ -16,6 +16,7 @@ material = "1.14.0"
 material3 = "1.4.0"
 mlkitDocumentScanner = "16.0.0"
 playServicesAuth = "22.0.0"
+pdfboxAndroid = "2.0.27.0"
 materialIconsExtended = "1.7.8"
 navigationCompose = "2.10.2"
 room = "2.8.5"
@@ -47,6 +48,7 @@ firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "fireb
 firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "mlkitDocumentScanner" }
+pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfboxAndroid" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 org-json = { group = "org.json", name = "json", version.ref = "orgJson" }

@@ -7,6 +7,7 @@ import com.example.mymaser.ai.DocumentImporter
 import com.example.mymaser.ai.KnownNames
 import com.example.mymaser.ai.MAX_FILE_BYTES
 import com.example.mymaser.ai.MIME_PDF
+import com.example.mymaser.ai.Unlocked
 import com.example.mymaser.ai.entriesToJson
 import com.example.mymaser.settings.MaserBasis
 import java.io.IOException
@@ -30,11 +31,14 @@ interface PendingImportStore {
  */
 class GmailImporter(
     private val store: PendingImportStore,
-    private val importer: DocumentImporter
+    private val importer: DocumentImporter,
+    private val unlock: suspend (List<AiInput>) -> Unlocked = { Unlocked(it, locked = 0, unreadable = 0) }
 ) {
     /**
      * Returns how many emails now wait for review. Stops early, without failing, when the AI
      * quota is used up or AI was turned off; throws [IOException] when the network failed.
+     * An email with a PDF the saved password can't open is left for a later run, so it's read once
+     * the right password is saved.
      */
     suspend fun run(
         source: GmailSource,
@@ -50,7 +54,7 @@ class GmailImporter(
         var found = 0
         for (id in ids.filterNot { it in known }.take(MAX_PER_RUN)) {
             val message = source.message(id)
-            val inputs = buildList {
+            val attached = buildList {
                 val text = listOf(message.subject, message.text).filter { it.isNotBlank() }.joinToString("\n\n")
                 if (text.isNotEmpty()) add(AiInput.Text(text))
                 var budget = MAX_FILE_BYTES
@@ -60,6 +64,9 @@ class GmailImporter(
                     add(AiInput.File(bytes, MIME_PDF))
                 }
             }
+            val opened = unlock(attached)
+            if (opened.locked > 0) continue
+            val inputs = opened.inputs
             if (inputs.isEmpty()) {
                 store.insert(PendingImport(id, message.subject, "[]", nowMillis, PendingImport.DONE))
                 continue

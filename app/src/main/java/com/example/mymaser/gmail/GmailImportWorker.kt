@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.example.mymaser.ai.DocumentImporter
 import com.example.mymaser.ai.GeminiAiClient
+import com.example.mymaser.ai.LockedPdfOpener
 import com.example.mymaser.ai.knownNamesOf
 import com.example.mymaser.dataStore
 import com.example.mymaser.history.HistoryDb
@@ -49,7 +50,8 @@ class GmailImportWorker(context: Context, params: WorkerParameters) : CoroutineW
         val db = HistoryDb.getInstance(context)
         val importer = GmailImporter(
             db.getPendingImportDao(),
-            DocumentImporter(GeminiAiClient.getInstance(context)) { context.aiEnabledFlow().first() }
+            DocumentImporter(GeminiAiClient.getInstance(context)) { context.aiEnabledFlow().first() },
+            LockedPdfOpener(context)::open
         )
         return try {
             val found = importer.run(

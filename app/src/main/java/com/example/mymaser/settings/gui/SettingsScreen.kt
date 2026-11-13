@@ -111,6 +111,12 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                     onBasisChange = { viewModel.set(SettingsKeys.MASER_BASIS, it.key) }
                 )
                 SettingsDivider()
+                PdfPasswordSetting(
+                    saved = state.hasPdfPassword,
+                    onSave = viewModel::savePdfPassword,
+                    onRemove = viewModel::removePdfPassword
+                )
+                SettingsDivider()
                 GmailSetting(
                     settings = state.gmail,
                     aiEnabled = state.aiEnabled,

@@ -7,6 +7,7 @@ import com.example.mymaser.ai.AiResult
 import com.example.mymaser.ai.DocumentImporter
 import com.example.mymaser.ai.ExtractedEntry
 import com.example.mymaser.ai.KnownNames
+import com.example.mymaser.ai.Unlocked
 import com.example.mymaser.ai.entriesFromJson
 import com.example.mymaser.ai.entriesToJson
 import com.example.mymaser.settings.MaserBasis
@@ -120,6 +121,21 @@ class GmailTest {
         val store = FakeStore()
         val client = ScriptedClient(mapOf("slip" to AiResult.Error(AiError.QuotaExceeded)))
         assertEquals(0, run(FakeSource(mapOf("1" to message("1", "slip"))), store, client))
+        assertTrue(store.items.isEmpty())
+    }
+
+    @Test
+    fun `an email whose PDF can't be opened yet is left for a later run`() {
+        val store = FakeStore()
+        val client = ScriptedClient(mapOf("slip" to AiResult.Success("""{"entries":[]}""")))
+        val source = FakeSource(
+            mapOf("1" to GmailMessage("1", "slip", "body", listOf(GmailMessage.PdfRef(null, "AQ", 1))))
+        )
+        val found = runBlocking {
+            GmailImporter(store, DocumentImporter(client) { true }) { Unlocked(emptyList(), locked = 1, unreadable = 0) }
+                .run(source, "q", MaserBasis.Net, "ILS", KnownNames(emptyList(), emptyList()), nowMillis = 1)
+        }
+        assertEquals(0, found)
         assertTrue(store.items.isEmpty())
     }
 
