@@ -198,7 +198,7 @@
     <string name="overview_title">Overview</string>
     <string name="overview_this_year">%1$d so far</string>
     <string name="overview_given">Given</string>
-    <string name="overview_given_value">%1$s of income</string>
+    <string name="overview_given_value">%1$s counted as maser</string>
     <string name="overview_maser_change">Maser balance change</string>
     <string name="overview_chart_title">Income and donations by month</string>
     <string name="overview_top_donations">Top donations</string>

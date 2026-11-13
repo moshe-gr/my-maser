@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
@@ -52,6 +54,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
+import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.currency.countable
 import com.example.mymaser.gui.components.ChipRow
 import com.example.mymaser.gui.components.ContentMaxWidth
@@ -59,9 +62,12 @@ import com.example.mymaser.gui.components.EditEntryDialog
 import com.example.mymaser.gui.components.EmptyState
 import com.example.mymaser.gui.components.HistoryItem
 import com.example.mymaser.gui.components.HistorySummarySheet
+import com.example.mymaser.gui.components.OverviewSheet
+import com.example.mymaser.gui.components.TaxCreditSheet
 import com.example.mymaser.gui.components.monthYearLabel
 import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.gui.formatCurrency
+import com.example.mymaser.gui.formatPercent
 import com.example.mymaser.gui.formatSignedCurrency
 import com.example.mymaser.gui.theme.MaserPreview
 import com.example.mymaser.gui.theme.ScreenPreviews
@@ -71,6 +77,8 @@ import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryPeriod
 import com.example.mymaser.history.HistoryQuery
 import com.example.mymaser.history.SummaryPeriod
+import com.example.mymaser.history.TaxYearCredit
+import com.example.mymaser.history.computeOverview
 import com.example.mymaser.history.TimeFilter
 import com.example.mymaser.history.TypeFilter
 import com.example.mymaser.history.filterHistory
@@ -118,6 +126,9 @@ fun HistoryScreen(
     onDelete: (History) -> Unit,
     onAddEntry: () -> Unit,
     onTaxCreditForName: (name: String, taxCredit: Boolean) -> Unit = { _, _ -> },
+    taxYears: List<TaxYearCredit> = emptyList(),
+    claimedTaxYears: Set<Int> = emptySet(),
+    onTaxYearClaimed: (year: Int, claimed: Boolean) -> Unit = { _, _ -> },
     originalOf: (History) -> History = { it },
     notice: @Composable () -> Unit = {}
 ) {
@@ -131,6 +142,8 @@ fun HistoryScreen(
 
     var selectedId by rememberSaveable { mutableStateOf<Int?>(null) }
     var editingId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showOverview by rememberSaveable { mutableStateOf(false) }
+    var showTaxCredit by rememberSaveable { mutableStateOf(false) }
     val selected = history.firstOrNull { it.id == selectedId }
     val editing = history.firstOrNull { it.id == editingId }
 
@@ -208,10 +221,16 @@ fun HistoryScreen(
                 }
             }
 
-            TaxYearLine(history, now)
-
             if (query.isActive) {
                 ResultsSummary(entries = filtered, onClear = ::clearFilters)
+            } else {
+                OverviewCard(
+                    history = history,
+                    now = now,
+                    taxYear = taxYears.firstOrNull(),
+                    onOverview = { showOverview = true },
+                    onTaxCredit = { showTaxCredit = true }
+                )
             }
 
             if (groups.isEmpty()) {
@@ -233,6 +252,26 @@ fun HistoryScreen(
                 )
             }
         }
+    }
+
+    if (showOverview) {
+        OverviewSheet(
+            history = history,
+            onOpenEntry = {
+                showOverview = false
+                selectedId = it
+            },
+            onDismiss = { showOverview = false }
+        )
+    }
+
+    if (showTaxCredit) {
+        TaxCreditSheet(
+            years = taxYears,
+            claimed = claimedTaxYears,
+            onClaimedChange = onTaxYearClaimed,
+            onDismiss = { showTaxCredit = false }
+        )
     }
 
     selected?.let { entry ->
@@ -427,30 +466,77 @@ private fun ResultsSummary(entries: List<History>, onClear: () -> Unit) {
     }
 }
 
-/** This tax year's donations, including tax-only ones, for filing receipts. */
+/** This year at a glance, with this tax year's donations, opening the overview and tax-credit sheets. */
 @Composable
-private fun TaxYearLine(history: List<History>, now: ZonedDateTime) {
+private fun OverviewCard(
+    history: List<History>,
+    now: ZonedDateTime,
+    taxYear: TaxYearCredit?,
+    onOverview: () -> Unit,
+    onTaxCredit: () -> Unit
+) {
     val currency = LocalDisplayCurrency.current
-    val donations = remember(history, now, currency) {
-        taxYearDonations(history.countable(currency), now)
+    val countable = remember(history, currency) { history.countable(currency) }
+    val totals = remember(countable, now) { computeOverview(countable, SummaryPeriod.ThisYear, now).current }
+    val donations = remember(countable, now) { taxYearDonations(countable, now) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        Column(Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    stringResource(R.string.overview_this_year, now.year),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.semantics { heading() }
+                )
+                AmountTotals(totals.income, totals.donations, Modifier.weight(1f))
+                totals.givenShare?.let {
+                    Text(
+                        formatPercent(it, maxFractionDigits = 1),
+                        style = MaterialTheme.typography.labelMedium.tabular,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            if (donations.total > 0) {
+                val total = formatCurrency(donations.total)
+                Text(
+                    text = if (donations.taxOnly > 0) {
+                        stringResource(
+                            R.string.tax_year_total_with_tax_only,
+                            donations.year,
+                            total,
+                            formatCurrency(donations.taxOnly)
+                        )
+                    } else {
+                        stringResource(R.string.tax_year_total, donations.year, total)
+                    },
+                    style = MaterialTheme.typography.labelMedium.tabular,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            taxYear?.takeIf { it.credit > 0 }?.let {
+                Text(
+                    stringResource(
+                        R.string.tax_year_credit_line,
+                        it.year,
+                        formatCurrency(it.credit, trimWholeDecimals = true, currencyCode = SupportedCurrency.ILS.code)
+                    ),
+                    style = MaterialTheme.typography.labelMedium.tabular,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Row(Modifier.align(Alignment.End)) {
+                TextButton(onClick = onOverview) { Text(stringResource(R.string.overview_title)) }
+                TextButton(onClick = onTaxCredit) { Text(stringResource(R.string.tax_credit_title)) }
+            }
+        }
     }
-    if (donations.total <= 0) return
-    val total = formatCurrency(donations.total)
-    Text(
-        text = if (donations.taxOnly > 0) {
-            stringResource(
-                R.string.tax_year_total_with_tax_only,
-                donations.year,
-                total,
-                formatCurrency(donations.taxOnly)
-            )
-        } else {
-            stringResource(R.string.tax_year_total, donations.year, total)
-        },
-        style = MaterialTheme.typography.labelLarge.tabular,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-    )
 }
 
 @Composable

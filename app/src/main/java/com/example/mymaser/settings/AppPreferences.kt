@@ -202,6 +202,18 @@ suspend fun Context.dismissPrediction(key: String) {
     }
 }
 
+/** Tax years the user marked as already claimed. */
+fun Context.claimedTaxYearsFlow(): Flow<Set<Int>> = dataStore.data.map { prefs ->
+    prefs[SettingsKeys.TAX_CLAIMED_YEARS].orEmpty().mapNotNull { it.toIntOrNull() }.toSet()
+}
+
+suspend fun Context.setTaxYearClaimed(year: Int, claimed: Boolean) {
+    dataStore.edit {
+        val current = it[SettingsKeys.TAX_CLAIMED_YEARS].orEmpty()
+        it[SettingsKeys.TAX_CLAIMED_YEARS] = if (claimed) current + year.toString() else current - year.toString()
+    }
+}
+
 fun isValidMaserPercentage(value: Float) = value in MIN_MASER_PERCENTAGE..MAX_MASER_PERCENTAGE
 
 /** "10%" for whole values, "12.5%" otherwise. */

@@ -42,6 +42,7 @@ object SettingsKeys {
 
     /** Prediction keys the user chose to skip, see [com.example.mymaser.history.Prediction.key]. */
     val DISMISSED_PREDICTIONS = stringSetPreferencesKey("dismissed_predictions")
+    val TAX_CLAIMED_YEARS = stringSetPreferencesKey("tax_claimed_years")
 
     val REMINDERS_ENABLED = booleanPreferencesKey("reminders_enabled")
     val REMINDER_EXPECTED = booleanPreferencesKey("reminder_expected")

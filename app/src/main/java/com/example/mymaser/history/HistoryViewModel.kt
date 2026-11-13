@@ -23,6 +23,8 @@ import com.example.mymaser.settings.reminderSettingsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.example.mymaser.settings.balanceSetupFlow
+import com.example.mymaser.settings.claimedTaxYearsFlow
+import com.example.mymaser.settings.setTaxYearClaimed
 import com.example.mymaser.settings.dismissPrediction
 import com.example.mymaser.settings.displayCurrencyFlow
 import com.example.mymaser.settings.maserPercentageFlow
@@ -115,6 +117,13 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     val taxYears: StateFlow<List<TaxYearCredit>> = shekelHistory
         .map { taxCreditYears(it, ZonedDateTime.now()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+
+    val claimedTaxYears: StateFlow<Set<Int>> = application.claimedTaxYearsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptySet())
+
+    fun setTaxYearClaimed(year: Int, claimed: Boolean) = runChange {
+        getApplication<Application>().setTaxYearClaimed(year, claimed)
+    }
 
     /** What the chat may look at right now, or null until everything has loaded. */
     fun chatData(): ChatData? {

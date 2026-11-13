@@ -198,7 +198,7 @@
     <string name="overview_title">סקירה</string>
     <string name="overview_this_year">%1$d עד עכשיו</string>
     <string name="overview_given">נתת</string>
-    <string name="overview_given_value">%1$s מההכנסות</string>
+    <string name="overview_given_value">%1$s נספרו כמעשר</string>
     <string name="overview_maser_change">שינוי ביתרת המעשר</string>
     <string name="overview_chart_title">הכנסות ותרומות לפי חודש</string>
     <string name="overview_top_donations">התרומות הגדולות</string>

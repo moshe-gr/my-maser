@@ -131,6 +131,8 @@ fun MainScreen(
     val forecast by viewModel.forecast.collectAsStateWithLifecycle()
     val pace by viewModel.pace.collectAsStateWithLifecycle()
     val taxProjection by viewModel.taxProjection.collectAsStateWithLifecycle()
+    val taxYears by viewModel.taxYears.collectAsStateWithLifecycle()
+    val claimedTaxYears by viewModel.claimedTaxYears.collectAsStateWithLifecycle()
     var showForecast by rememberSaveable { mutableStateOf(false) }
     val importState by importViewModel.state.collectAsStateWithLifecycle()
     val aiEnabled by importViewModel.aiEnabled.collectAsStateWithLifecycle()
@@ -380,6 +382,9 @@ fun MainScreen(
                     onDelete = ::deleteEntry,
                     onAddEntry = { openForm(isDonation = false) },
                     onTaxCreditForName = viewModel::setTaxCreditForName,
+                    taxYears = taxYears,
+                    claimedTaxYears = claimedTaxYears,
+                    onTaxYearClaimed = viewModel::setTaxYearClaimed,
                     originalOf = viewModel::original,
                     notice = ratesNotice
                 )

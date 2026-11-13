@@ -74,7 +74,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private fun SummaryPeriod.labelRes() = when (this) {
+internal fun SummaryPeriod.labelRes() = when (this) {
     SummaryPeriod.ThisMonth -> R.string.this_month
     SummaryPeriod.ThisYear -> R.string.this_year
     SummaryPeriod.LastYear -> R.string.filter_last_year
@@ -82,7 +82,7 @@ private fun SummaryPeriod.labelRes() = when (this) {
     SummaryPeriod.AllTime -> R.string.filter_all_time
 }
 
-private fun SummaryPeriod.changeLabelRes() = when (this) {
+internal fun SummaryPeriod.changeLabelRes() = when (this) {
     SummaryPeriod.ThisMonth -> R.string.summary_change_month
     SummaryPeriod.ThisYear -> R.string.summary_change_ytd
     SummaryPeriod.LastYear -> R.string.summary_change_year
@@ -357,7 +357,7 @@ private fun StatGrid(history: History, analytics: NameAnalytics, period: Summary
 private const val EMPTY_VALUE = "—"
 
 @Composable
-private fun StatTile(
+internal fun StatTile(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
