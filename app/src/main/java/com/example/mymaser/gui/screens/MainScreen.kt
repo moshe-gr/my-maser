@@ -68,7 +68,8 @@ import com.example.mymaser.gui.components.DueCards
 import com.example.mymaser.gui.components.EmailImportCard
 import com.example.mymaser.gui.components.EntryForm
 import com.example.mymaser.gui.components.EntryTypeSelector
-import com.example.mymaser.gui.components.ForecastLine
+import com.example.mymaser.gui.components.ForecastCard
+import com.example.mymaser.gui.components.ForecastSheet
 import com.example.mymaser.gui.components.ImportButton
 import com.example.mymaser.gui.components.ImportReviewSheet
 import com.example.mymaser.gui.components.QuickAddField
@@ -128,6 +129,9 @@ fun MainScreen(
     val requestedDestination by viewModel.destinationRequest.collectAsStateWithLifecycle()
     val reminderPrompt by viewModel.reminderPrompt.collectAsStateWithLifecycle()
     val forecast by viewModel.forecast.collectAsStateWithLifecycle()
+    val pace by viewModel.pace.collectAsStateWithLifecycle()
+    val taxProjection by viewModel.taxProjection.collectAsStateWithLifecycle()
+    var showForecast by rememberSaveable { mutableStateOf(false) }
     val importState by importViewModel.state.collectAsStateWithLifecycle()
     val aiEnabled by importViewModel.aiEnabled.collectAsStateWithLifecycle()
     val pendingEmails by importViewModel.pendingEmails.collectAsStateWithLifecycle()
@@ -237,8 +241,17 @@ fun MainScreen(
     }
 
     val homeNotice: @Composable () -> Unit = {
-        forecast?.let { ForecastLine(it) }
+        ForecastCard(forecast = forecast, pace = pace, onClick = { showForecast = true })
         ratesNotice()
+    }
+
+    if (showForecast) {
+        ForecastSheet(
+            forecast = forecast,
+            pace = pace,
+            taxCredit = taxProjection,
+            onDismiss = { showForecast = false }
+        )
     }
 
     ImportReviewSheet(

@@ -49,8 +49,10 @@ fun formatSignedCurrency(amount: Double, isNegative: Boolean): String =
     formatSignedCurrency(amount, isNegative, LocalDisplayCurrency.current)
 
 /** A [fraction] as a locale percentage; [signed] adds + or − except at exactly zero. */
-fun formatPercent(fraction: Double, signed: Boolean = false): String {
-    val text = NumberFormat.getPercentInstance(Locale.getDefault()).format(abs(fraction))
+fun formatPercent(fraction: Double, signed: Boolean = false, maxFractionDigits: Int = 0): String {
+    val text = NumberFormat.getPercentInstance(Locale.getDefault())
+        .apply { maximumFractionDigits = maxFractionDigits }
+        .format(abs(fraction))
     return when {
         !signed -> text
         fraction > 0 -> "+$text"

@@ -4,6 +4,24 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZonedDateTime
 
+/** The expected maser balance once [month]'s recurring entries are in. */
+data class MonthProjection(val month: YearMonth, val balance: Double)
+
+/** One recurring source's part in the forecast. */
+data class SourceProjection(
+    val name: String,
+    val isDonation: Boolean,
+    /** The usual amount of one occurrence. */
+    val amount: Double,
+    /** What one occurrence does to the maser balance: positive for income, negative for donations. */
+    val delta: Double,
+    /** Occurrences still expected this year, this month's included until it is logged or skipped. */
+    val remaining: Int,
+    /** Occurrences this year the user skipped. */
+    val skipped: Int,
+    val taxCredit: Boolean
+)
+
 data class YearEndForecast(
     /** Expected maser owed on December 31; zero or below means it will all be given. */
     val balance: Double,
@@ -11,7 +29,11 @@ data class YearEndForecast(
      * What to give each remaining month, including this one, on top of the recurring donations
      * already in [balance], to finish at zero.
      */
-    val monthlyToClear: Double
+    val monthlyToClear: Double,
+    /** From this month to December. */
+    val months: List<MonthProjection> = emptyList(),
+    /** Sources still expected this year, largest effect first. */
+    val sources: List<SourceProjection> = emptyList()
 )
 
 /**
@@ -20,18 +42,21 @@ data class YearEndForecast(
  * This month's occurrence counts until it is logged or skipped, even once its usual day has
  * passed, so logging a late payment doesn't move the forecast. Occurrences whose
  * [Prediction.key] is in [dismissed] are left out. [history] must already be in one currency.
- * Null when no income recurs, since there is nothing meaningful to project.
+ * Null when no income recurs, since there is nothing meaningful to project, unless
+ * [requireRecurringIncome] is false.
  */
 fun forecastYearEnd(
     history: List<History>,
     currentBalance: Double,
     now: ZonedDateTime,
-    dismissed: Set<String> = emptySet()
+    dismissed: Set<String> = emptySet(),
+    requireRecurringIncome: Boolean = true
 ): YearEndForecast? {
     val today = now.toLocalDate()
     val currentMonth = YearMonth.from(today)
     val december = YearMonth.of(today.year, 12)
-    var change = 0.0
+    val changeByMonth = mutableMapOf<YearMonth, Double>()
+    val sources = mutableListOf<SourceProjection>()
     var hasRecurringIncome = false
 
     history.bySource()
@@ -46,21 +71,53 @@ fun forecastYearEnd(
             val dates = entries.map { it.localDate(now.zone) }
             if (!isDonation) hasRecurringIncome = true
 
+            var remaining = 0
+            var skippedCount = 0
             var month = currentMonth
             while (!month.isAfter(december)) {
                 val expected = month.atDayClamped(recurrence.typicalDay)
                 val logged = dates.hasEntryNear(expected) ||
                     (month == currentMonth && dates.any { it.isLateFor(expected, month) })
                 val skipped = predictionKey(latest.name, isDonation, month) in dismissed
-                if (!logged && !skipped) change += delta
+                when {
+                    skipped -> skippedCount++
+                    !logged -> {
+                        remaining++
+                        changeByMonth.merge(month, delta.toDouble(), Double::plus)
+                    }
+                }
                 month = month.plusMonths(1)
+            }
+            if (remaining > 0 || skippedCount > 0) {
+                sources += SourceProjection(
+                    name = latest.name.trim(),
+                    isDonation = isDonation,
+                    amount = amount.toDouble(),
+                    delta = delta.toDouble(),
+                    remaining = remaining,
+                    skipped = skippedCount,
+                    taxCredit = latest.isTaxCreditDonation
+                )
             }
         }
 
-    if (!hasRecurringIncome) return null
-    val balance = currentBalance + change
+    if (requireRecurringIncome && !hasRecurringIncome) return null
+    var running = currentBalance
+    val months = generateSequence(currentMonth) { it.plusMonths(1) }
+        .takeWhile { !it.isAfter(december) }
+        .map { month ->
+            running += changeByMonth[month] ?: 0.0
+            MonthProjection(month, running)
+        }
+        .toList()
+    val balance = running
     val monthsLeft = 12 - today.monthValue + 1
-    return YearEndForecast(balance, maxOf(balance, 0.0) / monthsLeft)
+    return YearEndForecast(
+        balance = balance,
+        monthlyToClear = maxOf(balance, 0.0) / monthsLeft,
+        months = months,
+        sources = sources.sortedByDescending { kotlin.math.abs(it.delta * it.remaining) }
+    )
 }
 
 /** Logged after [expected] but still within its [month]. */

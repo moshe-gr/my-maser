@@ -9,6 +9,7 @@ import com.example.mymaser.currency.DEFAULT_CURRENCY
 import com.example.mymaser.currency.DisplayHistory
 import com.example.mymaser.currency.RateStatus
 import com.example.mymaser.currency.RateTable
+import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.currency.maserBalance
 import com.example.mymaser.currency.toDisplay
 import androidx.datastore.preferences.core.edit
@@ -93,6 +94,27 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             if (shown == null || total == null) null
             else forecastYearEnd(shown.countable(currency), total.toDouble(), ZonedDateTime.now(), dismissed)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    /** This year's giving against the maser percentage, or null without income this year. */
+    val pace: StateFlow<YearPace?> = combine(display, displayCurrency) { shown, currency ->
+        shown?.let { yearPace(it.countable(currency), ZonedDateTime.now()) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    /** Entries in shekels, the currency section 46 amounts are set in; unconvertible ones are left out. */
+    private val shekelHistory = combine(originals.filterNotNull(), rates) { list, table ->
+        toDisplay(list, SupportedCurrency.ILS.code, table, ZoneId.systemDefault()).countable(SupportedCurrency.ILS.code)
+    }
+
+    /** This year's tax credit if the recurring tax-credit donations still expected are given. */
+    val taxProjection: StateFlow<TaxYearCredit?> = combine(shekelHistory, dismissedFlow) { list, dismissed ->
+        val now = ZonedDateTime.now()
+        projectedTaxCredit(list, forecastYearEnd(list, 0.0, now, dismissed, requireRecurringIncome = false), now)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    /** This year and the years a refund can still be claimed for, newest first. */
+    val taxYears: StateFlow<List<TaxYearCredit>> = shekelHistory
+        .map { taxCreditYears(it, ZonedDateTime.now()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
     /** What the chat may look at right now, or null until everything has loaded. */
     fun chatData(): ChatData? {

@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.gui.theme.tabular
+import com.example.mymaser.history.MonthPair
 import com.example.mymaser.history.MonthTotal
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -47,26 +51,104 @@ private fun YearMonth.shortLabel() =
 /**
  * One bar per month in a single hue. Tapping a column selects it and shows its exact total
  * above the chart; each column is also announced as "month: amount" for screen readers.
+ * Months at or below zero get no bar.
  */
 @Composable
 fun MonthlyBarChart(
     months: List<MonthTotal>,
     color: Color,
+    modifier: Modifier = Modifier,
+    title: String = stringResource(R.string.summary_last_12_months),
+    initialSelection: Int = months.lastIndex
+) {
+    if (months.isEmpty()) return
+    val max = months.maxOf { it.total }.takeIf { it > 0 } ?: 1.0
+    BarChartFrame(
+        title = title,
+        months = months.map { it.month },
+        initialSelection = initialSelection,
+        valueTexts = months.map { formatCurrency(it.total) },
+        modifier = modifier
+    ) { index, selected ->
+        Bar(months[index].total / max, color, selected)
+    }
+}
+
+/** Income and donations side by side for each month, with a legend. */
+@Composable
+fun DualBarChart(
+    months: List<MonthPair>,
+    title: String,
+    incomeColor: Color,
+    donationColor: Color,
     modifier: Modifier = Modifier
 ) {
     if (months.isEmpty()) return
-    var selected by rememberSaveable(months.size) { mutableIntStateOf(months.lastIndex) }
-    val max = months.maxOf { it.total }.takeIf { it > 0 } ?: 1.0
-    val selectedMonth = months[selected.coerceIn(months.indices)]
+    val max = months.maxOf { maxOf(it.income, it.donations) }.takeIf { it > 0 } ?: 1.0
+    val incomeLabel = stringResource(R.string.income)
+    val donationLabel = stringResource(R.string.donations)
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        BarChartFrame(
+            title = title,
+            months = months.map { it.month },
+            initialSelection = months.lastIndex,
+            valueTexts = months.map {
+                "$incomeLabel ${formatCurrency(it.income)} · $donationLabel ${formatCurrency(it.donations)}"
+            }
+        ) { index, selected ->
+            Bar(months[index].income / max, incomeColor, selected)
+            Bar(months[index].donations / max, donationColor, selected)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            LegendItem(incomeLabel, incomeColor)
+            LegendItem(donationLabel, donationColor)
+        }
+    }
+}
+
+@Composable
+private fun LegendItem(label: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.size(10.dp).background(color, CircleShape))
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun RowScope.Bar(fraction: Double, color: Color, selected: Boolean) {
+    val animated by animateFloatAsState(fraction.toFloat().coerceIn(0f, 1f), label = "bar_height")
+    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
+        if (fraction > 0) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(animated.coerceAtLeast(0.02f))
+                    .background(if (selected) color else color.copy(alpha = DIMMED_ALPHA), BarShape)
+            )
+        }
+    }
+}
+
+@Composable
+private fun BarChartFrame(
+    title: String,
+    months: List<YearMonth>,
+    initialSelection: Int,
+    valueTexts: List<String>,
+    modifier: Modifier = Modifier,
+    bars: @Composable RowScope.(index: Int, selected: Boolean) -> Unit
+) {
+    var selected by rememberSaveable(months.size, initialSelection) { mutableIntStateOf(initialSelection) }
+    val current = selected.coerceIn(months.indices)
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = stringResource(R.string.summary_last_12_months),
+            text = title,
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.semantics { heading() }
         )
         Text(
-            text = "${selectedMonth.month.monthYearLabel()} · ${formatCurrency(selectedMonth.total)}",
+            text = "${months[current].monthYearLabel()} · ${valueTexts[current]}",
             style = MaterialTheme.typography.bodyMedium.tabular,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -77,39 +159,26 @@ fun MonthlyBarChart(
             verticalAlignment = Alignment.Bottom
         ) {
             months.forEachIndexed { index, month ->
-                val fraction by animateFloatAsState(
-                    (month.total / max).toFloat(),
-                    label = "bar_height"
-                )
                 val description = stringResource(
                     R.string.summary_bar_description,
-                    month.month.monthYearLabel(),
-                    formatCurrency(month.total)
+                    month.monthYearLabel(),
+                    valueTexts[index]
                 )
-                Box(
+                Row(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
                         .selectable(
-                            selected = index == selected,
+                            selected = index == current,
                             role = Role.Tab,
                             onClick = { selected = index }
                         )
                         .semantics { contentDescription = description }
                         .padding(horizontal = 3.dp),
-                    contentAlignment = Alignment.BottomCenter
+                    horizontalArrangement = Arrangement.spacedBy(1.dp),
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    if (month.total > 0) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(fraction.coerceAtLeast(0.02f))
-                                .background(
-                                    color = if (index == selected) color else color.copy(alpha = DIMMED_ALPHA),
-                                    shape = BarShape
-                                )
-                        )
-                    }
+                    bars(index, index == current)
                 }
             }
         }
@@ -118,7 +187,7 @@ fun MonthlyBarChart(
             val labelled = setOf(0, months.size / 2, months.lastIndex)
             months.forEachIndexed { index, month ->
                 Text(
-                    text = if (index in labelled) month.month.shortLabel() else "",
+                    text = if (index in labelled) month.shortLabel() else "",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
