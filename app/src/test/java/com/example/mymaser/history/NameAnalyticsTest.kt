@@ -176,15 +176,15 @@ class NameAnalyticsTest {
         ).lines()
         assertEquals(
             "date,name,type,amount,currency,original_amount,original_currency," +
-                "maser_percentage,maser_effect,tax_only",
+                "maser_percentage,maser_effect,tax_only,tax_credit",
             csv[0]
         )
         assertEquals(
-            "2026-10-01 12:00,\"'=SUM(A1)\",income,1000.00,ILS,1000.00,ILS,20.00,200.00,false",
+            "2026-10-01 12:00,\"'=SUM(A1)\",income,1000.00,ILS,1000.00,ILS,20.00,200.00,false,false",
             csv[1]
         )
         assertEquals(
-            "2026-11-02 12:00,\"Fund \"\"A\"\", Inc\",donation,12.50,ILS,12.50,ILS,10.00,-12.50,false",
+            "2026-11-02 12:00,\"Fund \"\"A\"\", Inc\",donation,12.50,ILS,12.50,ILS,10.00,-12.50,false,false",
             csv[2]
         )
     }
@@ -195,17 +195,17 @@ class NameAnalyticsTest {
         val shown = stored.copy(amount = 3700F, currency = "ILS")
         val csv = entriesToCsv(listOf(shown), zone) { stored }.lines()
         assertEquals(
-            "2026-10-01 12:00,\"Salary\",income,3700.00,ILS,1000.00,USD,10.00,370.00,false",
+            "2026-10-01 12:00,\"Salary\",income,3700.00,ILS,1000.00,USD,10.00,370.00,false,false",
             csv[1]
         )
     }
 
     @Test
-    fun `csv marks tax-only donations with no maser effect`() {
-        val entry = donation("Hospital", at(2026, 11, 2), 100F).copy(isTaxOnly = true)
+    fun `csv marks tax-only and tax-credit donations`() {
+        val entry = donation("Hospital", at(2026, 11, 2), 100F).copy(isTaxOnly = true, taxCredit = true)
         val csv = entriesToCsv(listOf(entry), zone).lines()
         assertEquals(
-            "2026-11-02 12:00,\"Hospital\",donation,100.00,ILS,100.00,ILS,10.00,0.00,true",
+            "2026-11-02 12:00,\"Hospital\",donation,100.00,ILS,100.00,ILS,10.00,0.00,true,true",
             csv[1]
         )
     }

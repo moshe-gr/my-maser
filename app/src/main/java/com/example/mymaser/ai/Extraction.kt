@@ -18,7 +18,9 @@ data class ExtractedEntry(
     val currency: String,
     val date: LocalDate?,
     /** The model's pick among the user's existing names, when it's clearly the same source. */
-    val knownName: String? = null
+    val knownName: String? = null,
+    /** A donation the document says counts for the section 46 tax credit. */
+    val taxCredit: Boolean = false
 )
 
 /** Stores found entries until the user reviews them, e.g. from an email read in the background. */
@@ -31,6 +33,7 @@ fun entriesToJson(entries: List<ExtractedEntry>): String = JSONArray(
             .put("currency", it.currency)
             .put("date", it.date?.toString() ?: JSONObject.NULL)
             .put("knownName", it.knownName ?: JSONObject.NULL)
+            .put("taxCredit", it.taxCredit)
     }
 ).toString()
 
@@ -42,7 +45,8 @@ fun entriesFromJson(json: String): List<ExtractedEntry> = try {
             amount = it.getDouble("amount").toFloat(),
             currency = it.getString("currency"),
             date = it.text("date")?.let(::parseDate),
-            knownName = it.text("knownName")
+            knownName = it.text("knownName"),
+            taxCredit = it.optBoolean("taxCredit")
         )
     }
 } catch (_: JSONException) {
@@ -71,6 +75,8 @@ Find every income and every donation in the document and return them as JSON.
 - Payslip (תלוש שכר): one income. name = employer. grossAmount = ברוטו, netAmount = נטו לתשלום,
   amount = netAmount if known, else grossAmount. date = the pay month's last day.
 - Donation receipt (קבלה, תרומה, section 46 / סעיף 46): one donation. name = the organisation.
+  taxCredit = true only when the receipt says the donation is recognised under section 46
+  (סעיף 46, מוכר לענין זיכוי מס); otherwise omit it.
 - Bank or transfer confirmation: income if money came in, donation if it went to a charity.
 - A short note the user typed or said, e.g. "gave 180 to Yad Eliezer" or "קיבלתי בונוס 2000":
   one entry per amount mentioned. Omit the date unless the note gives one.
@@ -93,6 +99,7 @@ object ExtractionFields {
     const val CURRENCY = "currency"
     const val DATE = "date"
     const val KNOWN_NAME = "knownName"
+    const val TAX_CREDIT = "taxCredit"
 }
 
 /**
@@ -143,7 +150,8 @@ private fun JSONObject.toEntry(basis: MaserBasis, fallbackCurrency: String, toda
         amount = amount.toFloat(),
         currency = normalizeCurrency(text(f.CURRENCY)) ?: fallbackCurrency,
         date = text(f.DATE)?.let(::parseDate)?.let { minOf(it, today) },
-        knownName = text(f.KNOWN_NAME)
+        knownName = text(f.KNOWN_NAME),
+        taxCredit = isDonation && optBoolean(f.TAX_CREDIT)
     )
 }
 

@@ -48,7 +48,11 @@ fun prepareReview(
     return entries.map { entry ->
         val sameKind = history.filter { it.isDonation == entry.isDonation }
         val name = resolveName(entry, sameKind, aliases, now)
-        val resolved = entry.copy(name = name)
+        val lastTaxCredit = entry.isDonation && sameKind
+            .filter { nameKey(it.name) == nameKey(name) }
+            .maxByOrNull { it.timeStamp }
+            ?.taxCredit == true
+        val resolved = entry.copy(name = name, taxCredit = entry.taxCredit || lastTaxCredit)
         val identity = listOf(entry.isDonation, nameKey(name), entry.amount, entry.currency, entry.date)
         ReviewEntry(
             entry = resolved,

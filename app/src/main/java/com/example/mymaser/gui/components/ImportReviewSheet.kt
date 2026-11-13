@@ -52,7 +52,8 @@ private data class ReviewRow(
     val item: ReviewEntry,
     val selected: Boolean = item.loggedAs == null && !item.repeat,
     val name: String = item.entry.name,
-    val amountText: String = formatAmountInput(item.entry.amount)
+    val amountText: String = formatAmountInput(item.entry.amount),
+    val taxCredit: Boolean = item.entry.taxCredit
 ) {
     val entry: ExtractedEntry get() = item.entry
 
@@ -65,7 +66,8 @@ private data class ReviewRow(
             currency = entry.currency,
             isDonation = entry.isDonation,
             timeStamp = documentTimeStamp(entry.date, ZoneId.systemDefault(), nowMillis),
-            documentName = item.documentName
+            documentName = item.documentName,
+            taxCredit = entry.isDonation && taxCredit
         )
     }
 }
@@ -252,6 +254,9 @@ private fun ReviewRowCard(row: ReviewRow, warning: EntryWarning?, onChange: (Rev
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (row.entry.isDonation && row.selected) {
+                    TaxCreditSwitch(checked = row.taxCredit, onChange = { onChange(row.copy(taxCredit = it)) })
+                }
                 if (row.item.documentName.trim() != row.name.trim()) {
                     Note(stringResource(R.string.import_document_name, row.item.documentName))
                 }

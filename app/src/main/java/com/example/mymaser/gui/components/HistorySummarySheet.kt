@@ -62,6 +62,7 @@ import com.example.mymaser.history.SummaryPeriod
 import com.example.mymaser.history.computeNameAnalytics
 import com.example.mymaser.history.entriesToCsv
 import com.example.mymaser.history.isTaxOnlyDonation
+import com.example.mymaser.history.nameKey
 import com.example.mymaser.settings.formatPercentage
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -103,7 +104,8 @@ fun HistorySummarySheet(
     onDelete: () -> Unit,
     onShowAll: (SummaryPeriod) -> Unit,
     onDismiss: () -> Unit,
-    originalOf: (History) -> History = { it }
+    originalOf: (History) -> History = { it },
+    onTaxCreditForName: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -202,6 +204,19 @@ fun HistorySummarySheet(
 
                 DetailRows(history, analytics)
 
+                if (history.isDonation) {
+                    val allEligible = remember(allHistory, history) {
+                        val key = nameKey(history.name)
+                        allHistory.filter { it.isDonation && nameKey(it.name) == key }
+                            .all { it.taxCredit }
+                    }
+                    TaxCreditSwitch(
+                        checked = allEligible,
+                        onChange = onTaxCreditForName,
+                        label = stringResource(R.string.tax_credit_for_name, history.name.trim())
+                    )
+                }
+
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     FilledTonalButton(
                         onClick = { hideThen { onShowAll(period) } },
@@ -281,9 +296,7 @@ private fun SheetHeader(history: History, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyMedium.tabular,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (history.isTaxOnlyDonation) {
-                TaxOnlyTag(Modifier.padding(top = 4.dp))
-            }
+            DonationTags(history, Modifier.padding(top = 4.dp))
         }
     }
 }

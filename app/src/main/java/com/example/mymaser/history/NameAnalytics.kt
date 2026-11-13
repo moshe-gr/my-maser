@@ -197,7 +197,7 @@ fun entriesToCsv(
 ): String = buildString {
     appendLine(
         "date,name,type,amount,currency,original_amount,original_currency," +
-            "maser_percentage,maser_effect,tax_only"
+            "maser_percentage,maser_effect,tax_only,tax_credit"
     )
     entries.sortedBy { it.timeStamp }.forEach { entry ->
         val original = originalOf(entry)
@@ -212,7 +212,8 @@ fun entriesToCsv(
                 original.currency,
                 entry.maserPercentage.csvNumber(),
                 entry.maserDelta.csvNumber(),
-                entry.isTaxOnlyDonation.toString()
+                entry.isTaxOnlyDonation.toString(),
+                entry.isTaxCreditDonation.toString()
             ).joinToString(",")
         )
     }

@@ -43,6 +43,16 @@ class ExtractionTest {
     }
 
     @Test
+    fun `tax credit is read for donations only and survives storage`() {
+        val json = """{"entries":[{"kind":"donation","name":"X","amount":5,"taxCredit":true},
+            {"kind":"income","name":"Y","amount":5,"taxCredit":true},
+            {"kind":"donation","name":"Z","amount":5}]}"""
+        val entries = parse(json)
+        assertEquals(listOf(true, false, false), entries.map { it.taxCredit })
+        assertEquals(entries, entriesFromJson(entriesToJson(entries)))
+    }
+
+    @Test
     fun `unsupported or missing currency falls back`() {
         val json = """{"entries":[{"kind":"donation","name":"X","amount":5,"currency":"JPY"},
             {"kind":"donation","name":"Y","amount":5}]}"""

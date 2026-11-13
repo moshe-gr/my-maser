@@ -114,9 +114,10 @@ private fun SummaryPeriod.toTimeFilter() = when (this) {
 @Composable
 fun HistoryScreen(
     history: List<History>?,
-    onEdit: (History, String, Float, Boolean) -> Unit,
+    onEdit: (History, String, Float, Boolean, Boolean) -> Unit,
     onDelete: (History) -> Unit,
     onAddEntry: () -> Unit,
+    onTaxCreditForName: (name: String, taxCredit: Boolean) -> Unit = { _, _ -> },
     originalOf: (History) -> History = { it },
     notice: @Composable () -> Unit = {}
 ) {
@@ -240,6 +241,7 @@ fun HistoryScreen(
             allHistory = history,
             originalOf = originalOf,
             onEdit = { editingId = entry.id },
+            onTaxCreditForName = { onTaxCreditForName(entry.name, it) },
             onDelete = {
                 selectedId = null
                 onDelete(entry)
@@ -258,8 +260,8 @@ fun HistoryScreen(
     editing?.let { entry ->
         EditEntryDialog(
             entry = originalOf(entry),
-            onConfirm = { name, amount, isTaxOnly ->
-                onEdit(entry, name, amount, isTaxOnly)
+            onConfirm = { name, amount, isTaxOnly, taxCredit ->
+                onEdit(entry, name, amount, isTaxOnly, taxCredit)
                 editingId = null
             },
             onDismiss = { editingId = null }
@@ -545,7 +547,7 @@ private fun HistoryPreview() {
     MaserPreview {
         HistoryScreen(
             history = sampleHistory,
-            onEdit = { _, _, _, _ -> },
+            onEdit = { _, _, _, _, _ -> },
             onDelete = {},
             onAddEntry = {}
         )

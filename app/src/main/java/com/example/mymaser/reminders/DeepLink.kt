@@ -19,6 +19,7 @@ private const val EXTRA_AMOUNT = "com.example.mymaser.AMOUNT"
 private const val EXTRA_CURRENCY = "com.example.mymaser.CURRENCY"
 private const val EXTRA_IS_DONATION = "com.example.mymaser.IS_DONATION"
 private const val EXTRA_IS_TAX_ONLY = "com.example.mymaser.IS_TAX_ONLY"
+private const val EXTRA_TAX_CREDIT = "com.example.mymaser.TAX_CREDIT"
 private const val EXTRA_DESTINATION = "com.example.mymaser.DESTINATION"
 
 private const val LINK_FORM = "form"
@@ -36,6 +37,7 @@ fun DeepLink.toIntent(context: Context): Intent =
                 link.prefill.currency?.let { putExtra(EXTRA_CURRENCY, it) }
                 putExtra(EXTRA_IS_DONATION, link.prefill.isDonation)
                 putExtra(EXTRA_IS_TAX_ONLY, link.prefill.isTaxOnly)
+                putExtra(EXTRA_TAX_CREDIT, link.prefill.taxCredit)
             }
             is DeepLink.Open -> {
                 putExtra(EXTRA_LINK, LINK_OPEN)
@@ -53,7 +55,8 @@ fun Intent.toDeepLink(): DeepLink? = when (getStringExtra(EXTRA_LINK)) {
                 amount = if (hasExtra(EXTRA_AMOUNT)) getFloatExtra(EXTRA_AMOUNT, 0F) else null,
                 currency = getStringExtra(EXTRA_CURRENCY),
                 isDonation = getBooleanExtra(EXTRA_IS_DONATION, false),
-                isTaxOnly = getBooleanExtra(EXTRA_IS_TAX_ONLY, false)
+                isTaxOnly = getBooleanExtra(EXTRA_IS_TAX_ONLY, false),
+                taxCredit = getBooleanExtra(EXTRA_TAX_CREDIT, false)
             )
         )
     }

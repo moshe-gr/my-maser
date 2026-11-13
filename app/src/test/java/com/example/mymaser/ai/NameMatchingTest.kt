@@ -97,6 +97,19 @@ class NameMatchingTest {
     }
 
     @Test
+    fun `a known name's tax credit carries over to the review`() {
+        val history = listOf(donation("שחר טוב", 100F, LocalDate.of(2026, 9, 10)).copy(taxCredit = true))
+        val review = prepareReview(
+            listOf(extracted("שחר טוב עזרה הדדית"), extracted("Other")),
+            history,
+            emptyMap(),
+            now
+        )
+        assertTrue(review[0].entry.taxCredit)
+        assertFalse(review[1].entry.taxCredit)
+    }
+
+    @Test
     fun `the same entry twice in one review is marked as a repeat`() {
         val slip = extracted("Acme", 9000F, LocalDate.of(2026, 10, 31))
         val review = prepareReview(listOf(slip, slip, slip.copy(amount = 1F)), emptyList(), emptyMap(), now)

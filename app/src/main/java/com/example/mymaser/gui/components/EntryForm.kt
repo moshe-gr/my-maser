@@ -67,8 +67,9 @@ fun EntryForm(
     names: List<String>,
     lastEntry: History?,
     onSuggestionPicked: (String) -> AmountSuggestion?,
-    onSave: (name: String, amount: Float, currency: String, isTaxOnly: Boolean) -> Unit,
+    onSave: (name: String, amount: Float, currency: String, isTaxOnly: Boolean, taxCredit: Boolean) -> Unit,
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
+    taxCreditFor: (String) -> Boolean = { false },
     prefill: Prefill? = null,
     onPrefillConsumed: () -> Unit = {},
     onCheck: (name: String, amount: Float, currency: String) -> EntryWarning? = { _, _, _ -> null },
@@ -81,6 +82,7 @@ fun EntryForm(
     var chosenCurrency by rememberSaveable { mutableStateOf<String?>(null) }
     var autoFilledAmount by rememberSaveable { mutableStateOf<String?>(null) }
     var isTaxOnly by rememberSaveable { mutableStateOf(false) }
+    var taxCredit by rememberSaveable { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
@@ -91,6 +93,7 @@ fun EntryForm(
 
     fun pick(suggestion: String) {
         name = suggestion
+        if (isDonation) taxCredit = taxCreditFor(suggestion)
         menuOpen = false
         focusManager.moveFocus(FocusDirection.Down)
         val amountIsOurs = amountText.isEmpty() || amountText == autoFilledAmount
@@ -109,18 +112,20 @@ fun EntryForm(
         chosenCurrency = prefill.currency
         autoFilledAmount = amountText
         isTaxOnly = prefill.isTaxOnly
+        taxCredit = prefill.taxCredit || (isDonation && taxCreditFor(prefill.name))
         menuOpen = false
         onPrefillConsumed()
     }
 
     fun save() {
         focusManager.clearFocus()
-        onSave(name.trim(), amount, currency, isDonation && isTaxOnly)
+        onSave(name.trim(), amount, currency, isDonation && isTaxOnly, isDonation && taxCredit)
         name = ""
         amountText = ""
         chosenCurrency = null
         autoFilledAmount = null
         isTaxOnly = false
+        taxCredit = false
     }
 
     fun submit() {
@@ -235,7 +240,14 @@ fun EntryForm(
         )
 
         if (isDonation) {
-            DonationTypeSelector(isTaxOnly = isTaxOnly, onChange = { isTaxOnly = it })
+            DonationTypeSelector(
+                isTaxOnly = isTaxOnly,
+                onChange = {
+                    isTaxOnly = it
+                    if (it) taxCredit = true
+                }
+            )
+            TaxCreditSwitch(checked = taxCredit, onChange = { taxCredit = it })
         }
 
         Button(
@@ -300,7 +312,7 @@ private fun IncomeFormPreview() {
             names = emptyList(),
             lastEntry = History(name = "Salary", amount = 12000F),
             onSuggestionPicked = { null },
-            onSave = { _, _, _, _ -> }
+            onSave = { _, _, _, _, _ -> }
         )
     }
 }
@@ -314,7 +326,7 @@ private fun DonationFormPreview() {
             names = emptyList(),
             lastEntry = null,
             onSuggestionPicked = { null },
-            onSave = { _, _, _, _ -> }
+            onSave = { _, _, _, _, _ -> }
         )
     }
 }

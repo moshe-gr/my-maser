@@ -46,6 +46,8 @@ val History.isMaserDonation: Boolean get() = isDonation && !isTaxOnly
 
 val History.isTaxOnlyDonation: Boolean get() = isDonation && isTaxOnly
 
+val History.isTaxCreditDonation: Boolean get() = isDonation && taxCredit
+
 enum class TypeFilter { All, Income, Donations, TaxOnly }
 
 enum class TimeFilter { AllTime, Today, ThisWeek, ThisMonth, ThisYear, LastYear, SpecificMonth, SpecificYear }

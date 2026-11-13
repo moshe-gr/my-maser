@@ -87,6 +87,9 @@
     <string name="donation_type_tax_only">Tax only</string>
     <string name="tax_only_tag">Tax only</string>
     <string name="tax_only_hint">Won\'t reduce your maser balance</string>
+    <string name="tax_credit_switch">Counts for tax credit (section 46)</string>
+    <string name="tax_credit_tag">Tax credit</string>
+    <string name="tax_credit_for_name">All donations to %1$s count for tax credit</string>
     <string name="filter_tax_only">Tax only</string>
     <string name="tax_year_total">Donated in %1$d: %2$s</string>
     <string name="tax_year_total_with_tax_only">Donated in %1$d: %2$s · %3$s tax only</string>

@@ -217,6 +217,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         currency: String,
         isDonation: Boolean,
         isTaxOnly: Boolean,
+        taxCredit: Boolean,
         onSaved: (History) -> Unit
     ) = runChange {
         val entry = History(
@@ -226,7 +227,8 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             isDonation = isDonation,
             maserPercentage = percentageFlow.first(),
             currency = currency,
-            isTaxOnly = isDonation && isTaxOnly
+            isTaxOnly = isDonation && isTaxOnly,
+            taxCredit = isDonation && taxCredit
         )
         val id = repository.insert(entry)
         onSaved(entry.copy(id = id))
@@ -243,20 +245,41 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
                 isDonation = it.isDonation,
                 maserPercentage = percentage,
                 currency = it.currency,
-                isTaxOnly = it.isDonation && it.isTaxOnly
+                isTaxOnly = it.isDonation && it.isTaxOnly,
+                taxCredit = it.isDonation && it.taxCredit
             )
             entry.copy(id = repository.insert(entry))
         }
         onSaved(saved)
     }
 
-    fun editEntry(entry: History, name: String, amount: Float, isTaxOnly: Boolean) {
+    fun editEntry(entry: History, name: String, amount: Float, isTaxOnly: Boolean, taxCredit: Boolean) {
         val stored = original(entry)
         runChange {
             repository.update(
-                stored.copy(name = name, amount = amount, isTaxOnly = stored.isDonation && isTaxOnly)
+                stored.copy(
+                    name = name,
+                    amount = amount,
+                    isTaxOnly = stored.isDonation && isTaxOnly,
+                    taxCredit = stored.isDonation && taxCredit
+                )
             )
         }
+    }
+
+    /** Sets the tax-credit flag on every donation stored under [name]. */
+    fun setTaxCreditForName(name: String, taxCredit: Boolean) {
+        val key = nameKey(name)
+        val ids = originals.value.orEmpty()
+            .filter { it.isDonation && nameKey(it.name) == key }
+            .map { it.id }
+        if (ids.isNotEmpty()) runChange { repository.setTaxCredit(ids, taxCredit) }
+    }
+
+    /** Whether the latest donation under [name] counted for the tax credit; false for a new name. */
+    fun lastTaxCredit(name: String): Boolean {
+        val key = nameKey(name)
+        return originals.value?.firstOrNull { it.isDonation && nameKey(it.name) == key }?.taxCredit == true
     }
 
     /** Deletes the stored entry and returns it, so it can be restored exactly. */

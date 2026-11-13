@@ -25,7 +25,7 @@ import com.example.mymaser.history.sanitizeAmountInput
 @Composable
 fun EditEntryDialog(
     entry: History,
-    onConfirm: (name: String, amount: Float, isTaxOnly: Boolean) -> Unit,
+    onConfirm: (name: String, amount: Float, isTaxOnly: Boolean, taxCredit: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by rememberSaveable(entry.id) { mutableStateOf(entry.name) }
@@ -33,6 +33,7 @@ fun EditEntryDialog(
         mutableStateOf(formatAmountInput(entry.amount))
     }
     var isTaxOnly by rememberSaveable(entry.id) { mutableStateOf(entry.isTaxOnly) }
+    var taxCredit by rememberSaveable(entry.id) { mutableStateOf(entry.taxCredit) }
     val amount = amountText.toFloatOrNull() ?: 0F
     val isValid = amount > 0F && name.isNotBlank()
 
@@ -58,12 +59,19 @@ fun EditEntryDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
                 if (entry.isDonation) {
-                    DonationTypeSelector(isTaxOnly = isTaxOnly, onChange = { isTaxOnly = it })
+                    DonationTypeSelector(
+                        isTaxOnly = isTaxOnly,
+                        onChange = {
+                            isTaxOnly = it
+                            if (it) taxCredit = true
+                        }
+                    )
+                    TaxCreditSwitch(checked = taxCredit, onChange = { taxCredit = it })
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name.trim(), amount, isTaxOnly) }, enabled = isValid) {
+            TextButton(onClick = { onConfirm(name.trim(), amount, isTaxOnly, taxCredit) }, enabled = isValid) {
                 Text(stringResource(R.string.save))
             }
         },

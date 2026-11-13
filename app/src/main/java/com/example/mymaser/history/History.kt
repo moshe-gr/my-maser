@@ -25,7 +25,10 @@ data class History(
     val currency: String = DEFAULT_CURRENCY,
     /** A donation kept for tax receipts that doesn't reduce the maser balance. */
     @ColumnInfo(defaultValue = "0")
-    val isTaxOnly: Boolean = false
+    val isTaxOnly: Boolean = false,
+    /** A donation the user says counts for the section 46 tax credit. */
+    @ColumnInfo(defaultValue = "0")
+    val taxCredit: Boolean = false
 )
 
 fun History.localDate(zone: ZoneId): LocalDate =

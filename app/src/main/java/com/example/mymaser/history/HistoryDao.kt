@@ -26,6 +26,9 @@ interface HistoryDao {
     @Query("SELECT * FROM History ORDER BY timeStamp DESC")
     suspend fun getAll(): List<History>
 
+    @Query("UPDATE History SET taxCredit = :taxCredit WHERE id IN (:ids)")
+    suspend fun setTaxCredit(ids: List<Int>, taxCredit: Boolean)
+
     @Query("UPDATE History SET currency = :currency")
     suspend fun setCurrencyForAll(currency: String)
 }

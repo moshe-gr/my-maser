@@ -160,9 +160,10 @@ fun MainScreen(
         amount: Float,
         currency: String,
         isDonation: Boolean,
-        isTaxOnly: Boolean = false
+        isTaxOnly: Boolean = false,
+        taxCredit: Boolean = false
     ) {
-        viewModel.addEntry(name, amount, currency, isDonation, isTaxOnly) { saved ->
+        viewModel.addEntry(name, amount, currency, isDonation, isTaxOnly, taxCredit) { saved ->
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             offerUndo(savedMessage) { viewModel.deleteEntry(saved) }
         }
@@ -214,7 +215,7 @@ fun MainScreen(
         QuickAddField(onSubmit = importViewModel::quickAdd)
         DueCards(
             predictions = predictions,
-            onLog = { saveEntry(it.name, it.amount, it.currency, it.isDonation, it.isTaxOnly) },
+            onLog = { saveEntry(it.name, it.amount, it.currency, it.isDonation, it.isTaxOnly, it.taxCredit) },
             onOpen = { viewModel.requestPrefill(it.toPrefill()) },
             onSkip = viewModel::dismissPrediction
         )
@@ -365,6 +366,7 @@ fun MainScreen(
                     onEdit = viewModel::editEntry,
                     onDelete = ::deleteEntry,
                     onAddEntry = { openForm(isDonation = false) },
+                    onTaxCreditForName = viewModel::setTaxCreditForName,
                     originalOf = viewModel::original,
                     notice = ratesNotice
                 )
@@ -399,11 +401,12 @@ fun MainScreen(
                         names = if (isDonation) donationNames else incomeNames,
                         lastEntry = history?.firstOrNull { it.isDonation == isDonation },
                         onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation) },
-                        onSave = { name, amount, currency, isTaxOnly ->
-                            saveEntry(name, amount, currency, isDonation, isTaxOnly)
+                        onSave = { name, amount, currency, isTaxOnly, taxCredit ->
+                            saveEntry(name, amount, currency, isDonation, isTaxOnly, taxCredit)
                             navController.popBackStack()
                         },
                         maserPercentage = maserPercentage,
+                        taxCreditFor = viewModel::lastTaxCredit,
                         prefill = prefill,
                         onPrefillConsumed = viewModel::consumePrefill,
                         onCheck = { name, amount, currency ->

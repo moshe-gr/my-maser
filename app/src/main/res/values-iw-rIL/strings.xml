@@ -83,6 +83,9 @@
     <string name="donation_type_tax_only">למס בלבד</string>
     <string name="tax_only_tag">למס בלבד</string>
     <string name="tax_only_hint">לא יפחית מיתרת המעשר</string>
+    <string name="tax_credit_switch">מזכה בזיכוי מס (סעיף 46)</string>
+    <string name="tax_credit_tag">זיכוי מס</string>
+    <string name="tax_credit_for_name">כל התרומות ל־%1$s מזכות בזיכוי מס</string>
     <string name="filter_tax_only">למס בלבד</string>
     <string name="tax_year_total">נתרם ב-%1$d: %2$s</string>
     <string name="tax_year_total_with_tax_only">נתרם ב-%1$d: %2$s · %3$s למס בלבד</string>

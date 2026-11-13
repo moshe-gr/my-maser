@@ -16,7 +16,8 @@ data class Prediction(
     val amount: Float,
     val currency: String,
     val status: DueStatus,
-    val isTaxOnly: Boolean = false
+    val isTaxOnly: Boolean = false,
+    val taxCredit: Boolean = false
 ) {
     /** Identifies this source's occurrence in one month, for dismissals and sent reminders. */
     val key: String
@@ -74,7 +75,8 @@ fun predictDueEntries(
                         amount = suggestion.amount,
                         currency = suggestion.currency,
                         status = status,
-                        isTaxOnly = latest.isTaxOnlyDonation
+                        isTaxOnly = latest.isTaxOnlyDonation,
+                        taxCredit = latest.isTaxCreditDonation
                     )
                 }
                 .filterNot { it.key in dismissed }

@@ -6,10 +6,11 @@ data class Prefill(
     val amount: Float?,
     val currency: String?,
     val isDonation: Boolean,
-    val isTaxOnly: Boolean = false
+    val isTaxOnly: Boolean = false,
+    val taxCredit: Boolean = false
 )
 
-fun Prediction.toPrefill() = Prefill(name, amount, currency, isDonation, isTaxOnly)
+fun Prediction.toPrefill() = Prefill(name, amount, currency, isDonation, isTaxOnly, taxCredit)
 
 /** A confirmed entry ready to store, with the time it happened. */
 data class NewEntry(
@@ -20,5 +21,6 @@ data class NewEntry(
     val timeStamp: Long,
     val isTaxOnly: Boolean = false,
     /** How the imported document named the source, so a rename can be remembered. */
-    val documentName: String? = null
+    val documentName: String? = null,
+    val taxCredit: Boolean = false
 )

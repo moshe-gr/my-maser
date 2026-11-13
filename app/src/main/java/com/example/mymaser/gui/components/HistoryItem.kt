@@ -20,7 +20,6 @@ import com.example.mymaser.gui.formatSignedCurrency
 import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.gui.theme.tabular
 import com.example.mymaser.history.History
-import com.example.mymaser.history.isTaxOnlyDonation
 import java.util.Date
 
 @Composable
@@ -56,9 +55,7 @@ fun HistoryItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (history.isTaxOnlyDonation) {
-                    TaxOnlyTag(Modifier.padding(top = 4.dp))
-                }
+                DonationTags(history, Modifier.padding(top = 4.dp))
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(

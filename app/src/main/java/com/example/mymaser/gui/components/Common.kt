@@ -3,6 +3,7 @@ package com.example.mymaser.gui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -47,6 +50,9 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.gui.theme.maserColors
+import com.example.mymaser.history.History
+import com.example.mymaser.history.isTaxCreditDonation
+import com.example.mymaser.history.isTaxOnlyDonation
 import java.text.DateFormat
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -188,9 +194,55 @@ fun DonationTypeSelector(
     }
 }
 
+/** Whether a donation counts for the section 46 tax credit. */
+@Composable
+fun TaxCreditSwitch(
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = stringResource(R.string.tax_credit_switch)
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(checked = checked, onCheckedChange = null)
+    }
+}
+
+/** The tax-only and tax-credit tags a donation carries, if any. */
+@Composable
+fun DonationTags(history: History, modifier: Modifier = Modifier) {
+    if (!history.isTaxOnlyDonation && !history.isTaxCreditDonation) return
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (history.isTaxOnlyDonation) TaxOnlyTag()
+        if (history.isTaxCreditDonation) TaxCreditTag()
+    }
+}
+
 /** Marks a donation that doesn't reduce the maser balance. */
 @Composable
 fun TaxOnlyTag(modifier: Modifier = Modifier) {
+    SmallTag(stringResource(R.string.tax_only_tag), modifier)
+}
+
+/** Marks a donation that counts for the tax credit. */
+@Composable
+fun TaxCreditTag(modifier: Modifier = Modifier) {
+    SmallTag(stringResource(R.string.tax_credit_tag), modifier)
+}
+
+@Composable
+private fun SmallTag(text: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -198,7 +250,7 @@ fun TaxOnlyTag(modifier: Modifier = Modifier) {
         shape = MaterialTheme.shapes.extraSmall
     ) {
         Text(
-            text = stringResource(R.string.tax_only_tag),
+            text = text,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )

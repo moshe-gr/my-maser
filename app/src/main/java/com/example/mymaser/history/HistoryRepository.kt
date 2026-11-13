@@ -11,4 +11,6 @@ class HistoryRepository(private val dao: HistoryDao) {
     suspend fun update(history: History) = dao.update(history)
 
     suspend fun delete(history: History) = dao.delete(history)
+
+    suspend fun setTaxCredit(ids: List<Int>, taxCredit: Boolean) = dao.setTaxCredit(ids, taxCredit)
 }
