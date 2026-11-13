@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Android maps the "iw" resource folders to "he", which locales_config declares; lint doesn't treat them as the same language. -->
+    <issue id="UnusedTranslation">
+        <ignore path="src/main/AndroidManifest.xml" />
+    </issue>
+    <!-- In bouncycastle (pulled in by pdfbox-android for encrypted PDFs); the app never uses its TLS classes. -->
+    <issue id="TrustAllX509TrustManager">
+        <ignore regexp="bcpkix" />
+    </issue>
+</lint>
