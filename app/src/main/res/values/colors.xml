@@ -2,4 +2,6 @@
 <resources>
     <color name="white">#FFFFFFFF</color>
     <color name="brand_primary">#00695C</color>
+    <!-- Matches the Compose colour scheme's background so new windows open seamlessly. -->
+    <color name="window_background">#FFF7F9F9</color>
 </resources>

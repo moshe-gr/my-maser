@@ -17,6 +17,7 @@ import com.example.mymaser.gui.LocalDisplayCurrency
 import com.example.mymaser.settings.Appearance
 import com.example.mymaser.settings.ThemeMode
 import com.example.mymaser.settings.appearanceFlow
+import com.example.mymaser.settings.applyThemeMode
 
 private val LightNavigationScrim = Color.argb(0xE6, 0xFF, 0xFF, 0xFF)
 private val DarkNavigationScrim = Color.argb(0x80, 0x1B, 0x1B, 0x1B)
@@ -40,6 +41,8 @@ fun MaserAppTheme(
         ThemeMode.Dark -> true
         ThemeMode.System -> isSystemInDarkTheme()
     }
+
+    LaunchedEffect(loaded.themeMode) { context.applyThemeMode(loaded.themeMode) }
 
     val activity = LocalActivity.current as? ComponentActivity
     LaunchedEffect(darkTheme) {

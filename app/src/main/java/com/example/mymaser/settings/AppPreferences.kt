@@ -1,6 +1,8 @@
 package com.example.mymaser.settings
 
 import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.edit
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.example.mymaser.currency.BalanceAdjustment
@@ -24,15 +26,35 @@ const val MIN_MASER_PERCENTAGE = 1f
 const val MAX_MASER_PERCENTAGE = 100f
 val PRESET_MASER_PERCENTAGES = listOf(10f, 20f)
 
-enum class ThemeMode(val key: String) {
-    System("system"),
-    Light("light"),
-    Dark("dark");
+enum class ThemeMode(val key: String, val nightMode: Int) {
+    System("system", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM),
+    Light("light", AppCompatDelegate.MODE_NIGHT_NO),
+    Dark("dark", AppCompatDelegate.MODE_NIGHT_YES);
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: System
     }
 }
+
+private const val THEME_MIRROR_PREFS = "theme_mirror"
+private const val THEME_MIRROR_KEY = "theme_mode"
+
+/**
+ * Makes [mode] the app-wide night mode, so window backgrounds and system UI match it before
+ * Compose draws. Also mirrors it to SharedPreferences, which, unlike DataStore, can be read
+ * synchronously at start-up.
+ */
+fun Context.applyThemeMode(mode: ThemeMode) {
+    getSharedPreferences(THEME_MIRROR_PREFS, Context.MODE_PRIVATE).edit {
+        putString(THEME_MIRROR_KEY, mode.key)
+    }
+    AppCompatDelegate.setDefaultNightMode(mode.nightMode)
+}
+
+/** The last theme passed to [applyThemeMode], or System if it never ran. */
+fun Context.mirroredThemeMode(): ThemeMode = ThemeMode.fromKey(
+    getSharedPreferences(THEME_MIRROR_PREFS, Context.MODE_PRIVATE).getString(THEME_MIRROR_KEY, null)
+)
 
 /** Which payslip figure ma'aser is counted from. */
 enum class MaserBasis(val key: String) {
