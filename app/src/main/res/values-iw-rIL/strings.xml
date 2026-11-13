@@ -170,7 +170,7 @@
     <string name="guard_unusual_body">%1$s רחוק מהסכום הרגיל, %2$s, עבור %3$s.</string>
     <string name="guard_save_anyway">שמור בכל זאת</string>
     <string name="guard_fix">תקן</string>
-    <string name="forecast_owed">בקצב הנוכחי: %1$s מעשר עד 31 בדצמבר. תן כ־%2$s בחודש כדי לסיים באפס.</string>
+    <string name="forecast_owed">בקצב הנוכחי: %1$s מעשר עד 31 בדצמבר. תן עוד כ־%2$s בחודש כדי לסיים באפס.</string>
     <string name="forecast_clear">בקצב הנוכחי המעשר יינתן במלואו עד 31 בדצמבר.</string>
     <plurals name="summary_exported">
         <item quantity="one">יוצאה רשומה אחת</item>

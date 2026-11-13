@@ -1,5 +1,6 @@
 package com.example.mymaser.history
 
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals
@@ -84,6 +85,44 @@ class EntryChecksAndForecastTest {
         val nov18 = ZonedDateTime.of(2026, 11, 18, 15, 0, 0, 0, zone)
         val forecast = forecastYearEnd(paidEarly, 0.0, nov18)!!
         assertEquals(1000.0, forecast.balance, 0.001)
+    }
+
+    @Test
+    fun `a late salary not logged yet still counts this month`() {
+        val onThe5th = (6..10).map { History(timeStamp = at(2026, it, 5), name = "Salary", amount = 10000F) }
+        val forecast = forecastYearEnd(onThe5th, 0.0, now)!!
+        assertEquals(2 * 1000.0, forecast.balance, 0.001)
+    }
+
+    @Test
+    fun `a salary logged late this month is not counted again`() {
+        val onThe1st = (6..10).map { History(timeStamp = at(2026, it, 1), name = "Salary", amount = 10000F) }
+        val loggedLate = onThe1st + History(timeStamp = at(2026, 11, 8), name = "Salary", amount = 10000F)
+        val forecast = forecastYearEnd(loggedLate, 0.0, now)!!
+        assertEquals(1000.0, forecast.balance, 0.001)
+    }
+
+    @Test
+    fun `recurring tax-only donations don't reduce the forecast`() {
+        val taxOnly = (6..10).map {
+            History(timeStamp = at(2026, it, 25), name = "Pledge", amount = 300F, isDonation = true, isTaxOnly = true)
+        }
+        val forecast = forecastYearEnd(salary + taxOnly, 0.0, now)!!
+        assertEquals(2 * 1000.0, forecast.balance, 0.001)
+    }
+
+    @Test
+    fun `a skipped occurrence is left out`() {
+        val skipped = setOf(predictionKey("Salary", false, YearMonth.of(2026, 11)))
+        val forecast = forecastYearEnd(salary, 0.0, now, skipped)!!
+        assertEquals(1000.0, forecast.balance, 0.001)
+    }
+
+    @Test
+    fun `a one-off on today's day of the month doesn't set the amount`() {
+        val bonus = History(timeStamp = at(2026, 7, 10), name = "Salary", amount = 30000F)
+        val forecast = forecastYearEnd(salary + bonus, 0.0, now)!!
+        assertEquals(2 * 1000.0, forecast.balance, 0.001)
     }
 
     @Test

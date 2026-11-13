@@ -84,11 +84,14 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         else maserBalance(shown, setup.adjustment, currency, table).toFloat()
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    private val dismissedFlow = application.dataStore.data
+        .map { it[SettingsKeys.DISMISSED_PREDICTIONS].orEmpty() }
+
     /** Projected year-end balance from recurring sources, or null when nothing recurs. */
     val forecast: StateFlow<YearEndForecast?> =
-        combine(display, displayCurrency, totalMaser) { shown, currency, total ->
+        combine(display, displayCurrency, totalMaser, dismissedFlow) { shown, currency, total, dismissed ->
             if (shown == null || total == null) null
-            else forecastYearEnd(shown.countable(currency), total.toDouble(), ZonedDateTime.now())
+            else forecastYearEnd(shown.countable(currency), total.toDouble(), ZonedDateTime.now(), dismissed)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
     /** What the chat may look at right now, or null until everything has loaded. */
@@ -123,9 +126,6 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 
     /** The value Home last settled on, so it can count up to changes made on other tabs. */
     var lastShownTotal: Float? = null
-
-    private val dismissedFlow = application.dataStore.data
-        .map { it[SettingsKeys.DISMISSED_PREDICTIONS].orEmpty() }
 
     /** Recurring entries due around today and not logged yet. */
     val predictions: StateFlow<List<Prediction>> =

@@ -172,7 +172,7 @@
     <string name="guard_unusual_body">%1$s is far from the usual %2$s for %3$s.</string>
     <string name="guard_save_anyway">Save anyway</string>
     <string name="guard_fix">Fix</string>
-    <string name="forecast_owed">At this pace: %1$s owed by Dec 31. Give about %2$s a month to finish at zero.</string>
+    <string name="forecast_owed">At this pace: %1$s owed by Dec 31. Give about %2$s extra a month to finish at zero.</string>
     <string name="forecast_clear">At this pace your maser will be fully given by Dec 31.</string>
     <plurals name="summary_exported">
         <item quantity="one">Exported %d entry</item>

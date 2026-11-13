@@ -135,7 +135,7 @@ Don't give halachic rulings; suggest asking a rabbi for those.
             "given_ahead" to round((-data.balance).coerceAtLeast(0.0)),
             "projected_left_to_give_on_december_31" to projected?.let { round(it.coerceAtLeast(0.0)) },
             "projected_given_ahead_on_december_31" to projected?.let { round((-it).coerceAtLeast(0.0)) },
-            "monthly_to_finish_at_zero" to data.forecast?.monthlyToClear?.let { round(it.coerceAtLeast(0.0)) }
+            "extra_monthly_beyond_recurring_donations_to_finish_at_zero" to data.forecast?.monthlyToClear?.let { round(it.coerceAtLeast(0.0)) }
         )
     }
 
