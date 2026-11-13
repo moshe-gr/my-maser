@@ -208,7 +208,9 @@
     </plurals>
     <string name="notify_email_text">Payslips or donation receipts were found in your Gmail.</string>
     <string name="chat_title">Ask about your maser</string>
-    <string name="chat_open">Ask about your maser</string>
+    <string name="chat_tab">Ask</string>
+    <string name="chat_needs_ai">Answers are worked out with Google Gemini, so this needs smart import turned on in Settings.</string>
+    <string name="add_entry">Add</string>
     <string name="chat_intro">Ask anything about your income, donations and maser. Answers are worked out from totals on your phone, and the conversation isn\'t saved.</string>
     <string name="chat_hint">Ask a question</string>
     <string name="chat_send">Send</string>

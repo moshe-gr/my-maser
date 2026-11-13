@@ -139,6 +139,34 @@ fun EntryTypeBadge(isDonation: Boolean, size: Dp = 40.dp, iconSize: Dp = 20.dp) 
     }
 }
 
+/** Switches the add form between income and donation. */
+@Composable
+fun EntryTypeSelector(
+    isDonation: Boolean,
+    onChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val options = listOf(false to R.string.income, true to R.string.donation)
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        options.forEachIndexed { index, (donation, label) ->
+            SegmentedButton(
+                selected = isDonation == donation,
+                onClick = { onChange(donation) },
+                shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                icon = {
+                    Icon(
+                        if (donation) Icons.Filled.VolunteerActivism else Icons.Filled.AccountBalanceWallet,
+                        contentDescription = null,
+                        modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
+                    )
+                }
+            ) {
+                Text(stringResource(label))
+            }
+        }
+    }
+}
+
 /** Chooses whether a donation comes out of maser or is kept only for tax receipts. */
 @Composable
 fun DonationTypeSelector(

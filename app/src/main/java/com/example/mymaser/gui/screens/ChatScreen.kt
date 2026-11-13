@@ -42,6 +42,9 @@ import com.example.mymaser.R
 import com.example.mymaser.ai.AiError
 import com.example.mymaser.ai.ChatMessage
 import com.example.mymaser.ai.canRetry
+import com.example.mymaser.gui.components.EmptyState
+import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material3.FilledTonalButton
 
 private const val INTRO_KEY = "intro"
 private const val THINKING_KEY = "thinking"
@@ -53,8 +56,21 @@ fun ChatScreen(
     thinking: Boolean,
     onAsk: (String) -> Unit,
     onRetry: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    enabled: Boolean = true
 ) {
+    if (!enabled) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            EmptyState(
+                icon = Icons.AutoMirrored.Outlined.Chat,
+                message = stringResource(R.string.chat_needs_ai),
+                action = {
+                    FilledTonalButton(onClick = onOpenSettings) { Text(stringResource(R.string.open_settings)) }
+                }
+            )
+        }
+        return
+    }
     var text by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
 

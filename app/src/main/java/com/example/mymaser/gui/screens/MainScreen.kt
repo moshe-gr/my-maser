@@ -1,14 +1,27 @@
 package com.example.mymaser.gui.screens
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -20,17 +33,21 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import com.example.mymaser.gui.components.AnimatedPresence
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,37 +60,32 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mymaser.R
+import com.example.mymaser.ai.ChatViewModel
+import com.example.mymaser.ai.ImportViewModel
 import com.example.mymaser.gui.ScreenTypes
+import com.example.mymaser.gui.components.AnimatedPresence
 import com.example.mymaser.gui.components.DueCards
-import com.example.mymaser.gui.components.EntryForm
-import com.example.mymaser.gui.components.ForecastLine
 import com.example.mymaser.gui.components.EmailImportCard
+import com.example.mymaser.gui.components.EntryForm
+import com.example.mymaser.gui.components.EntryTypeSelector
+import com.example.mymaser.gui.components.ForecastLine
 import com.example.mymaser.gui.components.ImportButton
 import com.example.mymaser.gui.components.ImportReviewSheet
 import com.example.mymaser.gui.components.QuickAddField
-import com.example.mymaser.ai.ChatViewModel
-import com.example.mymaser.ai.ImportViewModel
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.Chat
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.ui.unit.dp
-import com.example.mymaser.history.NewEntry
-import androidx.compose.ui.platform.LocalResources
 import com.example.mymaser.gui.components.RatesNotice
 import com.example.mymaser.gui.components.ReminderPromptCard
-import com.example.mymaser.reminders.AppDestination
-import com.example.mymaser.history.toPrefill
-import androidx.compose.runtime.LaunchedEffect
 import com.example.mymaser.gui.theme.MaserMotion
 import com.example.mymaser.history.History
 import com.example.mymaser.history.HistoryViewModel
+import com.example.mymaser.history.NewEntry
+import com.example.mymaser.history.toPrefill
+import com.example.mymaser.reminders.AppDestination
 import com.example.mymaser.settings.SettingsActivity
 import kotlinx.coroutines.launch
 
-private const val CHAT_ROUTE = "chat"
+/** The add form is pushed over a tab rather than being a tab itself. */
+private const val ADD_ROUTE = "add"
+private const val FORM_SLIDE_MS = 300
 
 private fun NavDestination?.isOn(screen: ScreenTypes) =
     this?.hierarchy?.any { it.route == screen.route } == true
@@ -100,8 +112,9 @@ fun MainScreen(
     val haptics = LocalHapticFeedback.current
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
+    val onForm = destination?.route == ADD_ROUTE
     val current = ScreenTypes.entries.firstOrNull { destination.isOn(it) } ?: ScreenTypes.Home
-    val onChat = destination?.route == CHAT_ROUTE
+    var addingDonation by rememberSaveable { mutableStateOf(true) }
 
     val history by viewModel.history.collectAsStateWithLifecycle()
     val totalMaser by viewModel.totalMaser.collectAsStateWithLifecycle()
@@ -122,6 +135,13 @@ fun MainScreen(
     val undoLabel = stringResource(R.string.undo)
     val savedMessage = stringResource(R.string.information_saved_successfully)
     val deletedMessage = stringResource(R.string.entry_deleted)
+
+    fun openSettings() = context.startActivity(Intent(context, SettingsActivity::class.java))
+
+    fun openForm(isDonation: Boolean) {
+        addingDonation = isDonation
+        navController.navigate(ADD_ROUTE) { launchSingleTop = true }
+    }
 
     fun offerUndo(message: String, undo: () -> Unit) {
         scope.launch {
@@ -166,17 +186,16 @@ fun MainScreen(
     }
 
     LaunchedEffect(prefill) {
-        prefill?.let { navController.openTab(if (it.isDonation) ScreenTypes.Donation else ScreenTypes.Income) }
+        prefill?.let { openForm(it.isDonation) }
     }
 
     LaunchedEffect(requestedDestination) {
-        val target = when (requestedDestination) {
-            AppDestination.Home -> ScreenTypes.Home
-            AppDestination.Donation -> ScreenTypes.Donation
-            AppDestination.History -> ScreenTypes.History
+        when (requestedDestination) {
+            AppDestination.Home -> navController.openTab(ScreenTypes.Home)
+            AppDestination.History -> navController.openTab(ScreenTypes.History)
+            AppDestination.Donation -> openForm(isDonation = true)
             null -> return@LaunchedEffect
         }
-        navController.openTab(target)
         viewModel.consumeDestination()
     }
 
@@ -193,17 +212,6 @@ fun MainScreen(
             )
         }
         QuickAddField(onSubmit = importViewModel::quickAdd)
-        if (aiEnabled) {
-            OutlinedButton(
-                onClick = { navController.navigate(CHAT_ROUTE) { launchSingleTop = true } },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.small
-            ) {
-                Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.chat_open))
-            }
-        }
         DueCards(
             predictions = predictions,
             onLog = { saveEntry(it.name, it.amount, it.currency, it.isDonation, it.isTaxOnly) },
@@ -232,28 +240,6 @@ fun MainScreen(
         ratesNotice()
     }
 
-    @Composable
-    fun EntryTab(isDonation: Boolean) {
-        EntryForm(
-            isDonation = isDonation,
-            names = if (isDonation) donationNames else incomeNames,
-            lastEntry = history?.firstOrNull { it.isDonation == isDonation },
-            onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation) },
-            onSave = { name, amount, currency, isTaxOnly ->
-                saveEntry(name, amount, currency, isDonation, isTaxOnly)
-            },
-            maserPercentage = maserPercentage,
-            prefill = prefill,
-            onPrefillConsumed = viewModel::consumePrefill,
-            onCheck = { name, amount, currency ->
-                viewModel.checkNewEntry(name, amount, currency, isDonation)
-            },
-            header = {
-                if (aiEnabled) ImportButton(onDocuments = importViewModel::readUris)
-            }
-        )
-    }
-
     ImportReviewSheet(
         state = importState,
         onCheck = { viewModel.checkNewEntry(it.name, it.amount, it.currency, it.isDonation, it.timeStamp) },
@@ -261,7 +247,7 @@ fun MainScreen(
         onRetry = importViewModel::retry,
         onOpenSettings = {
             importViewModel.dismiss()
-            context.startActivity(Intent(context, SettingsActivity::class.java))
+            openSettings()
         },
         onDismiss = importViewModel::dismiss
     )
@@ -280,50 +266,61 @@ fun MainScreen(
                     Text(
                         stringResource(
                             when {
-                                onChat -> R.string.chat_title
+                                onForm -> if (addingDonation) R.string.add_donation else R.string.add_income
                                 current == ScreenTypes.Home -> R.string.app_name
+                                current == ScreenTypes.Ask -> R.string.chat_title
                                 else -> current.label
                             }
                         )
                     )
                 },
                 navigationIcon = {
-                    if (onChat) {
+                    if (onForm) {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            context.startActivity(Intent(context, SettingsActivity::class.java))
+                    if (!onForm) {
+                        IconButton(onClick = ::openSettings) {
+                            Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings))
                         }
-                    ) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.settings)
-                        )
                     }
                 }
             )
         },
         bottomBar = {
-            NavigationBar {
-                ScreenTypes.entries.forEach { screen ->
-                    val selected = !onChat && current == screen
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { navController.openTab(screen) },
-                        icon = {
-                            Icon(
-                                imageVector = if (selected) screen.selectedIcon else screen.icon,
-                                contentDescription = null
-                            )
-                        },
-                        label = { Text(stringResource(screen.label)) }
-                    )
+            AnimatedVisibility(visible = !onForm, enter = MaserMotion.expand, exit = MaserMotion.collapse) {
+                NavigationBar {
+                    ScreenTypes.entries.forEach { screen ->
+                        val selected = current == screen
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { navController.openTab(screen) },
+                            icon = {
+                                Icon(
+                                    imageVector = if (selected) screen.selectedIcon else screen.icon,
+                                    contentDescription = null
+                                )
+                            },
+                            label = { Text(stringResource(screen.label)) }
+                        )
+                    }
                 }
+            }
+        },
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = !onForm && current == ScreenTypes.History,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut()
+            ) {
+                ExtendedFloatingActionButton(
+                    onClick = { openForm(isDonation = true) },
+                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                    text = { Text(stringResource(R.string.add_entry)) }
+                )
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -337,8 +334,16 @@ fun MainScreen(
                 .consumeWindowInsets(padding)
                 .imePadding(),
             enterTransition = { MaserMotion.tabEnter },
-            exitTransition = { MaserMotion.tabExit },
-            popEnterTransition = { MaserMotion.tabEnter },
+            exitTransition = {
+                if (targetState.destination.route == ADD_ROUTE) {
+                    ExitTransition.KeepUntilTransitionsFinished
+                } else {
+                    MaserMotion.tabExit
+                }
+            },
+            popEnterTransition = {
+                if (initialState.destination.route == ADD_ROUTE) EnterTransition.None else MaserMotion.tabEnter
+            },
             popExitTransition = { MaserMotion.tabExit }
         ) {
             composable(ScreenTypes.Home.route) {
@@ -347,14 +352,24 @@ fun MainScreen(
                     totalMaser = totalMaser,
                     lastShownTotal = viewModel.lastShownTotal,
                     onTotalShown = { viewModel.lastShownTotal = it },
-                    onAddIncome = { navController.openTab(ScreenTypes.Income) },
-                    onAddDonation = { navController.openTab(ScreenTypes.Donation) },
+                    onAddIncome = { openForm(isDonation = false) },
+                    onAddDonation = { openForm(isDonation = true) },
                     maserPercentage = maserPercentage,
                     notice = homeNotice,
                     dueCards = dueCards
                 )
             }
-            composable(CHAT_ROUTE) {
+            composable(ScreenTypes.History.route) {
+                HistoryScreen(
+                    history = history,
+                    onEdit = viewModel::editEntry,
+                    onDelete = ::deleteEntry,
+                    onAddEntry = { openForm(isDonation = false) },
+                    originalOf = viewModel::original,
+                    notice = ratesNotice
+                )
+            }
+            composable(ScreenTypes.Ask.route) {
                 val messages by chatViewModel.messages.collectAsStateWithLifecycle()
                 val thinking by chatViewModel.thinking.collectAsStateWithLifecycle()
                 ChatScreen(
@@ -362,22 +377,44 @@ fun MainScreen(
                     thinking = thinking,
                     onAsk = { chatViewModel.ask(it, viewModel.chatData()) },
                     onRetry = { chatViewModel.retry(viewModel.chatData()) },
-                    onOpenSettings = {
-                        context.startActivity(Intent(context, SettingsActivity::class.java))
-                    }
+                    onOpenSettings = ::openSettings,
+                    enabled = aiEnabled
                 )
             }
-            composable(ScreenTypes.Income.route) { EntryTab(isDonation = false) }
-            composable(ScreenTypes.Donation.route) { EntryTab(isDonation = true) }
-            composable(ScreenTypes.History.route) {
-                HistoryScreen(
-                    history = history,
-                    onEdit = viewModel::editEntry,
-                    onDelete = ::deleteEntry,
-                    onAddEntry = { navController.openTab(ScreenTypes.Income) },
-                    originalOf = viewModel::original,
-                    notice = ratesNotice
-                )
+            composable(
+                ADD_ROUTE,
+                enterTransition = {
+                    slideIntoContainer(SlideDirection.Up, tween(FORM_SLIDE_MS, easing = FastOutSlowInEasing)) +
+                        fadeIn(tween(FORM_SLIDE_MS))
+                },
+                popExitTransition = {
+                    slideOutOfContainer(SlideDirection.Down, tween(FORM_SLIDE_MS, easing = FastOutSlowInEasing)) +
+                        fadeOut(tween(FORM_SLIDE_MS))
+                }
+            ) {
+                val isDonation = addingDonation
+                key(isDonation) {
+                    EntryForm(
+                        isDonation = isDonation,
+                        names = if (isDonation) donationNames else incomeNames,
+                        lastEntry = history?.firstOrNull { it.isDonation == isDonation },
+                        onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation) },
+                        onSave = { name, amount, currency, isTaxOnly ->
+                            saveEntry(name, amount, currency, isDonation, isTaxOnly)
+                            navController.popBackStack()
+                        },
+                        maserPercentage = maserPercentage,
+                        prefill = prefill,
+                        onPrefillConsumed = viewModel::consumePrefill,
+                        onCheck = { name, amount, currency ->
+                            viewModel.checkNewEntry(name, amount, currency, isDonation)
+                        },
+                        header = {
+                            EntryTypeSelector(isDonation = isDonation, onChange = { addingDonation = it })
+                            if (aiEnabled) ImportButton(onDocuments = importViewModel::readUris)
+                        }
+                    )
+                }
             }
         }
     }

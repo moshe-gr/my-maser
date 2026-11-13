@@ -82,6 +82,9 @@ import java.time.ZonedDateTime
 import java.time.temporal.WeekFields
 import java.util.Locale
 
+/** Room below the last row so the Add button never covers its amount. */
+private val FAB_CLEARANCE = 88.dp
+
 private fun TypeFilter.labelRes() = when (this) {
     TypeFilter.All -> R.string.filter_all
     TypeFilter.Income -> R.string.incomes
@@ -479,7 +482,7 @@ private fun HistoryList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp)
+        contentPadding = PaddingValues(bottom = FAB_CLEARANCE)
     ) {
         groups.forEach { (period, entries) ->
             stickyHeader(key = "header-$period") {

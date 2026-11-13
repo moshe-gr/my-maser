@@ -209,7 +209,9 @@
     </plurals>
     <string name="notify_email_text">נמצאו תלושי שכר או קבלות על תרומות ב־Gmail שלך.</string>
     <string name="chat_title">שאל על המעשר שלך</string>
-    <string name="chat_open">שאל על המעשר שלך</string>
+    <string name="chat_tab">שאל</string>
+    <string name="chat_needs_ai">התשובות מחושבות עם Google Gemini, לכן צריך להפעיל ייבוא חכם בהגדרות.</string>
+    <string name="add_entry">הוספה</string>
     <string name="chat_intro">אפשר לשאול כל דבר על ההכנסות, התרומות והמעשר שלך. התשובות מחושבות מסכומים שנערכים בטלפון, והשיחה לא נשמרת.</string>
     <string name="chat_hint">כתוב שאלה</string>
     <string name="chat_send">שלח</string>
