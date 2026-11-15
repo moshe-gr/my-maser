@@ -25,6 +25,11 @@ object SettingsKeys {
     /** Comma-separated words the daily email search looks for. */
     val GMAIL_KEYWORDS = stringPreferencesKey("gmail_keywords")
 
+    /** How the last finished check went, see [com.example.mymaser.settings.GmailLastCheck]. */
+    val GMAIL_LAST_CHECK_AT = longPreferencesKey("gmail_last_check_at")
+    val GMAIL_LAST_OUTCOME = stringPreferencesKey("gmail_last_outcome")
+    val GMAIL_LAST_FOUND = intPreferencesKey("gmail_last_found")
+
     /** JSON object of renames the user made when reviewing imports. */
     val NAME_ALIASES = stringPreferencesKey("name_aliases")
 

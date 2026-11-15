@@ -242,6 +242,29 @@
     <string name="gmail_status_reconnect">Reconnect needed</string>
     <string name="gmail_status_not_connected">Not connected</string>
     <string name="gmail_status_off">Off</string>
+    <string name="gmail_checking">Checking your inbox…</string>
+    <string name="gmail_waiting">Waiting for an internet connection…</string>
+    <string name="gmail_retrying">Couldn\'t finish the check. Trying again soon…</string>
+    <plurals name="gmail_last_found">
+        <item quantity="one">Checked %2$s · %1$d email to review on Home</item>
+        <item quantity="other">Checked %2$s · %1$d emails to review on Home</item>
+    </plurals>
+    <string name="gmail_last_nothing">Checked %s · nothing new</string>
+    <string name="gmail_last_ai_unavailable">Checked %s · Gemini is busy or reached its daily limit, so the rest will be read later</string>
+    <string name="gmail_last_failed">Last check (%s) couldn\'t reach Gmail or Gemini. It will try again.</string>
+    <string name="gmail_checked_just_now">just now</string>
+    <plurals name="gmail_minutes_ago">
+        <item quantity="one">%d minute ago</item>
+        <item quantity="other">%d minutes ago</item>
+    </plurals>
+    <plurals name="gmail_hours_ago">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <plurals name="gmail_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
     <plurals name="email_found_title">
         <item quantity="one">%d email with income or donations</item>
         <item quantity="other">%d emails with income or donations</item>

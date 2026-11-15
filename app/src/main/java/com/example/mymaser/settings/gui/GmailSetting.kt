@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -28,10 +29,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -40,7 +44,11 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.gmail.gmailAuthorizationRequest
 import com.example.mymaser.gui.theme.MaserMotion
+import com.example.mymaser.gmail.GmailProgress
+import com.example.mymaser.settings.GmailLastCheck
+import com.example.mymaser.settings.GmailOutcome
 import com.example.mymaser.settings.GmailSettings
+import kotlinx.coroutines.delay
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.ApiException
 
@@ -50,6 +58,7 @@ private enum class GmailState { NeedsAi, Disconnected, Reconnect, Connected }
 @Composable
 fun GmailSetting(
     settings: GmailSettings,
+    progress: GmailProgress,
     aiEnabled: Boolean,
     onConnected: () -> Unit,
     onDisconnect: () -> Unit,
@@ -136,9 +145,12 @@ fun GmailSetting(
                                 Text(stringResource(R.string.save))
                             }
                         }
-                        OutlinedButton(onClick = onCheckNow) { Text(stringResource(R.string.gmail_check_now)) }
+                        OutlinedButton(onClick = onCheckNow, enabled = progress == GmailProgress.Idle) {
+                            Text(stringResource(R.string.gmail_check_now))
+                        }
                         TextButton(onClick = onDisconnect) { Text(stringResource(R.string.gmail_disconnect)) }
                     }
+                    if (current == GmailState.Connected) CheckStatus(progress, settings.lastCheck)
                 }
             }
         }
@@ -151,6 +163,70 @@ fun GmailSetting(
         )
     }
 }
+
+/** What a running check is doing, or how the last one went and when. */
+@Composable
+private fun CheckStatus(progress: GmailProgress, lastCheck: GmailLastCheck?) {
+    val colors = MaterialTheme.colorScheme
+    val now by produceState(System.currentTimeMillis(), lastCheck) {
+        while (true) {
+            value = System.currentTimeMillis()
+            delay(MINUTE_MILLIS)
+        }
+    }
+    val status = when (progress) {
+        GmailProgress.Running -> Status(stringResource(R.string.gmail_checking), colors.onSurfaceVariant, busy = true)
+        GmailProgress.Waiting -> Status(stringResource(R.string.gmail_waiting), colors.onSurfaceVariant, busy = true)
+        GmailProgress.Retrying -> Status(stringResource(R.string.gmail_retrying), colors.onSurfaceVariant, busy = true)
+        GmailProgress.Idle -> lastCheck?.let { check ->
+            val ago = timeAgo(now - check.atMillis)
+            when (check.outcome) {
+                GmailOutcome.Found -> Status(
+                    pluralStringResource(R.plurals.gmail_last_found, check.found, check.found, ago),
+                    colors.primary
+                )
+                GmailOutcome.NothingNew -> Status(stringResource(R.string.gmail_last_nothing, ago), colors.onSurfaceVariant)
+                GmailOutcome.AiUnavailable ->
+                    Status(stringResource(R.string.gmail_last_ai_unavailable, ago), colors.onSurfaceVariant)
+                GmailOutcome.Failed -> Status(stringResource(R.string.gmail_last_failed, ago), colors.error)
+            }
+        }
+    }
+    AnimatedContent(
+        targetState = status,
+        transitionSpec = { MaserMotion.swapIn togetherWith MaserMotion.swapOut },
+        label = "gmail_check_status"
+    ) { shown ->
+        if (shown == null) return@AnimatedContent
+        Row(
+            modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (shown.busy) {
+                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+            }
+            SettingHint(shown.text, color = shown.color)
+        }
+    }
+}
+
+@Composable
+private fun timeAgo(elapsedMillis: Long): String {
+    val minutes = (elapsedMillis.coerceAtLeast(0) / MINUTE_MILLIS).toInt()
+    val hours = minutes / 60
+    val days = hours / 24
+    return when {
+        minutes < 1 -> stringResource(R.string.gmail_checked_just_now)
+        hours < 1 -> pluralStringResource(R.plurals.gmail_minutes_ago, minutes, minutes)
+        days < 1 -> pluralStringResource(R.plurals.gmail_hours_ago, hours, hours)
+        else -> pluralStringResource(R.plurals.gmail_days_ago, days, days)
+    }
+}
+
+private const val MINUTE_MILLIS = 60_000L
+
+private data class Status(val text: String, val color: Color, val busy: Boolean = false)
 
 @Composable
 private fun GmailHeader(state: GmailState) {

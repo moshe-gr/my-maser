@@ -26,16 +26,22 @@ data class PendingImport(
 
         /** Nothing to add, or already reviewed. */
         const val DONE = "done"
+
+        /** The AI couldn't read it once; tried again on the next run, then given up. */
+        const val RETRY = "retry"
     }
 }
 
 @Dao
 interface PendingImportDao : PendingImportStore {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     override suspend fun insert(item: PendingImport)
 
-    @Query("SELECT messageId FROM PendingImport WHERE messageId IN (:ids)")
+    @Query("SELECT messageId FROM PendingImport WHERE messageId IN (:ids) AND status != '${PendingImport.RETRY}'")
     override suspend fun knownIds(ids: List<String>): List<String>
+
+    @Query("SELECT messageId FROM PendingImport WHERE messageId IN (:ids) AND status = '${PendingImport.RETRY}'")
+    override suspend fun retryIds(ids: List<String>): List<String>
 
     @Query("SELECT * FROM PendingImport WHERE status = '${PendingImport.PENDING}' ORDER BY createdAt")
     fun observePending(): Flow<List<PendingImport>>

@@ -21,22 +21,31 @@ interface GmailSource {
 
 /** What the importer needs to store; [PendingImportDao] in the app. */
 interface PendingImportStore {
+    /** Ids already settled, so not read again; emails waiting for a retry aren't among them. */
     suspend fun knownIds(ids: List<String>): List<String>
+    suspend fun retryIds(ids: List<String>): List<String>
+
+    /** Adds the email, or replaces its retry record. */
     suspend fun insert(item: PendingImport)
 }
+
+/** [found] emails now wait for review; [stoppedBy] is why the run ended before reading them all. */
+data class GmailRun(val found: Int, val stoppedBy: AiError? = null)
 
 /**
  * Reads new matching emails into [PendingImport]s. Each email is looked at once: what it holds is
  * kept for review, and emails with nothing to add are remembered so they're skipped next time.
+ * [log] gets one line per step, with message ids but never mail content.
  */
 class GmailImporter(
     private val store: PendingImportStore,
     private val importer: DocumentImporter,
-    private val unlock: suspend (List<AiInput>) -> Unlocked = { Unlocked(it, locked = 0, unreadable = 0) }
+    private val unlock: suspend (List<AiInput>) -> Unlocked = { Unlocked(it, locked = 0, unreadable = 0) },
+    private val log: (String) -> Unit = {}
 ) {
     /**
-     * Returns how many emails now wait for review. Stops early, without failing, when the AI
-     * quota is used up or AI was turned off; throws [IOException] when the network failed.
+     * Stops early, without failing, when the AI quota is used up or AI was turned off; throws
+     * [IOException] when the network failed.
      * An email with a PDF the saved password can't open is left for a later run, so it's read once
      * the right password is saved.
      */
@@ -47,12 +56,19 @@ class GmailImporter(
         fallbackCurrency: String,
         knownNames: KnownNames,
         nowMillis: Long
-    ): Int {
+    ): GmailRun {
         val ids = source.search(query)
-        if (ids.isEmpty()) return 0
+        if (ids.isEmpty()) {
+            log("Search matched no emails")
+            return GmailRun(0)
+        }
         val known = store.knownIds(ids).toSet()
+        val unread = ids.filterNot { it in known }
+        val batch = unread.take(MAX_PER_RUN)
+        val retrying = if (batch.isEmpty()) emptySet() else store.retryIds(batch).toSet()
+        log("Search matched ${ids.size}, already read ${known.size}, reading ${batch.size} of ${unread.size}")
         var found = 0
-        for (id in ids.filterNot { it in known }.take(MAX_PER_RUN)) {
+        for (id in batch) {
             val message = source.message(id)
             val attached = buildList {
                 val text = listOf(message.subject, message.text).filter { it.isNotBlank() }.joinToString("\n\n")
@@ -65,27 +81,39 @@ class GmailImporter(
                 }
             }
             val opened = unlock(attached)
-            if (opened.locked > 0) continue
+            val parts = "text=${message.text.length} pdfs=${message.pdfs.size} attached=${attached.size}"
+            if (opened.locked > 0) {
+                log("$id: $parts, ${opened.locked} PDF(s) locked with no matching password, left for later")
+                continue
+            }
             val inputs = opened.inputs
             if (inputs.isEmpty()) {
+                log("$id: $parts, nothing readable (${opened.unreadable} unreadable PDF(s)), done")
                 store.insert(PendingImport(id, message.subject, "[]", nowMillis, PendingImport.DONE))
                 continue
             }
             when (val result = importer.read(inputs, basis, fallbackCurrency, knownNames)) {
                 is AiResult.Success -> {
                     val status = if (result.value.isEmpty()) PendingImport.DONE else PendingImport.PENDING
+                    log("$id: $parts, ${result.value.size} entr(ies), $status")
                     store.insert(PendingImport(id, message.subject, entriesToJson(result.value), nowMillis, status))
                     if (result.value.isNotEmpty()) found++
                 }
                 is AiResult.Error -> when (result.reason) {
                     AiError.Network -> throw IOException("Gemini unreachable")
-                    AiError.Failed ->
-                        store.insert(PendingImport(id, message.subject, "[]", nowMillis, PendingImport.DONE))
-                    AiError.QuotaExceeded, AiError.Busy, AiError.Disabled, AiError.NotConfigured -> return found
+                    AiError.Failed -> {
+                        val status = if (id in retrying) PendingImport.DONE else PendingImport.RETRY
+                        log("$id: $parts, AI couldn't read it, ${if (status == PendingImport.DONE) "gave up" else "will retry"}")
+                        store.insert(PendingImport(id, message.subject, "[]", nowMillis, status))
+                    }
+                    AiError.QuotaExceeded, AiError.Busy, AiError.Disabled, AiError.NotConfigured -> {
+                        log("$id: stopped, AI ${result.reason}")
+                        return GmailRun(found, stoppedBy = result.reason)
+                    }
                 }
             }
         }
-        return found
+        return GmailRun(found)
     }
 
     private companion object {

@@ -119,7 +119,10 @@ class GmailApi(private val token: String) : GmailSource {
             when (val code = connection.responseCode) {
                 HttpURLConnection.HTTP_OK -> connection.inputStream.bufferedReader().use { it.readText() }
                 HttpURLConnection.HTTP_UNAUTHORIZED -> throw GmailUnauthorizedException()
-                else -> throw IOException("Gmail answered $code")
+                else -> {
+                    val reason = connection.errorStream?.bufferedReader()?.use { it.readText() }?.take(ERROR_BODY_CHARS)
+                    throw IOException("Gmail answered $code: $reason")
+                }
             }
         } finally {
             connection.disconnect()
@@ -131,6 +134,7 @@ class GmailApi(private val token: String) : GmailSource {
         /** Ids are cheap; a wide window lets a backlog drain over a few daily runs. */
         const val MAX_RESULTS = 100
         const val TIMEOUT_MS = 20_000
+        const val ERROR_BODY_CHARS = 300
 
         fun decodeBase64Url(data: String): ByteArray = Base64.decode(data, Base64.URL_SAFE)
     }

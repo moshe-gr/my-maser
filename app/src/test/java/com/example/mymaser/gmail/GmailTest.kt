@@ -78,9 +78,11 @@ class GmailTest {
 
     private class FakeStore(known: List<String> = emptyList()) : PendingImportStore {
         val items = known.associateWith { PendingImport(it, "", "[]", 0, PendingImport.DONE) }.toMutableMap()
-        override suspend fun knownIds(ids: List<String>) = ids.filter { it in items }
+        override suspend fun knownIds(ids: List<String>) =
+            ids.filter { items[it]?.let { item -> item.status != PendingImport.RETRY } == true }
+        override suspend fun retryIds(ids: List<String>) = ids.filter { items[it]?.status == PendingImport.RETRY }
         override suspend fun insert(item: PendingImport) {
-            items.putIfAbsent(item.messageId, item)
+            items[item.messageId] = item
         }
     }
 
@@ -110,7 +112,7 @@ class GmailTest {
                 "newsletter" to AiResult.Success("""{"entries":[]}""")
             )
         )
-        assertEquals(1, run(source, store, client))
+        assertEquals(GmailRun(found = 1), run(source, store, client))
         assertEquals(PendingImport.PENDING, store.items.getValue("1").status)
         assertEquals("Acme", entriesFromJson(store.items.getValue("1").entriesJson).single().name)
         assertEquals(PendingImport.DONE, store.items.getValue("2").status)
@@ -120,7 +122,10 @@ class GmailTest {
     fun `quota stops the run without remembering the email`() {
         val store = FakeStore()
         val client = ScriptedClient(mapOf("slip" to AiResult.Error(AiError.QuotaExceeded)))
-        assertEquals(0, run(FakeSource(mapOf("1" to message("1", "slip"))), store, client))
+        assertEquals(
+            GmailRun(found = 0, stoppedBy = AiError.QuotaExceeded),
+            run(FakeSource(mapOf("1" to message("1", "slip"))), store, client)
+        )
         assertTrue(store.items.isEmpty())
     }
 
@@ -132,11 +137,41 @@ class GmailTest {
             mapOf("1" to GmailMessage("1", "slip", "body", listOf(GmailMessage.PdfRef(null, "AQ", 1))))
         )
         val found = runBlocking {
-            GmailImporter(store, DocumentImporter(client) { true }) { Unlocked(emptyList(), locked = 1, unreadable = 0) }
+            GmailImporter(
+                store,
+                DocumentImporter(client) { true },
+                unlock = { Unlocked(emptyList(), locked = 1, unreadable = 0) }
+            )
                 .run(source, "q", MaserBasis.Net, "ILS", KnownNames(emptyList(), emptyList()), nowMillis = 1)
         }
-        assertEquals(0, found)
+        assertEquals(GmailRun(found = 0), found)
         assertTrue(store.items.isEmpty())
+    }
+
+    @Test
+    fun `an email the AI fails on is tried once more before it's given up`() {
+        val source = FakeSource(mapOf("1" to message("1", "slip")))
+        val store = FakeStore()
+        val failing = ScriptedClient(mapOf("slip" to AiResult.Error(AiError.Failed)))
+
+        assertEquals(GmailRun(found = 0), run(source, store, failing))
+        assertEquals(PendingImport.RETRY, store.items.getValue("1").status)
+
+        assertEquals(GmailRun(found = 0), run(source, store, failing))
+        assertEquals(PendingImport.DONE, store.items.getValue("1").status)
+    }
+
+    @Test
+    fun `a retried email that reads fine waits for review`() {
+        val source = FakeSource(mapOf("1" to message("1", "slip")))
+        val store = FakeStore()
+        run(source, store, ScriptedClient(mapOf("slip" to AiResult.Error(AiError.Failed))))
+        val reading = ScriptedClient(
+            mapOf("slip" to AiResult.Success("""{"entries":[{"kind":"donation","name":"Shul","amount":50}]}"""))
+        )
+
+        assertEquals(GmailRun(found = 1), run(source, store, reading))
+        assertEquals(PendingImport.PENDING, store.items.getValue("1").status)
     }
 
     @Test(expected = IOException::class)

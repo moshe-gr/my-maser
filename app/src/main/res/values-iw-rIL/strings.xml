@@ -243,6 +243,33 @@
     <string name="gmail_status_reconnect">נדרש חיבור מחדש</string>
     <string name="gmail_status_not_connected">לא מחובר</string>
     <string name="gmail_status_off">כבוי</string>
+    <string name="gmail_checking">בודק את תיבת הדואר…</string>
+    <string name="gmail_waiting">ממתין לחיבור לאינטרנט…</string>
+    <string name="gmail_retrying">הבדיקה לא הושלמה. ננסה שוב בקרוב…</string>
+    <plurals name="gmail_last_found">
+        <item quantity="one">נבדק %2$s · מייל אחד מחכה לבדיקה במסך הבית</item>
+        <item quantity="two">נבדק %2$s · %1$d מיילים מחכים לבדיקה במסך הבית</item>
+        <item quantity="other">נבדק %2$s · %1$d מיילים מחכים לבדיקה במסך הבית</item>
+    </plurals>
+    <string name="gmail_last_nothing">נבדק %s · אין חדש</string>
+    <string name="gmail_last_ai_unavailable">נבדק %s · Gemini עמוס או הגיע למגבלה היומית, השאר ייקרא בהמשך</string>
+    <string name="gmail_last_failed">הבדיקה האחרונה (%s) לא הצליחה להתחבר ל־Gmail או ל־Gemini. ננסה שוב.</string>
+    <string name="gmail_checked_just_now">ממש עכשיו</string>
+    <plurals name="gmail_minutes_ago">
+        <item quantity="one">לפני דקה</item>
+        <item quantity="two">לפני %d דקות</item>
+        <item quantity="other">לפני %d דקות</item>
+    </plurals>
+    <plurals name="gmail_hours_ago">
+        <item quantity="one">לפני שעה</item>
+        <item quantity="two">לפני שעתיים</item>
+        <item quantity="other">לפני %d שעות</item>
+    </plurals>
+    <plurals name="gmail_days_ago">
+        <item quantity="one">לפני יום</item>
+        <item quantity="two">לפני יומיים</item>
+        <item quantity="other">לפני %d ימים</item>
+    </plurals>
     <plurals name="email_found_title">
         <item quantity="one">מייל אחד עם הכנסה או תרומה</item>
         <item quantity="two">%d מיילים עם הכנסות או תרומות</item>

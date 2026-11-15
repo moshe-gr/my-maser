@@ -108,17 +108,40 @@ fun Context.aiEnabledFlow(): Flow<Boolean> = dataStore.data
     .map { it.aiEnabled() }
     .distinctUntilChanged()
 
+enum class GmailOutcome {
+    Found,
+    NothingNew,
+
+    /** Gemini was busy or out of quota; what's left is read on a later run. */
+    AiUnavailable,
+
+    /** Gmail or Gemini couldn't be reached; WorkManager retries. */
+    Failed
+}
+
+/** The last check that finished; [found] emails are waiting for review after it. */
+data class GmailLastCheck(val atMillis: Long, val outcome: GmailOutcome, val found: Int)
+
 data class GmailSettings(
     val connected: Boolean = false,
     val needsReconnect: Boolean = false,
-    val keywords: String = DEFAULT_GMAIL_KEYWORDS
+    val keywords: String = DEFAULT_GMAIL_KEYWORDS,
+    val lastCheck: GmailLastCheck? = null
 )
 
 fun Preferences.gmailSettings(): GmailSettings = GmailSettings(
     connected = this[SettingsKeys.GMAIL_CONNECTED] ?: false,
     needsReconnect = this[SettingsKeys.GMAIL_NEEDS_RECONNECT] ?: false,
-    keywords = this[SettingsKeys.GMAIL_KEYWORDS] ?: DEFAULT_GMAIL_KEYWORDS
+    keywords = this[SettingsKeys.GMAIL_KEYWORDS] ?: DEFAULT_GMAIL_KEYWORDS,
+    lastCheck = gmailLastCheck()
 )
+
+private fun Preferences.gmailLastCheck(): GmailLastCheck? {
+    val at = this[SettingsKeys.GMAIL_LAST_CHECK_AT] ?: return null
+    val outcome = GmailOutcome.entries.firstOrNull { it.name == this[SettingsKeys.GMAIL_LAST_OUTCOME] }
+        ?: return null
+    return GmailLastCheck(at, outcome, this[SettingsKeys.GMAIL_LAST_FOUND] ?: 0)
+}
 
 fun Context.gmailSettingsFlow(): Flow<GmailSettings> = dataStore.data
     .map { it.gmailSettings() }

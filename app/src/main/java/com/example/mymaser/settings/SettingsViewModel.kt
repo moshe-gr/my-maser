@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mymaser.currency.CurrencyRepository
 import com.example.mymaser.currency.RateStatus
+import com.example.mymaser.gmail.GmailProgress
 import com.example.mymaser.gmail.GmailScheduler
 import com.example.mymaser.reminders.ReminderScheduler
 import com.example.mymaser.reminders.ReminderSettings
@@ -78,6 +79,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     val rateStatus: StateFlow<RateStatus> = currencyRepository.status
+
+    val gmailProgress: StateFlow<GmailProgress> = GmailScheduler.progress(application)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), GmailProgress.Idle)
 
     /** Switches what everything is shown in, then fetches any exchange rates that requires. */
     fun setDisplayCurrency(code: String) {
@@ -153,5 +157,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun runRemindersNow() {
         ReminderScheduler.runNow(getApplication())
+    }
+
+    private companion object {
+        const val STOP_TIMEOUT_MS = 5_000L
     }
 }

@@ -62,6 +62,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val loaded by viewModel.state.collectAsState()
     val state = loaded ?: return
     val rateStatus by viewModel.rateStatus.collectAsState()
+    val gmailProgress by viewModel.gmailProgress.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
@@ -119,6 +120,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 SettingsDivider()
                 GmailSetting(
                     settings = state.gmail,
+                    progress = gmailProgress,
                     aiEnabled = state.aiEnabled,
                     onConnected = viewModel::gmailConnected,
                     onDisconnect = viewModel::disconnectGmail,
