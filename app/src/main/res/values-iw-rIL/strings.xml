@@ -181,6 +181,8 @@
     <string name="forecast_state_clear">הכל ניתן</string>
     <string name="forecast_income_adds">הכנסות צפויות מוסיפות %1$s</string>
     <string name="forecast_donations_give">תרומות קבועות מורידות %1$s</string>
+    <string name="income_rate_maser">מעשר %1$s</string>
+    <string name="income_rate_chomesh">חומש %1$s</string>
     <string name="forecast_details">פרטים</string>
     <string name="forecast_title">תחזית לסוף השנה</string>
     <string name="forecast_chart_title">מעשר צפוי בסוף כל חודש</string>

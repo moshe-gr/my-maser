@@ -85,6 +85,7 @@ import com.example.mymaser.history.groupByPeriod
 import com.example.mymaser.history.localDate
 import com.example.mymaser.history.periodTotals
 import com.example.mymaser.history.taxYearDonations
+import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 import java.time.YearMonth
 import java.time.ZonedDateTime
 import java.time.temporal.WeekFields
@@ -122,7 +123,7 @@ private fun SummaryPeriod.toTimeFilter() = when (this) {
 @Composable
 fun HistoryScreen(
     history: List<History>?,
-    onEdit: (History, String, Float, Boolean, Boolean) -> Unit,
+    onEdit: (History, String, Float, Boolean, Boolean, Float) -> Unit,
     onDelete: (History) -> Unit,
     onAddEntry: () -> Unit,
     onTaxCreditForName: (name: String, taxCredit: Boolean) -> Unit = { _, _ -> },
@@ -130,6 +131,7 @@ fun HistoryScreen(
     claimedTaxYears: Set<Int> = emptySet(),
     onTaxYearClaimed: (year: Int, claimed: Boolean) -> Unit = { _, _ -> },
     originalOf: (History) -> History = { it },
+    maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
     notice: @Composable () -> Unit = {}
 ) {
     if (history == null) return
@@ -300,8 +302,9 @@ fun HistoryScreen(
     editing?.let { entry ->
         EditEntryDialog(
             entry = originalOf(entry),
-            onConfirm = { name, amount, isTaxOnly, taxCredit ->
-                onEdit(entry, name, amount, isTaxOnly, taxCredit)
+            usualRate = maserPercentage,
+            onConfirm = { name, amount, isTaxOnly, taxCredit, rate ->
+                onEdit(entry, name, amount, isTaxOnly, taxCredit, rate)
                 editingId = null
             },
             onDismiss = { editingId = null }
@@ -635,7 +638,7 @@ private fun HistoryPreview() {
     MaserPreview {
         HistoryScreen(
             history = sampleHistory,
-            onEdit = { _, _, _, _, _ -> },
+            onEdit = { _, _, _, _, _, _ -> },
             onDelete = {},
             onAddEntry = {}
         )

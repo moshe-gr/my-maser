@@ -165,9 +165,10 @@ fun MainScreen(
         currency: String,
         isDonation: Boolean,
         isTaxOnly: Boolean = false,
-        taxCredit: Boolean = false
+        taxCredit: Boolean = false,
+        rate: Float? = null
     ) {
-        viewModel.addEntry(name, amount, currency, isDonation, isTaxOnly, taxCredit) { saved ->
+        viewModel.addEntry(name, amount, currency, isDonation, isTaxOnly, taxCredit, rate) { saved ->
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             offerUndo(savedMessage) { viewModel.deleteEntry(saved) }
         }
@@ -384,6 +385,7 @@ fun MainScreen(
                     claimedTaxYears = claimedTaxYears,
                     onTaxYearClaimed = viewModel::setTaxYearClaimed,
                     originalOf = viewModel::original,
+                    maserPercentage = maserPercentage,
                     notice = ratesNotice
                 )
             }
@@ -417,8 +419,8 @@ fun MainScreen(
                         names = if (isDonation) donationNames else incomeNames,
                         lastEntry = history?.firstOrNull { it.isDonation == isDonation },
                         onSuggestionPicked = { viewModel.suggestedAmount(it, isDonation) },
-                        onSave = { name, amount, currency, isTaxOnly, taxCredit ->
-                            saveEntry(name, amount, currency, isDonation, isTaxOnly, taxCredit)
+                        onSave = { name, amount, currency, isTaxOnly, taxCredit, rate ->
+                            saveEntry(name, amount, currency, isDonation, isTaxOnly, taxCredit, rate)
                             navController.popBackStack()
                         },
                         maserPercentage = maserPercentage,

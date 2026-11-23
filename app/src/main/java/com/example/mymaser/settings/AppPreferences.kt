@@ -24,7 +24,12 @@ import org.json.JSONObject
 const val DEFAULT_MASER_PERCENTAGE = 10f
 const val MIN_MASER_PERCENTAGE = 1f
 const val MAX_MASER_PERCENTAGE = 100f
-val PRESET_MASER_PERCENTAGES = listOf(10f, 20f)
+const val CHOMESH_PERCENTAGE = 20f
+val PRESET_MASER_PERCENTAGES = listOf(DEFAULT_MASER_PERCENTAGE, CHOMESH_PERCENTAGE)
+
+/** The rates one income can be counted at: the usual [rate] and chomesh, or maser when chomesh is usual. */
+fun incomeRateOptions(rate: Float): List<Float> =
+    if (rate == CHOMESH_PERCENTAGE) PRESET_MASER_PERCENTAGES else listOf(rate, CHOMESH_PERCENTAGE).sorted()
 
 enum class ThemeMode(val key: String, val nightMode: Int) {
     System("system", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM),

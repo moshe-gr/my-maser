@@ -59,6 +59,9 @@ import com.example.mymaser.gui.theme.maserColors
 import com.example.mymaser.history.History
 import com.example.mymaser.history.isTaxCreditDonation
 import com.example.mymaser.history.isTaxOnlyDonation
+import com.example.mymaser.settings.CHOMESH_PERCENTAGE
+import com.example.mymaser.settings.formatPercentage
+import com.example.mymaser.settings.incomeRateOptions
 import java.text.DateFormat
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -211,6 +214,33 @@ fun DonationTypeSelector(
                 shape = SegmentedButtonDefaults.itemShape(index, options.size)
             ) {
                 Text(stringResource(label))
+            }
+        }
+    }
+}
+
+/** The rate one income is counted at, e.g. chomesh for a single income on top of the usual maser. */
+@Composable
+fun IncomeRateSelector(
+    rate: Float,
+    usualRate: Float,
+    onChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val options = incomeRateOptions(usualRate).let { if (rate in it) it else (it + rate).sorted() }
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        options.forEachIndexed { index, option ->
+            SegmentedButton(
+                selected = rate == option,
+                onClick = { onChange(option) },
+                shape = SegmentedButtonDefaults.itemShape(index, options.size)
+            ) {
+                Text(
+                    stringResource(
+                        if (option == CHOMESH_PERCENTAGE) R.string.income_rate_chomesh else R.string.income_rate_maser,
+                        formatPercentage(option)
+                    )
+                )
             }
         }
     }

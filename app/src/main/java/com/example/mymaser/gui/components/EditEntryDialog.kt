@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -19,13 +20,16 @@ import androidx.compose.ui.unit.dp
 import com.example.mymaser.R
 import com.example.mymaser.currency.SupportedCurrency
 import com.example.mymaser.history.History
+import com.example.mymaser.gui.formatCurrency
 import com.example.mymaser.history.formatAmountInput
+import com.example.mymaser.history.maserDelta
 import com.example.mymaser.history.sanitizeAmountInput
 
 @Composable
 fun EditEntryDialog(
     entry: History,
-    onConfirm: (name: String, amount: Float, isTaxOnly: Boolean, taxCredit: Boolean) -> Unit,
+    usualRate: Float,
+    onConfirm: (name: String, amount: Float, isTaxOnly: Boolean, taxCredit: Boolean, rate: Float) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by rememberSaveable(entry.id) { mutableStateOf(entry.name) }
@@ -34,6 +38,7 @@ fun EditEntryDialog(
     }
     var isTaxOnly by rememberSaveable(entry.id) { mutableStateOf(entry.isTaxOnly) }
     var taxCredit by rememberSaveable(entry.id) { mutableStateOf(entry.taxCredit) }
+    var rate by rememberSaveable(entry.id) { mutableFloatStateOf(entry.maserPercentage) }
     val amount = amountText.toFloatOrNull() ?: 0F
     val isValid = amount > 0F && name.isNotBlank()
 
@@ -56,8 +61,23 @@ fun EditEntryDialog(
                     suffix = { Text(SupportedCurrency.symbolFor(entry.currency)) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.small,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    supportingText = if (entry.isDonation || amount <= 0F) {
+                        null
+                    } else {
+                        {
+                            Text(
+                                stringResource(
+                                    R.string.adds_to_maser,
+                                    formatCurrency(maserDelta(amount, false, rate).toDouble(), currencyCode = entry.currency)
+                                )
+                            )
+                        }
+                    }
                 )
+                if (!entry.isDonation) {
+                    IncomeRateSelector(rate = rate, usualRate = usualRate, onChange = { rate = it })
+                }
                 if (entry.isDonation) {
                     DonationTypeSelector(
                         isTaxOnly = isTaxOnly,
@@ -71,7 +91,7 @@ fun EditEntryDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name.trim(), amount, isTaxOnly, taxCredit) }, enabled = isValid) {
+            TextButton(onClick = { onConfirm(name.trim(), amount, isTaxOnly, taxCredit, rate) }, enabled = isValid) {
                 Text(stringResource(R.string.save))
             }
         },

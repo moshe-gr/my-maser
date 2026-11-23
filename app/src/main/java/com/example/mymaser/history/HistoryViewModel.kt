@@ -250,6 +250,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         isDonation: Boolean,
         isTaxOnly: Boolean,
         taxCredit: Boolean,
+        rate: Float? = null,
         onSaved: (History) -> Unit
     ) = runChange {
         val entry = History(
@@ -257,7 +258,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             name = name,
             amount = amount,
             isDonation = isDonation,
-            maserPercentage = percentageFlow.first(),
+            maserPercentage = rate ?: percentageFlow.first(),
             currency = currency,
             isTaxOnly = isDonation && isTaxOnly,
             taxCredit = isDonation && taxCredit
@@ -285,13 +286,21 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         onSaved(saved)
     }
 
-    fun editEntry(entry: History, name: String, amount: Float, isTaxOnly: Boolean, taxCredit: Boolean) {
+    fun editEntry(
+        entry: History,
+        name: String,
+        amount: Float,
+        isTaxOnly: Boolean,
+        taxCredit: Boolean,
+        rate: Float
+    ) {
         val stored = original(entry)
         runChange {
             repository.update(
                 stored.copy(
                     name = name,
                     amount = amount,
+                    maserPercentage = if (stored.isDonation) stored.maserPercentage else rate,
                     isTaxOnly = stored.isDonation && isTaxOnly,
                     taxCredit = stored.isDonation && taxCredit
                 )

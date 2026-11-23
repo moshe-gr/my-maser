@@ -66,7 +66,14 @@ fun EntryForm(
     names: List<String>,
     lastEntry: History?,
     onSuggestionPicked: (String) -> AmountSuggestion?,
-    onSave: (name: String, amount: Float, currency: String, isTaxOnly: Boolean, taxCredit: Boolean) -> Unit,
+    onSave: (
+        name: String,
+        amount: Float,
+        currency: String,
+        isTaxOnly: Boolean,
+        taxCredit: Boolean,
+        rate: Float?
+    ) -> Unit,
     maserPercentage: Float = DEFAULT_MASER_PERCENTAGE,
     taxCreditFor: (String) -> Boolean = { false },
     prefill: Prefill? = null,
@@ -83,10 +90,12 @@ fun EntryForm(
     var isTaxOnly by rememberSaveable { mutableStateOf(false) }
     var taxCredit by rememberSaveable { mutableStateOf(false) }
     var taxCreditChosen by rememberSaveable { mutableStateOf(false) }
+    var chosenRate by rememberSaveable { mutableStateOf<Float?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     val currency = chosenCurrency ?: displayCurrency
+    val rate = chosenRate ?: maserPercentage
     val amount = amountText.toFloatOrNull() ?: 0F
     val canSave = amount > 0F && name.isNotBlank()
     val suggestions = remember(names, name) { matchSuggestions(names, name, MAX_SUGGESTIONS) }
@@ -118,13 +127,21 @@ fun EntryForm(
         isTaxOnly = prefill.isTaxOnly
         taxCredit = prefill.taxCredit || (isDonation && taxCreditFor(prefill.name))
         taxCreditChosen = false
+        chosenRate = null
         menuOpen = false
         onPrefillConsumed()
     }
 
     fun save() {
         focusManager.clearFocus()
-        onSave(name.trim(), amount, currency, isDonation && isTaxOnly, isDonation && taxCredit)
+        onSave(
+            name.trim(),
+            amount,
+            currency,
+            isDonation && isTaxOnly,
+            isDonation && taxCredit,
+            chosenRate.takeIf { !isDonation }
+        )
         name = ""
         amountText = ""
         chosenCurrency = null
@@ -132,6 +149,7 @@ fun EntryForm(
         isTaxOnly = false
         taxCredit = false
         taxCreditChosen = false
+        chosenRate = null
     }
 
     fun submit() {
@@ -216,7 +234,7 @@ fun EntryForm(
                             stringResource(
                                 R.string.adds_to_maser,
                                 formatCurrency(
-                                    maserDelta(amount, false, maserPercentage).toDouble(),
+                                    maserDelta(amount, false, rate).toDouble(),
                                     currencyCode = currency
                                 )
                             )
@@ -245,6 +263,10 @@ fun EntryForm(
                 submit()
             })
         )
+
+        if (!isDonation) {
+            IncomeRateSelector(rate = rate, usualRate = maserPercentage, onChange = { chosenRate = it })
+        }
 
         if (isDonation) {
             DonationTypeSelector(
@@ -325,7 +347,7 @@ private fun IncomeFormPreview() {
             names = emptyList(),
             lastEntry = History(name = "Salary", amount = 12000F),
             onSuggestionPicked = { null },
-            onSave = { _, _, _, _, _ -> }
+            onSave = { _, _, _, _, _, _ -> }
         )
     }
 }
@@ -339,7 +361,7 @@ private fun DonationFormPreview() {
             names = emptyList(),
             lastEntry = null,
             onSuggestionPicked = { null },
-            onSave = { _, _, _, _, _ -> }
+            onSave = { _, _, _, _, _, _ -> }
         )
     }
 }
