@@ -31,7 +31,7 @@ class QuickAddTest {
 
     @Test
     fun `income noun becomes the name`() {
-        assertEquals(parsed("salary", 9500.5F, "USD", false), parse("salary \$9500.50"))
+        assertEquals(parsed("salary", 9500.5F, "USD", false), parse($$"salary $9500.50"))
     }
 
     @Test

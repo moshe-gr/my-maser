@@ -41,7 +41,7 @@ class DocumentImporter(
     }
 }
 
-/** Names go in before the document, labelled so the model doesn't read them as its content. */
+/** Names go in before the document, labeled so the model doesn't read them as its content. */
 internal fun knownNamesHint(names: KnownNames): String? {
     val incomes = names.incomes.take(MAX_KNOWN_NAMES)
     val donations = names.donations.take(MAX_KNOWN_NAMES)

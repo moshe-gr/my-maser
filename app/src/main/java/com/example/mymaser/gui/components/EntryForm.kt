@@ -15,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -60,7 +60,6 @@ import com.example.mymaser.settings.DEFAULT_MASER_PERCENTAGE
 
 private const val MAX_SUGGESTIONS = 5
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EntryForm(
     isDonation: Boolean,

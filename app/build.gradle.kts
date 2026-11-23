@@ -1,16 +1,24 @@
+import com.android.build.api.dsl.ApplicationExtension
+import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+
 plugins {
     id("com.android.application")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
 // The app builds without Firebase; AI features stay unavailable until the config is added.
-if (file("google-services.json").exists()) {
-    apply(plugin = "com.google.gms.google-services")
+googleServices {
+    missingGoogleServicesStrategy = MissingGoogleServicesStrategy.IGNORE
 }
 
-configure<com.android.build.api.dsl.ApplicationExtension> {
-    compileSdk = 37
+configure<ApplicationExtension> {
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "com.example.mymaser"

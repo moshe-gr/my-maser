@@ -73,7 +73,7 @@ class GmailTest {
     private class FakeSource(private val messages: Map<String, GmailMessage>) : GmailSource {
         override suspend fun search(query: String) = messages.keys.toList()
         override suspend fun message(id: String) = messages.getValue(id)
-        override suspend fun pdf(messageId: String, ref: GmailMessage.PdfRef): ByteArray? = byteArrayOf(1)
+        override suspend fun pdf(messageId: String, ref: GmailMessage.PdfRef): ByteArray = byteArrayOf(1)
     }
 
     private class FakeStore(known: List<String> = emptyList()) : PendingImportStore {

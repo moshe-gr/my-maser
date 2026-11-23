@@ -18,6 +18,7 @@ import com.google.firebase.ai.type.content
 import com.google.firebase.ai.type.generationConfig
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 
 /** Something to read: free text, or a file such as a photo or a PDF. */
 sealed interface AiInput {
@@ -106,7 +107,7 @@ internal suspend fun <T> geminiWithFallback(
     models.forEachIndexed { index, model ->
         if (index > 0) {
             Log.i(AI_LOG_TAG, "Gemini model $index of ${models.size} unavailable, trying the next one")
-            delay(BUSY_RETRY_DELAY_MS)
+            delay(BUSY_RETRY_DELAY_MS.milliseconds)
         }
         result = geminiCall { block(model) }
         if ((result as? AiResult.Error)?.reason !in FALL_BACK_ON) return result

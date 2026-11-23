@@ -51,6 +51,7 @@ import com.example.mymaser.settings.GmailSettings
 import kotlinx.coroutines.delay
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.ApiException
+import kotlin.time.Duration.Companion.milliseconds
 
 private enum class GmailState { NeedsAi, Disconnected, Reconnect, Connected }
 
@@ -171,7 +172,7 @@ private fun CheckStatus(progress: GmailProgress, lastCheck: GmailLastCheck?) {
     val now by produceState(System.currentTimeMillis(), lastCheck) {
         while (true) {
             value = System.currentTimeMillis()
-            delay(MINUTE_MILLIS)
+            delay(MINUTE_MILLIS.milliseconds)
         }
     }
     val status = when (progress) {

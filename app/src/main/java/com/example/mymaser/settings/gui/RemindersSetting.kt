@@ -40,7 +40,6 @@ import java.time.format.FormatStyle
 
 enum class ReminderToggle { Master, Expected, Balance, Review }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemindersSetting(
     settings: ReminderSettings,

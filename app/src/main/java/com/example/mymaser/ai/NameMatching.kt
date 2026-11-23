@@ -27,7 +27,7 @@ private const val PATTERN_DAY_TOLERANCE = 3
 private const val PATTERN_RECENT_AMOUNTS = 3
 private const val MIN_MATCHED_CHARS = 3
 
-/** Legal-form words that say nothing about who the payer or organisation is. */
+/** Legal-form words that say nothing about who the payer or organization is. */
 private val NOISE_WORDS = setOf("ער", "בעמ", "ltd", "inc", "llc", "עמותת")
 
 /** Key under which a rename the user made in the review is remembered, per kind. */

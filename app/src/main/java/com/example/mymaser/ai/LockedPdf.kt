@@ -39,7 +39,7 @@ private val LONG_NUMBER = Regex("\\d(?:-?\\d){6,}")
 
 /**
  * A locked PDF's text with what identifies the person removed: the password itself, long numbers,
- * and lines labelled as ID or address.
+ * and lines labeled as ID or address.
  */
 fun redactPdfText(text: String, passwords: List<String>): String {
     var result = text

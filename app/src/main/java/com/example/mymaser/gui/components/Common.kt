@@ -34,7 +34,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,7 +74,7 @@ val ContentMaxWidth = 600.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun rememberSheetState(): SheetState {
-    val state = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val state = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     LaunchedEffect(state) {
         val opening = snapshotFlow { state.targetValue }.first { it != SheetValue.Hidden }
         if (opening == SheetValue.PartiallyExpanded) state.expand()
