@@ -1,5 +1,7 @@
 package com.example.mymaser.gui.components
 
+import android.icu.text.ListFormatter
+import android.icu.text.NumberFormat
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -42,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -178,17 +181,17 @@ fun HistorySummarySheet(
             ) {
                 StatGrid(history, analytics, period)
 
-                analytics.recurrences.forEach { recurrence ->
-                    val nextDate = recurrence.nextExpected.format(
+                if (analytics.recurrences.isNotEmpty()) {
+                    val locale = LocalConfiguration.current.locales[0]
+                    val days = ListFormatter.getInstance(locale).format(
+                        analytics.recurrences.map { NumberFormat.getIntegerInstance(locale).format(it.typicalDay) }
+                    )
+                    val nextDate = analytics.recurrences.minOf { it.nextExpected }.format(
                         DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
                     )
                     InfoLine(
                         icon = Icons.Outlined.EventRepeat,
-                        text = stringResource(
-                            R.string.summary_recurring,
-                            recurrence.typicalDay,
-                            nextDate
-                        )
+                        text = stringResource(R.string.summary_recurring, days, nextDate)
                     )
                 }
 
