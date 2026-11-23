@@ -30,16 +30,28 @@ private const val CLEAR_TOLERANCE = 0.5
 private const val PACE_DIGITS = 1
 
 @Composable
-fun forecastText(forecast: YearEndForecast): String =
-    if (forecast.balance > CLEAR_TOLERANCE) {
-        stringResource(
-            R.string.forecast_owed,
-            formatCurrency(forecast.balance, trimWholeDecimals = true),
-            formatCurrency(forecast.monthlyToClear, trimWholeDecimals = true)
-        )
-    } else {
-        stringResource(R.string.forecast_clear)
-    }
+fun forecastText(forecast: YearEndForecast): String = when {
+    forecast.balance > CLEAR_TOLERANCE -> stringResource(
+        R.string.forecast_owed,
+        formatCurrency(forecast.balance, trimWholeDecimals = true),
+        formatCurrency(forecast.monthlyToClear, trimWholeDecimals = true)
+    )
+    forecast.balance < -CLEAR_TOLERANCE -> stringResource(
+        R.string.forecast_ahead,
+        formatCurrency(-forecast.balance, trimWholeDecimals = true)
+    )
+    else -> stringResource(R.string.forecast_clear)
+}
+
+/** A maser balance in words: owed, given ahead, or all given. */
+@Composable
+fun balanceText(balance: Double): String = when {
+    balance > CLEAR_TOLERANCE ->
+        stringResource(R.string.forecast_state_owed, formatCurrency(balance, trimWholeDecimals = true))
+    balance < -CLEAR_TOLERANCE ->
+        stringResource(R.string.forecast_state_ahead, formatCurrency(-balance, trimWholeDecimals = true))
+    else -> stringResource(R.string.forecast_state_clear)
+}
 
 @Composable
 fun paceText(pace: YearPace): String = stringResource(

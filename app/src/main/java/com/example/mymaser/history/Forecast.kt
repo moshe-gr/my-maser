@@ -27,6 +27,8 @@ data class SourceProjection(
 }
 
 data class YearEndForecast(
+    /** Maser owed now, before the expected entries; below zero is given ahead. */
+    val start: Double,
     /** Expected maser owed on December 31; zero or below means it will all be given. */
     val balance: Double,
     /**
@@ -122,6 +124,7 @@ fun forecastYearEnd(
     val balance = running
     val monthsLeft = 12 - today.monthValue + 1
     return YearEndForecast(
+        start = currentBalance,
         balance = balance,
         monthlyToClear = maxOf(balance, 0.0) / monthsLeft,
         months = months,

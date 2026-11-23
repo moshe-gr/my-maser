@@ -58,6 +58,7 @@ fun ForecastSheet(
 
             if (forecast != null) {
                 Text(forecastText(forecast), style = MaterialTheme.typography.bodyLarge)
+                ForecastPath(forecast)
                 if (forecast.months.any { it.balance > 0 }) {
                     MonthlyBarChart(
                         months = forecast.months.map { MonthTotal(it.month, it.balance) },
@@ -117,6 +118,39 @@ fun ForecastSheet(
                 )
                 Note(stringResource(R.string.tax_credit_estimate_note))
             }
+        }
+    }
+}
+
+/** Where the balance stands now, where it ends up, and what the expected entries add or give. */
+@Composable
+private fun ForecastPath(forecast: YearEndForecast) {
+    val incomeAdds = forecast.sources.filter { !it.isDonation }.sumOf { it.total }
+    val donationsGive = -forecast.sources.filter { it.isDonation }.sumOf { it.total }
+    val changes = buildList {
+        if (incomeAdds > 0) {
+            add(stringResource(R.string.forecast_income_adds, formatCurrency(incomeAdds, trimWholeDecimals = true)))
+        }
+        if (donationsGive > 0) {
+            add(
+                stringResource(
+                    R.string.forecast_donations_give,
+                    formatCurrency(donationsGive, trimWholeDecimals = true)
+                )
+            )
+        }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            stringResource(R.string.forecast_path, balanceText(forecast.start), balanceText(forecast.balance)),
+            style = MaterialTheme.typography.bodyMedium.tabular
+        )
+        if (changes.isNotEmpty()) {
+            Text(
+                changes.joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium.tabular,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

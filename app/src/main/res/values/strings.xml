@@ -176,6 +176,13 @@
     <string name="guard_fix">Fix</string>
     <string name="forecast_owed">At this pace: %1$s owed by Dec 31. Give about %2$s extra a month to finish at zero.</string>
     <string name="forecast_clear">At this pace your maser will be fully given by Dec 31.</string>
+    <string name="forecast_ahead">At this pace you\'ll end the year %1$s given ahead.</string>
+    <string name="forecast_path">Now %1$s → Dec 31: %2$s</string>
+    <string name="forecast_state_owed">%1$s owed</string>
+    <string name="forecast_state_ahead">%1$s ahead</string>
+    <string name="forecast_state_clear">all given</string>
+    <string name="forecast_income_adds">Expected income adds %1$s</string>
+    <string name="forecast_donations_give">recurring donations give %1$s</string>
     <string name="forecast_details">Details</string>
     <string name="forecast_title">Year-end forecast</string>
     <string name="forecast_chart_title">Expected maser owed at each month\'s end</string>
