@@ -178,7 +178,7 @@ fun HistorySummarySheet(
             ) {
                 StatGrid(history, analytics, period)
 
-                analytics.recurrence?.let { recurrence ->
+                analytics.recurrences.forEach { recurrence ->
                     val nextDate = recurrence.nextExpected.format(
                         DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
                     )

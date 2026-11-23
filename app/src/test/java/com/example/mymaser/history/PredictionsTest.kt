@@ -92,6 +92,32 @@ class PredictionsTest {
         assertTrue(predictDueEntries(oneOff, emptySet(), now(11, 10)).isEmpty())
     }
 
+    private val fund = (1..10).flatMap {
+        listOf(
+            History(timeStamp = at(2026, it, 10), name = "Fund", amount = 200F, isDonation = true),
+            History(timeStamp = at(2026, it, 21), name = "Fund", amount = 500F, isDonation = true)
+        )
+    }
+
+    @Test
+    fun `each occurrence of a twice-monthly source is predicted with its own amount`() {
+        val first = predictDueEntries(fund, emptySet(), now(11, 10)).single()
+        assertEquals(200F, first.amount)
+        val second = predictDueEntries(fund, emptySet(), now(11, 21)).single()
+        assertEquals(LocalDate.of(2026, 11, 21), second.expectedDate)
+        assertEquals(500F, second.amount)
+    }
+
+    @Test
+    fun `skipping one occurrence keeps the other`() {
+        val loggedFirst = fund + History(timeStamp = at(2026, 11, 10), name = "Fund", amount = 200F, isDonation = true)
+        val second = predictDueEntries(loggedFirst, emptySet(), now(11, 20)).single()
+        assertTrue(predictDueEntries(loggedFirst, setOf(second.key), now(11, 20)).isEmpty())
+        val first = predictDueEntries(fund, emptySet(), now(11, 10)).single()
+        assertTrue(first.key != second.key)
+        assertEquals(first, predictDueEntries(fund, setOf(second.key), now(11, 10)).single())
+    }
+
     @Test
     fun `pruning keeps only nearby months`() {
         val keys = setOf(

@@ -64,44 +64,49 @@ fun forecastYearEnd(
     var hasRecurringIncome = false
 
     history.bySource()
-        .forEach { (group, entries) ->
+        .forEach { (group, sourceEntries) ->
             val (isDonation, _) = group
-            val recurrence = detectRecurrence(entries, now) ?: return@forEach
-            val latest = entries.maxBy { it.timeStamp }
-            // Voting as of the usual day keeps one-offs logged on other days from setting the amount.
-            val usualDay = now.with(currentMonth.atDayClamped(recurrence.typicalDay))
-            val amount = suggestedAmount(entries, latest.name, isDonation, usualDay) ?: return@forEach
-            val delta = maserDelta(amount, isDonation, latest.maserPercentage, latest.isTaxOnlyDonation)
-            val dates = entries.map { it.localDate(now.zone) }
-            if (!isDonation) hasRecurringIncome = true
+            val name = sourceEntries.maxBy { it.timeStamp }.name
+            val recurrences = detectRecurrences(sourceEntries, now)
+            recurrences.forEachIndexed { index, recurrence ->
+                val entries = recurrence.entries
+                // Voting as of the usual day keeps one-offs logged on other days from setting the amount.
+                val usualDay = now.with(currentMonth.atDayClamped(recurrence.typicalDay))
+                val amount = suggestedAmount(entries, name, isDonation, usualDay) ?: return@forEachIndexed
+                val latest = entries.latestOfAmount(amount)
+                val delta = maserDelta(amount, isDonation, latest.maserPercentage, latest.isTaxOnlyDonation)
+                val dates = entries.map { it.localDate(now.zone) }
+                val occurrence = occurrenceOf(index, recurrences.size)
+                if (!isDonation) hasRecurringIncome = true
 
-            var remaining = 0
-            var skippedCount = 0
-            var month = currentMonth
-            while (!month.isAfter(december)) {
-                val expected = month.atDayClamped(recurrence.typicalDay)
-                val logged = dates.hasEntryNear(expected) ||
-                    (month == currentMonth && dates.any { it.isLateFor(expected, month) })
-                val skipped = predictionKey(latest.name, isDonation, month) in dismissed
-                when {
-                    skipped -> skippedCount++
-                    !logged -> {
-                        remaining++
-                        changeByMonth.merge(month, delta.toDouble(), Double::plus)
+                var remaining = 0
+                var skippedCount = 0
+                var month = currentMonth
+                while (!month.isAfter(december)) {
+                    val expected = month.atDayClamped(recurrence.typicalDay)
+                    val logged = dates.hasEntryNear(expected) ||
+                        (month == currentMonth && dates.any { it.isLateFor(expected, month) })
+                    val skipped = predictionKey(name, isDonation, month, occurrence) in dismissed
+                    when {
+                        skipped -> skippedCount++
+                        !logged -> {
+                            remaining++
+                            changeByMonth.merge(month, delta.toDouble(), Double::plus)
+                        }
                     }
+                    month = month.plusMonths(1)
                 }
-                month = month.plusMonths(1)
-            }
-            if (remaining > 0 || skippedCount > 0) {
-                sources += SourceProjection(
-                    name = latest.name.trim(),
-                    isDonation = isDonation,
-                    amount = amount.toDouble(),
-                    delta = delta.toDouble(),
-                    remaining = remaining,
-                    skipped = skippedCount,
-                    taxCredit = latest.isTaxCreditDonation
-                )
+                if (remaining > 0 || skippedCount > 0) {
+                    sources += SourceProjection(
+                        name = name.trim(),
+                        isDonation = isDonation,
+                        amount = amount.toDouble(),
+                        delta = delta.toDouble(),
+                        remaining = remaining,
+                        skipped = skippedCount,
+                        taxCredit = latest.isTaxCreditDonation
+                    )
+                }
             }
         }
 

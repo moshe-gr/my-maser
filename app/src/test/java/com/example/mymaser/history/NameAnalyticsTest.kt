@@ -5,7 +5,6 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -119,16 +118,15 @@ class NameAnalyticsTest {
     @Test
     fun `monthly entries on the same day are recurring`() {
         val history = (1..5).map { income("Salary", at(2026, 11 - it, 9 + it % 2), 1000F) }
-        val recurrence = detectRecurrence(history, now)
-        assertNotNull(recurrence)
-        assertTrue(recurrence!!.typicalDay in 9..10)
+        val recurrence = detectRecurrences(history, now).single()
+        assertTrue(recurrence.typicalDay in 9..10)
         assertEquals(LocalDate.of(2026, 11, recurrence.typicalDay), recurrence.nextExpected)
     }
 
     @Test
     fun `once paid this month the next expected date is next month`() {
         val history = (0..3).map { income("Salary", at(2026, 11 - it, 1), 1000F) }
-        assertEquals(LocalDate.of(2026, 12, 1), detectRecurrence(history, now)!!.nextExpected)
+        assertEquals(LocalDate.of(2026, 12, 1), detectRecurrences(history, now).single().nextExpected)
     }
 
     @Test
@@ -138,7 +136,7 @@ class NameAnalyticsTest {
             income("Rent", at(2026, 9, 30), 1F),
             income("Rent", at(2026, 10, 1), 1F)
         )
-        val recurrence = detectRecurrence(history, now)!!
+        val recurrence = detectRecurrences(history, now).single()
         assertTrue(recurrence.typicalDay in listOf(30, 31, 1))
     }
 
@@ -149,20 +147,51 @@ class NameAnalyticsTest {
             income("Gig", at(2026, 9, 15), 1F),
             income("Gig", at(2026, 8, 25), 1F)
         )
-        assertNull(detectRecurrence(scattered, now))
-        assertNull(detectRecurrence(scattered.take(2), now))
+        assertTrue(detectRecurrences(scattered, now).isEmpty())
+        assertTrue(detectRecurrences(scattered.take(2), now).isEmpty())
     }
 
     @Test
     fun `a source that stopped months ago is no longer recurring`() {
         val stopped = (1..4).map { income("Salary", at(2026, it, 10), 1000F) }
-        assertNull(detectRecurrence(stopped, now))
+        assertTrue(detectRecurrences(stopped, now).isEmpty())
     }
 
     @Test
     fun `one missed month still counts as recurring`() {
         val history = (7..9).map { income("Salary", at(2026, it, 10), 1000F) }
-        assertNotNull(detectRecurrence(history, now))
+        assertEquals(1, detectRecurrences(history, now).size)
+    }
+
+    private val twiceMonthly = (1..10).flatMap {
+        listOf(
+            donation("Fund", at(2026, it, 10), 200F),
+            donation("Fund", at(2026, it, 21 + it % 3), 500F)
+        )
+    }
+
+    @Test
+    fun `a source paid twice a month recurs on both days`() {
+        val recurrences = detectRecurrences(twiceMonthly, now)
+        assertEquals(listOf(10, 22), recurrences.map { it.typicalDay })
+        assertEquals(LocalDate.of(2026, 11, 10), recurrences[0].nextExpected)
+        assertEquals(LocalDate.of(2026, 11, 22), recurrences[1].nextExpected)
+        assertTrue(recurrences[0].entries.all { it.amount == 200F })
+        assertTrue(recurrences[1].entries.all { it.amount == 500F })
+    }
+
+    @Test
+    fun `a second day that stopped is dropped`() {
+        val stoppedSecond = twiceMonthly.filter { it.amount == 200F || it.timeStamp < at(2026, 6, 1) }
+        val recurrence = detectRecurrences(stoppedSecond, now).single()
+        assertEquals(10, recurrence.typicalDay)
+        assertTrue(recurrence.entries.all { it.amount == 200F })
+    }
+
+    @Test
+    fun `weekly entries are not monthly occurrences`() {
+        val weekly = (0..40).map { income("Gig", at(2026, 1, 4) + it * 7 * 86_400_000L, 1F) }
+        assertTrue(detectRecurrences(weekly, now).isEmpty())
     }
 
     @Test

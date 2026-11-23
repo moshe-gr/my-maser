@@ -14,7 +14,13 @@ enum class SummaryPeriod { ThisMonth, ThisYear, LastYear, Last12Months, AllTime 
 
 data class MonthTotal(val month: YearMonth, val total: Double)
 
-data class Recurrence(val typicalDay: Int, val nextExpected: LocalDate)
+/** One monthly occurrence of a source; a source paid twice a month has two. */
+data class Recurrence(
+    val typicalDay: Int,
+    val nextExpected: LocalDate,
+    /** The source's entries closest to this occurrence: all of them when it is the only one. */
+    val entries: List<History>
+)
 
 data class NameAnalytics(
     /** Entries for this name and type inside the period, newest first. */
@@ -33,7 +39,8 @@ data class NameAnalytics(
     val maserEffect: Double,
     /** The last 12 months, oldest first, ending with the current month. */
     val monthly: List<MonthTotal>,
-    val recurrence: Recurrence?
+    /** By usual day; empty when the name doesn't recur. */
+    val recurrences: List<Recurrence>
 ) {
     val count: Int get() = entries.size
 
@@ -48,6 +55,9 @@ private const val RECURRENCE_MIN_MONTHS = 3
 private const val RECURRENCE_DAY_TOLERANCE = 3
 private const val RECURRENCE_MIN_SHARE = 0.75
 
+/** More occurrences a month than this look weekly or random rather than monthly. */
+private const val RECURRENCE_MAX_PER_MONTH = 3
+
 /** About two missed months; a source quiet for longer has stopped. */
 private const val RECURRENCE_STALE_DAYS = 62L
 
@@ -59,6 +69,11 @@ internal fun YearMonth.atDayClamped(day: Int): LocalDate = atDay(minOf(day, leng
 
 internal fun List<LocalDate>.hasEntryNear(expected: LocalDate): Boolean =
     any { abs(ChronoUnit.DAYS.between(it, expected)) <= LOGGED_TOLERANCE_DAYS }
+
+/** The latest entry of the usual [amount], so a one-off's flags don't stand for the whole source. */
+internal fun List<History>.latestOfAmount(amount: Float, currency: String? = null): History =
+    filter { it.amount == amount && (currency == null || it.currency == currency) }
+        .maxByOrNull { it.timeStamp } ?: maxBy { it.timeStamp }
 
 /** Entries grouped by type and name, the unit recurrence is detected on; unnamed entries are left out. */
 internal fun List<History>.bySource(): Map<Pair<Boolean, String>, List<History>> =
@@ -142,7 +157,7 @@ fun computeNameAnalytics(
             val month = currentMonth.minusMonths(back.toLong())
             MonthTotal(month, forName.filter { YearMonth.from(it.localDate(now.zone)) == month }.sumAmounts())
         },
-        recurrence = detectRecurrence(forName, now)
+        recurrences = detectRecurrences(forName, now)
     )
 }
 
@@ -152,27 +167,77 @@ internal fun circularDayDistance(a: Int, b: Int): Int {
 }
 
 /**
- * A name recurs when, over the past year, it appeared in at least three different months, most of
- * its entries landed within a few days of the same day of the month, and it hasn't gone quiet.
+ * How a name recurs monthly, one [Recurrence] per occurrence in a month, sorted by usual day.
+ *
+ * A name recurs once a month when, over the past year, it appeared in at least three different
+ * months, most of its entries landed within a few days of the same day of the month, and it
+ * hasn't gone quiet. Failing that, it recurs several times a month when most of its entries fall
+ * into a few such days, each kept up nearly every month; days that went quiet are left out.
  */
-fun detectRecurrence(entries: List<History>, now: ZonedDateTime): Recurrence? {
+fun detectRecurrences(entries: List<History>, now: ZonedDateTime): List<Recurrence> {
     val since = now.minusDays(RECURRENCE_LOOKBACK_DAYS).toInstant().toEpochMilli()
     val dates = entries.filter { it.timeStamp >= since }.map { it.localDate(now.zone) }
+    val single = onceMonthlyDay(dates, now.toLocalDate())
+    if (single != null) return listOf(recurrence(single, entries, now))
+
+    val lastByDay = severalMonthlyDays(dates)
+    if (lastByDay.isEmpty()) return emptyList()
+    // Stopped days still claim their own entries, so those don't sway an active day's amount.
+    val byDay = entries.groupBy { entry ->
+        val day = entry.localDate(now.zone).dayOfMonth
+        lastByDay.keys.minBy { circularDayDistance(day, it) }
+    }
+    return lastByDay
+        .filterValues { ChronoUnit.DAYS.between(it, now.toLocalDate()) <= RECURRENCE_STALE_DAYS }
+        .keys
+        .sorted()
+        .map { recurrence(it, byDay[it].orEmpty(), now) }
+}
+
+private fun onceMonthlyDay(dates: List<LocalDate>, today: LocalDate): Int? {
     if (dates.map(YearMonth::from).distinct().size < RECURRENCE_MIN_MONTHS) return null
-    if (ChronoUnit.DAYS.between(dates.max(), now.toLocalDate()) > RECURRENCE_STALE_DAYS) return null
+    if (ChronoUnit.DAYS.between(dates.max(), today) > RECURRENCE_STALE_DAYS) return null
+    val typicalDay = typicalDay(dates)
+    val consistent = dates.count { circularDayDistance(it.dayOfMonth, typicalDay) <= RECURRENCE_DAY_TOLERANCE }
+    return typicalDay.takeIf { consistent >= dates.size * RECURRENCE_MIN_SHARE }
+}
 
-    val days = dates.map { it.dayOfMonth }
-    val typicalDay = (1..31).minBy { candidate -> days.sumOf { circularDayDistance(it, candidate) } }
-    val consistent = days.count { circularDayDistance(it, typicalDay) <= RECURRENCE_DAY_TOLERANCE }
-    if (consistent < days.size * RECURRENCE_MIN_SHARE) return null
+/** Each usual day with the last date it was kept; empty unless a few days explain most entries. */
+private fun severalMonthlyDays(dates: List<LocalDate>): Map<Int, LocalDate> {
+    val clusters = mutableListOf<List<LocalDate>>()
+    var left = dates
+    while (left.isNotEmpty()) {
+        val center = (1..31).maxBy { candidate ->
+            left.count { circularDayDistance(it.dayOfMonth, candidate) <= RECURRENCE_DAY_TOLERANCE }
+        }
+        val (cluster, rest) = left.partition {
+            circularDayDistance(it.dayOfMonth, center) <= RECURRENCE_DAY_TOLERANCE
+        }
+        if (!cluster.isNearlyEveryMonth()) break
+        clusters += cluster
+        left = rest
+    }
+    if (clusters.size !in 2..RECURRENCE_MAX_PER_MONTH) return emptyMap()
+    if (clusters.sumOf { it.size } < dates.size * RECURRENCE_MIN_SHARE) return emptyMap()
+    return clusters.associate { typicalDay(it) to it.max() }
+}
 
+/** In at least three months, and in most months from its first to its last. */
+private fun List<LocalDate>.isNearlyEveryMonth(): Boolean {
+    val months = map(YearMonth::from).distinct()
+    if (months.size < RECURRENCE_MIN_MONTHS) return false
+    val span = ChronoUnit.MONTHS.between(months.min(), months.max()) + 1
+    return months.size >= span * RECURRENCE_MIN_SHARE
+}
+
+private fun typicalDay(dates: List<LocalDate>): Int =
+    (1..31).minBy { candidate -> dates.sumOf { circularDayDistance(it.dayOfMonth, candidate) } }
+
+private fun recurrence(typicalDay: Int, entries: List<History>, now: ZonedDateTime): Recurrence {
     val currentMonth = YearMonth.from(now)
-    val paidThisMonth = dates.any { YearMonth.from(it) == currentMonth }
+    val paidThisMonth = entries.any { YearMonth.from(it.localDate(now.zone)) == currentMonth }
     val nextMonth = if (paidThisMonth) currentMonth.plusMonths(1) else currentMonth
-    return Recurrence(
-        typicalDay = typicalDay,
-        nextExpected = nextMonth.atDayClamped(typicalDay)
-    )
+    return Recurrence(typicalDay, nextMonth.atDayClamped(typicalDay), entries)
 }
 
 private val CSV_DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT)

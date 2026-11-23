@@ -126,6 +126,19 @@ class EntryChecksAndForecastTest {
     }
 
     @Test
+    fun `both occurrences of a twice-monthly donation reduce the forecast, despite a tax-only one-off`() {
+        val fund = (1..10).flatMap {
+            listOf(
+                History(timeStamp = at(2026, it, 10), name = "Fund", amount = 200F, isDonation = true),
+                History(timeStamp = at(2026, it, 21), name = "Fund", amount = 500F, isDonation = true)
+            )
+        } + History(timeStamp = at(2026, 10, 14), name = "Fund", amount = 50F, isDonation = true, isTaxOnly = true)
+        val forecast = forecastYearEnd(salary + fund, 0.0, now)!!
+        assertEquals(2 * 1000.0 - 2 * 200.0 - 2 * 500.0, forecast.balance, 0.001)
+        assertEquals(listOf(200.0, 500.0), forecast.sources.filter { it.isDonation }.map { it.amount }.sorted())
+    }
+
+    @Test
     fun `nothing to forecast without recurring income`() {
         assertNull(forecastYearEnd(charity, 100.0, now))
     }

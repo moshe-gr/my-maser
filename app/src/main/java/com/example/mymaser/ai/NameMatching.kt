@@ -2,7 +2,7 @@ package com.example.mymaser.ai
 
 import com.example.mymaser.history.History
 import com.example.mymaser.history.circularDayDistance
-import com.example.mymaser.history.detectRecurrence
+import com.example.mymaser.history.detectRecurrences
 import com.example.mymaser.history.localDate
 import com.example.mymaser.history.nameKey
 import java.time.ZonedDateTime
@@ -110,9 +110,9 @@ private fun byPattern(entry: ExtractedEntry, sameKind: List<History>, now: Zoned
         val recent = list.filter { it.currency == entry.currency }
             .sortedByDescending { it.timeStamp }
             .take(PATTERN_RECENT_AMOUNTS)
-        val recurrence = detectRecurrence(list, now)
-        recurrence != null && recent.any { it.amount == entry.amount } &&
-            circularDayDistance(recurrence.typicalDay, day) <= PATTERN_DAY_TOLERANCE
+        recent.any { it.amount == entry.amount } && detectRecurrences(list, now).any {
+            circularDayDistance(it.typicalDay, day) <= PATTERN_DAY_TOLERANCE
+        }
     }.keys.singleOrNull()
 }
 

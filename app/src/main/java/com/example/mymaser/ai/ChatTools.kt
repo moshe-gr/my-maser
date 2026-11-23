@@ -3,7 +3,7 @@ package com.example.mymaser.ai
 import com.example.mymaser.history.History
 import com.example.mymaser.history.YearEndForecast
 import com.example.mymaser.history.bySource
-import com.example.mymaser.history.detectRecurrence
+import com.example.mymaser.history.detectRecurrences
 import com.example.mymaser.history.localDate
 import com.example.mymaser.history.maserDelta
 import com.example.mymaser.history.nameKey
@@ -159,16 +159,18 @@ Don't give halachic rulings; suggest asking a rabbi for those.
     }
 
     private fun recurring(data: ChatData): Map<String, Any?> {
-        val items = data.entries.bySource().values.mapNotNull { entries ->
-            val recurrence = detectRecurrence(entries, data.now) ?: return@mapNotNull null
-            val latest = entries.maxBy { it.timeStamp }
-            mapOf(
-                "name" to latest.name.trim(),
-                "kind" to if (latest.isDonation) "donation" else "income",
-                "usual_day_of_month" to recurrence.typicalDay,
-                "last_amount" to round(latest.amount.toDouble()),
-                "next_expected" to recurrence.nextExpected.toString()
-            )
+        val items = data.entries.bySource().values.flatMap { entries ->
+            val name = entries.maxBy { it.timeStamp }.name.trim()
+            detectRecurrences(entries, data.now).map { recurrence ->
+                val latest = recurrence.entries.maxBy { it.timeStamp }
+                mapOf(
+                    "name" to name,
+                    "kind" to if (latest.isDonation) "donation" else "income",
+                    "usual_day_of_month" to recurrence.typicalDay,
+                    "last_amount" to round(latest.amount.toDouble()),
+                    "next_expected" to recurrence.nextExpected.toString()
+                )
+            }
         }
         return mapOf("currency" to data.currency, "recurring" to items)
     }

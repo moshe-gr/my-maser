@@ -17,17 +17,22 @@ data class Prediction(
     val currency: String,
     val status: DueStatus,
     val isTaxOnly: Boolean = false,
-    val taxCredit: Boolean = false
+    val taxCredit: Boolean = false,
+    /** Which of the source's occurrences in a month this is, or null when it has only one. */
+    val occurrence: Int? = null
 ) {
     /** Identifies this source's occurrence in one month, for dismissals and sent reminders. */
     val key: String
-        get() = predictionKey(name, isDonation, YearMonth.from(expectedDate))
+        get() = predictionKey(name, isDonation, YearMonth.from(expectedDate), occurrence)
 
     fun daysUntil(today: LocalDate): Long = ChronoUnit.DAYS.between(today, expectedDate)
 }
 
-fun predictionKey(name: String, isDonation: Boolean, month: YearMonth): String =
-    "${if (isDonation) "d" else "i"}|${nameKey(name)}|$month"
+fun predictionKey(name: String, isDonation: Boolean, month: YearMonth, occurrence: Int? = null): String =
+    "${if (isDonation) "d" else "i"}|${nameKey(name)}${occurrence?.let { "#$it" }.orEmpty()}|$month"
+
+/** [index] as a [Prediction.occurrence]: null when the source recurs once a month. */
+internal fun occurrenceOf(index: Int, count: Int): Int? = if (count > 1) index + 1 else null
 
 private const val UPCOMING_DAYS = 3
 private const val DUE_NOW_DAYS = 2
@@ -53,34 +58,37 @@ fun predictDueEntries(
     val today = now.toLocalDate()
     val currentMonth = YearMonth.from(today)
     return history.bySource()
-        .mapNotNull { (group, entries) ->
+        .flatMap { (group, entries) ->
             val (isDonation, _) = group
-            val recurrence = detectRecurrence(entries, now) ?: return@mapNotNull null
-            val dates = entries.map { it.localDate(now.zone) }
-            val latest = entries.maxBy { it.timeStamp }
-            val latestName = latest.name.trim()
+            val recurrences = detectRecurrences(entries, now)
+            val latestName = entries.maxBy { it.timeStamp }.name.trim()
 
-            (-1L..1L)
-                .map { offset -> currentMonth.plusMonths(offset).atDayClamped(recurrence.typicalDay) }
-                .mapNotNull { expected ->
-                    val daysUntil = ChronoUnit.DAYS.between(today, expected)
-                    val status = statusFor(daysUntil) ?: return@mapNotNull null
-                    if (dates.hasEntryNear(expected)) return@mapNotNull null
-                    val suggestion = suggestAmount(entries, latestName, isDonation, now)
-                        ?: return@mapNotNull null
-                    Prediction(
-                        name = latestName,
-                        isDonation = isDonation,
-                        expectedDate = expected,
-                        amount = suggestion.amount,
-                        currency = suggestion.currency,
-                        status = status,
-                        isTaxOnly = latest.isTaxOnlyDonation,
-                        taxCredit = latest.isTaxCreditDonation
-                    )
-                }
-                .filterNot { it.key in dismissed }
-                .minByOrNull { abs(it.daysUntil(today)) }
+            recurrences.mapIndexedNotNull { index, recurrence ->
+                val dates = recurrence.entries.map { it.localDate(now.zone) }
+                (-1L..1L)
+                    .map { offset -> currentMonth.plusMonths(offset).atDayClamped(recurrence.typicalDay) }
+                    .mapNotNull { expected ->
+                        val daysUntil = ChronoUnit.DAYS.between(today, expected)
+                        val status = statusFor(daysUntil) ?: return@mapNotNull null
+                        if (dates.hasEntryNear(expected)) return@mapNotNull null
+                        val suggestion = suggestAmount(recurrence.entries, latestName, isDonation, now)
+                            ?: return@mapNotNull null
+                        val latest = recurrence.entries.latestOfAmount(suggestion.amount, suggestion.currency)
+                        Prediction(
+                            name = latestName,
+                            isDonation = isDonation,
+                            expectedDate = expected,
+                            amount = suggestion.amount,
+                            currency = suggestion.currency,
+                            status = status,
+                            isTaxOnly = latest.isTaxOnlyDonation,
+                            taxCredit = latest.isTaxCreditDonation,
+                            occurrence = occurrenceOf(index, recurrences.size)
+                        )
+                    }
+                    .filterNot { it.key in dismissed }
+                    .minByOrNull { abs(it.daysUntil(today)) }
+            }
         }
         .sortedBy { it.expectedDate }
 }
@@ -89,7 +97,7 @@ fun predictDueEntries(
 fun recurringSourceNames(history: List<History>, now: ZonedDateTime): List<String> =
     history.bySource()
         .values
-        .filter { detectRecurrence(it, now) != null }
+        .filter { detectRecurrences(it, now).isNotEmpty() }
         .map { entries -> entries.maxBy { it.timeStamp } }
         .sortedByDescending { it.timeStamp }
         .map { it.name.trim() }
